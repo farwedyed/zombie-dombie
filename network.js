@@ -6,7 +6,7 @@ const Network = {
     lastUpdate: 0,
     
     init: function(onOpen) {
-        // FIX 1: Add STUN servers so routers don't block the connection
+        // 1. Keep STUN servers (Critical for finding each other)
         this.peer = new Peer(null, { 
             debug: 2,
             config: {
@@ -21,21 +21,18 @@ const Network = {
         
         this.peer.on('connection', (c) => {
             this.conn = c;
-            // Wait for connection to be ready before setting up host
             this.conn.on('open', () => {
                 this.setupHost();
             });
         });
 
-        this.peer.on('error', (err) => {
-            console.error(err);
-        });
+        this.peer.on('error', (err) => { console.error(err); });
     },
 
     join: function(hostId, onConnected) {
         this.mode = 'CLIENT';
         
-        // FIX 2: Add serialization: 'json' to bypass the CSP 'eval' error
+        // 2. USE 'none' TO BYPASS PEERJS SERIALIZATION BUGS
         this.conn = this.peer.connect(hostId, {
             serialization: 'none'
         });
@@ -45,21 +42,20 @@ const Network = {
             this.setupClient();
         });
 
-        this.conn.on('error', (err) => {
-            console.error("Connection Error:", err);
-        });
+        this.conn.on('error', (err) => { console.error("Connection Error:", err); });
     },
 
     /* --- HOST LOGIC --- */
     setupHost: function() {
-        this.conn.on('data', (data) => {
+        this.conn.on('data', (rawData) => {
+            // 3. MANUALLY PARSE DATA
+            const data = JSON.parse(rawData);
+
             if(data.type === 'P2_DATA' && players['p2']) {
                 players['p2'].x = data.x;
                 players['p2'].y = data.y;
                 players['p2'].angle = data.angle;
-                
                 if(data.name) players['p2'].name = data.name;
-
                 if(data.shoot) players['p2'].triggerShoot = true;
                 if(data.reload) players['p2'].triggerReload = true;
             }
@@ -85,7 +81,8 @@ const Network = {
         this.lastUpdate = now;
 
         if(this.conn && this.conn.open) {
-            this.conn.send({
+            // 4. MANUALLY STRINGIFY DATA BEFORE SENDING
+            const payload = JSON.stringify({
                 type: 'GAME_STATE',
                 p1: players['p1'], 
                 p2: players['p2'], 
@@ -97,18 +94,23 @@ const Network = {
                 windows: mapData.windows.map(w => ({ boards: w.boards })),
                 doors: mapData.rooms.map(r => ({ unlocked: r.unlocked }))
             });
+            this.conn.send(payload);
         }
     },
 
     broadcastGameOver: function(finalStats) {
         if(this.conn && this.conn.open) {
-            this.conn.send({ type: 'GAME_OVER', stats: finalStats });
+            // 5. MANUALLY STRINGIFY
+            this.conn.send(JSON.stringify({ type: 'GAME_OVER', stats: finalStats }));
         }
     },
 
     /* --- CLIENT LOGIC --- */
     setupClient: function() {
-        this.conn.on('data', (data) => {
+        this.conn.on('data', (rawData) => {
+            // 6. MANUALLY PARSE DATA
+            const data = JSON.parse(rawData);
+
             if(data.type === 'START') {
                 launchGame();
             }
@@ -161,22 +163,23 @@ const Network = {
     },
 
     sendClientData: function(p) {
-    if(this.conn && this.conn.open) {
-        // Manually turn object into string
-        const payload = JSON.stringify({
-            type: 'P2_DATA',
-            name: p.name,
-            x: p.x, y: p.y, angle: p.angle,
-            shoot: mouse.down,
-            reload: p.reloading
-        });
-        this.conn.send(payload);
-    }
-},
+        if(this.conn && this.conn.open) {
+            // 7. MANUALLY STRINGIFY
+            const payload = JSON.stringify({
+                type: 'P2_DATA',
+                name: p.name, 
+                x: p.x, y: p.y, angle: p.angle,
+                shoot: mouse.down,
+                reload: p.reloading
+            });
+            this.conn.send(payload);
+        }
+    },
 
     sendInteract: function() {
         if(this.conn && this.conn.open) {
-            this.conn.send({ type: 'INTERACT' });
+            // 8. MANUALLY STRINGIFY
+            this.conn.send(JSON.stringify({ type: 'INTERACT' }));
         }
     }
 };
