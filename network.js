@@ -37,7 +37,7 @@ const Network = {
         
         // FIX 2: Add serialization: 'json' to bypass the CSP 'eval' error
         this.conn = this.peer.connect(hostId, {
-            serialization: 'json'
+            serialization: 'none'
         });
 
         this.conn.on('open', () => {
@@ -161,16 +161,18 @@ const Network = {
     },
 
     sendClientData: function(p) {
-        if(this.conn && this.conn.open) {
-            this.conn.send({
-                type: 'P2_DATA',
-                name: p.name, 
-                x: p.x, y: p.y, angle: p.angle,
-                shoot: mouse.down,
-                reload: p.reloading
-            });
-        }
-    },
+    if(this.conn && this.conn.open) {
+        // Manually turn object into string
+        const payload = JSON.stringify({
+            type: 'P2_DATA',
+            name: p.name,
+            x: p.x, y: p.y, angle: p.angle,
+            shoot: mouse.down,
+            reload: p.reloading
+        });
+        this.conn.send(payload);
+    }
+},
 
     sendInteract: function() {
         if(this.conn && this.conn.open) {
