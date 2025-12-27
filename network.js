@@ -6,13 +6,36 @@ const Network = {
     lastUpdate: 0,
     
     init: function(onOpen) {
-        this.peer = new Peer(null, { debug: 1 });
-        this.peer.on('open', (id) => { onOpen(id); });
-        this.peer.on('connection', (c) => {
-            this.conn = c;
+    // We add a 'config' object here with Google's free STUN servers
+    this.peer = new Peer(null, { 
+        debug: 2,
+        config: {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' },
+                { urls: 'stun:stun2.l.google.com:19302' },
+                { urls: 'stun:stun3.l.google.com:19302' },
+                { urls: 'stun:stun4.l.google.com:19302' }
+            ]
+        }
+    });
+
+    this.peer.on('open', (id) => { onOpen(id); });
+    
+    this.peer.on('connection', (c) => {
+        this.conn = c;
+        // Wait for the connection to be fully open before setting up host
+        this.conn.on('open', () => {
             this.setupHost();
         });
-    },
+    });
+    
+    // Add error handling to see if connection fails
+    this.peer.on('error', (err) => {
+        console.error("PeerJS Error:", err);
+        alert("Connection Error: " + err.type);
+    });
+},
 
     join: function(hostId, onConnected) {
         this.mode = 'CLIENT';
