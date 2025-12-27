@@ -79,7 +79,25 @@ function checkAchievements() { achievements.forEach(a => { if(me && a.check(stat
 /* --- LOBBY --- */
 function startOffline() { Network.mode = 'OFFLINE'; launchGame(); }
 function enterLobbyHost() { document.getElementById('main-menu').style.display = 'none'; document.getElementById('lobby-screen').style.display = 'flex'; Network.mode = 'HOST'; Network.init((id) => { document.getElementById('host-id-display').innerText = id; }); }
-function enterLobbyJoin() { let id = document.getElementById('join-input').value; if(!id) return alert("Enter ID"); Network.init(() => { Network.join(id, () => { document.getElementById('main-menu').style.display = 'none'; document.getElementById('lobby-screen').style.display = 'flex'; document.getElementById('lobby-status').innerText = "Waiting for Host..."; document.getElementById('start-btn').style.display = 'none'; }); }); }
+function enterLobbyJoin() { 
+    let id = document.getElementById('join-input').value; 
+    if(!id) return alert("Please enter the Host ID"); 
+    
+    document.getElementById('lobby-status').innerText = "Connecting to Peer Server...";
+    
+    // Switch to Lobby Screen immediately so the user knows something is happening
+    document.getElementById('main-menu').style.display = 'none'; 
+    document.getElementById('lobby-screen').style.display = 'flex'; 
+    document.getElementById('start-btn').style.display = 'none'; // Hide start button for guest
+
+    Network.init(() => { 
+        document.getElementById('lobby-status').innerText = "Locating Host...";
+        Network.join(id, () => { 
+            document.getElementById('lobby-status').innerText = "Connected! Waiting for Host to start..."; 
+            document.getElementById('lobby-status').style.color = "#0f0";
+        }); 
+    }); 
+}
 function updateLobbyUI(connected) { if(connected) { document.getElementById('lobby-status').style.color = '#0f0'; document.getElementById('lobby-status').innerText = "PLAYER 2 JOINED!"; document.getElementById('start-btn').disabled = false; document.getElementById('start-btn').style.background = '#a83232'; } }
 function hostStartGame() { Network.conn.send({ type: 'START' }); launchGame(); }
 
@@ -263,38 +281,113 @@ function processInteraction(p) {
 function checkAllDead() { if(Network.mode === 'CLIENT') return; let allDown = Object.values(players).every(p => p.state === 'DOWNED'); if(allDown && !Object.values(players).some(p => p.reviveTimer > 0)) gameOver(); }
 
 function updateZombies() {
-    if(stats.zombiesToSpawn > 0 && stats.frame % 100 === 0 && stats.zombiesAlive < 24) {
+    // Spawning logic
+    if (stats.zombiesToSpawn > 0 && stats.frame % 100 === 0 && stats.zombiesAlive < 24) {
         let valid = mapData.spawnPoints.filter(sp => mapData.rooms[sp.roomId].unlocked);
-        if(valid.length > 0) {
+        if (valid.length > 0) {
             let sp = valid[Math.floor(Math.random() * valid.length)];
             let hp = 100 + (stats.round * 30);
             zombieIdCounter++;
-            zombies.push({ id: zombieIdCounter, x:sp.x, y:sp.y, hp:hp, maxHp:hp, speed:1+(Math.random()*1.5), r:16 });
+            
+            // NEW: Zombies start with hasEntered = false
+            zombies.push({ 
+                id: zombieIdCounter, x: sp.x, y: sp.y, hp: hp, maxHp: hp, 
+                speed: 1 + (Math.random() * 1.5), r: 16, hasEntered: false 
+            });
             stats.zombiesToSpawn--; stats.zombiesAlive++;
         }
     }
+
     zombies.forEach((z, i) => {
-        let target = null, minDist = 9999;
-        Object.values(players).forEach(p => { if(p.state === 'ALIVE') { let d = Math.hypot(p.x - z.x, p.y - z.y); if(d < minDist) { minDist = d; target = p; } } });
-        if(!target) return;
+        let targetX, targetY;
+
+        // --- NEW AI LOGIC: ENTRY WAYPOINTS ---
+        if (!z.hasEntered) {
+            // Find the closest window to the zombie
+            let closestWin = null;
+            let minDist = 999999;
+            mapData.windows.forEach(w => {
+                let d = Math.hypot(z.x - w.entryX, z.y - w.entryY);
+                if (d < minDist) { minDist = d; closestWin = w; }
+            });
+
+            // Head to that window's INSIDE point
+            targetX = closestWin.entryX;
+            targetY = closestWin.entryY;
+
+            // If zombie reaches the inside point, switch to player-chasing forever
+            if (Math.hypot(z.x - targetX, z.y - targetY) < 15) {
+                z.hasEntered = true;
+            }
+        } else {
+            // Normal behavior: Target the closest ALIVE player
+            let target = null;
+            let minDist = 9999;
+            Object.values(players).forEach(p => {
+                if (p.state === 'ALIVE') {
+                    let d = Math.hypot(p.x - z.x, p.y - z.y);
+                    if (d < minDist) { minDist = d; target = p; }
+                }
+            });
+            if (!target) return;
+            targetX = target.x;
+            targetY = target.y;
+        }
+
+        // --- WINDOW COLLISION / BREAKING ---
         let attackingWindow = null;
-        for(let w of mapData.windows) {
-            if(w.boards > 0) { if(z.x > w.x - 30 && z.x < w.x + w.w + 30 && z.y > w.y - 30 && z.y < w.y + w.h + 30) { attackingWindow = w; break; } }
+        for (let w of mapData.windows) {
+            if (w.boards > 0) {
+                // Check if zombie is touching the window area
+                if (z.x > w.x - 35 && z.x < w.x + w.w + 35 && z.y > w.y - 35 && z.y < w.y + w.h + 35) {
+                    attackingWindow = w; break;
+                }
+            }
         }
-        if(attackingWindow) { if(stats.frame % 60 === 0) { attackingWindow.boards--; spawnParticles(attackingWindow.x+attackingWindow.w/2, attackingWindow.y+attackingWindow.h/2, '#8B4513', 2); } }
-        else {
-            let a = Math.atan2(target.y - z.y, target.x - z.x); let mx = Math.cos(a)*z.speed, my = Math.sin(a)*z.speed;
-            if(!RoomSystem.checkCollision(z.x+mx, z.y, false)) z.x += mx; if(!RoomSystem.checkCollision(z.x, z.y+my, false)) z.y += my;
+
+        if (attackingWindow) {
+            // Break boards instead of moving
+            if (stats.frame % 60 === 0) { 
+                attackingWindow.boards--; 
+                spawnParticles(attackingWindow.x + attackingWindow.w / 2, attackingWindow.y + attackingWindow.h / 2, '#8B4513', 2);
+            }
+        } else {
+            // Standard Movement toward current target (Window Waypoint or Player)
+            let a = Math.atan2(targetY - z.y, targetX - z.x);
+            let mx = Math.cos(a) * z.speed;
+            let my = Math.sin(a) * z.speed;
+            
+            if (!RoomSystem.checkCollision(z.x + mx, z.y, false)) z.x += mx;
+            if (!RoomSystem.checkCollision(z.x, z.y + my, false)) z.y += my;
         }
-        for(let j=i+1; j<zombies.length; j++) {
-            let z2 = zombies[j]; let dist = Math.hypot(z.x - z2.x, z.y - z2.y);
-            if(dist < 20 && dist > 0) { let push = (20 - dist) / 2; let ax = ((z.x - z2.x) / dist) * push * 0.5; let ay = ((z.y - z2.y) / dist) * push * 0.5; if(!RoomSystem.checkCollision(z.x+ax, z.y+ay, false)) { z.x += ax; z.y += ay; } if(!RoomSystem.checkCollision(z2.x-ax, z2.y-ay, false)) { z2.x -= ax; z2.y -= ay; } }
+
+        // Bumping logic (Keep zombies from stacking)
+        for (let j = i + 1; j < zombies.length; j++) {
+            let z2 = zombies[j];
+            let dist = Math.hypot(z.x - z2.x, z.y - z2.y);
+            if (dist < 20 && dist > 0) {
+                let push = (20 - dist) / 2;
+                let ax = ((z.x - z2.x) / dist) * push * 0.5;
+                let ay = ((z.y - z2.y) / dist) * push * 0.5;
+                if (!RoomSystem.checkCollision(z.x + ax, z.y + ay, false)) { z.x += ax; z.y += ay; }
+                if (!RoomSystem.checkCollision(z2.x - ax, z2.y - ay, false)) { z2.x -= ax; z2.y -= ay; }
+            }
         }
+
+        // Damage Players
         Object.values(players).forEach(p => {
-            if(Math.hypot(p.x-z.x, p.y-z.y) < 30 && p.state === 'ALIVE') {
+            if (Math.hypot(p.x - z.x, p.y - z.y) < 30 && p.state === 'ALIVE') {
                 p.hp -= 5;
-                if(p === me) { document.getElementById('damage-flash').style.background = "rgba(255,0,0,0.3)"; setTimeout(() => document.getElementById('damage-flash').style.background = "transparent", 50); }
-                if(p.hp <= 0) { p.state = 'DOWNED'; p.reviveTimer = p.hasJug ? 300 : -1; if(p.hasJug) addText(p.x, p.y, "JUG SAVED YOU!", "#f00"); else addText(p.x, p.y, "DOWNED!", "#f00"); }
+                if (p === me) {
+                    document.getElementById('damage-flash').style.background = "rgba(255,0,0,0.3)";
+                    setTimeout(() => document.getElementById('damage-flash').style.background = "transparent", 50);
+                }
+                if (p.hp <= 0) {
+                    p.state = 'DOWNED';
+                    p.reviveTimer = p.hasJug ? 300 : -1;
+                    if (p.hasJug) addText(p.x, p.y, "JUG SAVED YOU!", "#f00");
+                    else addText(p.x, p.y, "DOWNED!", "#f00");
+                }
             }
         });
     });
