@@ -6,13 +6,14 @@
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     
     <style>
-        body { margin: 0; overflow: hidden; background: #000; font-family: 'Courier New', monospace; user-select: none; }
+        body { margin: 0; overflow: hidden; background: #080808; font-family: 'Courier New', monospace; user-select: none; }
         canvas { display: block; }
         
+        /* --- UI OVERLAY --- */
         #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
         .hud-text { font-weight: bold; text-shadow: 2px 2px 0 #000; position: absolute; }
         
-        #round-box { top: 20px; left: 50%; transform: translateX(-50%); color: #a83232; font-size: 40px; }
+        #round-box { top: 20px; left: 50%; transform: translateX(-50%); color: #a83232; font-size: 50px; font-weight: 900; }
         #score-box { top: 20px; right: 20px; color: #ffd700; font-size: 32px; text-align: right; }
         
         #bottom-right-cluster { position: absolute; bottom: 20px; right: 20px; text-align: right; }
@@ -22,8 +23,6 @@
         .perk { width: 30px; height: 30px; border-radius: 50%; border: 2px solid white; display: none; box-shadow: 0 0 5px red; }
 
         #controls-hint { position: absolute; bottom: 10px; left: 10px; color: rgba(255,255,255,0.4); font-size: 14px; }
-
-        /* TOASTS */
         #ach-toast-container { position: absolute; bottom: 40px; left: 10px; display: flex; flex-direction: column-reverse; gap: 10px; pointer-events: none; z-index: 9999; }
         .ach-toast { background: rgba(30, 30, 30, 0.95); border-left: 5px solid #ffd700; color: #fff; padding: 12px; width: 250px; animation: slideIn 0.5s ease-out, fadeOut 1s 4s forwards; pointer-events: auto; }
         @keyframes slideIn { 0% {transform:translateX(-100%);opacity:0;} 100% {transform:translateX(0);opacity:1;} }
@@ -32,27 +31,65 @@
         #interact-msg { top: 60%; left: 50%; transform: translate(-50%, -50%); position: absolute; color: #fff; background: rgba(0,0,0,0.8); padding: 8px 15px; border: 1px solid #444; display: none; z-index: 900; }
         #damage-flash { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; transition: background 0.1s; }
 
-        /* SCREENS */
-        .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(10,10,10,0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: auto; z-index: 2000; }
-        h1 { color: #a83232; font-size: 60px; margin-bottom: 20px; text-shadow: 4px 4px 0 #000; }
-        button { background: #222; color: white; border: 1px solid #666; padding: 15px 40px; font-size: 20px; cursor: pointer; margin: 10px; width: 300px; }
-        button:hover { background: #a83232; }
-        button:disabled { background: #111; color: #555; border-color: #333; cursor: not-allowed; }
+        /* --- MENUS --- */
+        .screen { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            background: linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.8)), url('https://www.transparenttextures.com/patterns/dark-matter.png');
+            background-color: #111;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            pointer-events: auto; z-index: 2000; 
+        }
 
+        /* CONTAINER FOR MAIN MENU */
+        .menu-container {
+            width: 400px;
+            padding: 30px;
+            background: rgba(20, 20, 20, 0.9);
+            border: 1px solid #333;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+            text-align: center;
+        }
+
+        h1 { color: #a83232; font-size: 50px; margin: 0 0 10px 0; letter-spacing: 5px; text-shadow: 4px 4px 0 #000; }
+        .stats-text { color: #666; margin-bottom: 25px; font-size: 14px; }
+        .stats-text span { color: #ccc; }
+
+        /* INPUTS */
+        input { 
+            background: #000; border: 1px solid #444; color: #fff; 
+            padding: 12px; font-family: inherit; font-size: 16px; text-align: center; outline: none;
+            width: 100%; box-sizing: border-box; transition: 0.2s;
+        }
+        input:focus { border-color: #a83232; }
+        
+        #username-input { margin-bottom: 20px; border-color: #a83232; color: #ffd700; font-weight: bold; }
+
+        /* BUTTONS */
+        button { 
+            background: #1a1a1a; color: #ccc; border: 1px solid #333; 
+            padding: 12px; width: 100%; margin: 5px 0; cursor: pointer; 
+            font-family: inherit; font-size: 18px; transition: 0.2s; 
+        }
+        button:hover { background: #a83232; color: #fff; border-color: #a83232; transform: translateX(5px); }
+        button:active { transform: translateX(2px); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        /* JOIN ROW */
+        .join-row { display: flex; gap: 5px; margin: 5px 0; }
+        .join-row input { flex: 2; font-size: 14px; margin: 0; }
+        .join-row button { flex: 1; margin: 0; font-size: 14px; background: #222; }
+
+        /* FOOTER BUTTONS */
+        .footer-btns { display: flex; gap: 5px; margin-top: 15px; border-top: 1px solid #333; padding-top: 15px; }
+        .footer-btns button { font-size: 12px; padding: 10px; background: #0e0e0e; }
+
+        /* MODALS */
         .modal { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 600px; height: 500px; background: #111; border: 2px solid #444; z-index: 2100; padding: 20px; overflow-y: auto; }
         .list-item { background: #222; margin-bottom: 10px; padding: 10px; display: flex; justify-content: space-between; border-left: 5px solid #555; color: white; }
         .unlocked { border-left-color: #ffd700; background: #2a2a2a; }
 
-        /* MP UI */
-        #join-input { padding: 10px; font-size: 18px; width: 280px; text-align: center; margin-bottom: 10px; background: #222; color: white; border: 1px solid #666; }
-        #lobby-status { color: #0f0; margin-top: 20px; font-family: monospace; font-size: 18px; }
-        
-        /* SCOREBOARD (TAB) */
-        #scoreboard {
-            display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 700px; background: rgba(0,0,0,0.9); border: 2px solid #444; z-index: 1500;
-            padding: 20px; color: white;
-        }
+        /* TAB SCOREBOARD */
+        #scoreboard { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 700px; background: rgba(0,0,0,0.95); border: 2px solid #a83232; z-index: 1500; padding: 20px; color: white; }
         table { width: 100%; border-collapse: collapse; }
         th { text-align: left; border-bottom: 2px solid #666; padding: 10px; color: #a83232; }
         td { padding: 10px; border-bottom: 1px solid #333; }
@@ -64,22 +101,31 @@
 
 <!-- MAIN MENU -->
 <div id="main-menu" class="screen">
-    <h1>ZOMBIES 2D</h1>
-    <div style="color: #888; margin-bottom: 20px;">KILLS: <span id="menu-kills" style="color:#fff">0</span></div>
-    
-    <button onclick="startOffline()">PLAY OFFLINE</button>
-    <div style="border-top: 1px solid #444; width: 300px; margin: 10px;"></div>
-    
-    <button onclick="enterLobbyHost()">HOST GAME</button>
-    <div style="display:flex; flex-direction:column; align-items:center;">
-        <input type="text" id="join-input" placeholder="Paste Host ID">
-        <button onclick="enterLobbyJoin()">JOIN GAME</button>
+    <div class="menu-container">
+        <h1>ZOMBIES 2D</h1>
+        <div class="stats-text">
+            KILLS: <span id="menu-kills">0</span> | BEST ROUND: <span id="menu-round">1</span>
+        </div>
+
+        <!-- IDENTITY -->
+        <input type="text" id="username-input" placeholder="ENTER CODENAME" maxlength="12">
+        
+        <!-- PLAY ACTIONS -->
+        <button onclick="startOffline()" style="margin-top: 10px; border-color: #444;">PLAY SOLO</button>
+        <button onclick="enterLobbyHost()">HOST ONLINE</button>
+        
+        <div class="join-row">
+            <input type="text" id="join-input" placeholder="Enter Host ID">
+            <button onclick="enterLobbyJoin()">JOIN</button>
+        </div>
+
+        <!-- FOOTER -->
+        <div class="footer-btns">
+            <button onclick="openMenu('gun-modal')">GUNS</button>
+            <button onclick="openMenu('ach-modal')">AWARDS</button>
+            <button onclick="resetData()" style="color: #c0392b;">RESET</button>
+        </div>
     </div>
-    <div style="border-top: 1px solid #444; width: 300px; margin: 10px;"></div>
-    
-    <button onclick="openMenu('ach-modal')" style="width: 140px; display:inline-block;">AWARDS</button>
-    <button onclick="openMenu('gun-modal')" style="width: 140px; display:inline-block;">GUNS</button>
-    <button onclick="resetData()" style="width: 140px; display:inline-block;">RESET</button>
 </div>
 
 <!-- LOBBY SCREEN -->
@@ -95,7 +141,7 @@
 <!-- TAB SCOREBOARD -->
 <div id="scoreboard">
     <table>
-        <thead><tr><th>PLAYER</th><th>KILLS</th><th>STATUS</th><th>PING</th></tr></thead>
+        <thead><tr><th>PLAYER</th><th>KILLS</th><th>SCORE</th><th>STATUS</th><th>PING</th></tr></thead>
         <tbody id="score-body"></tbody>
     </table>
 </div>
@@ -111,7 +157,6 @@
 <div id="game-over" class="screen" style="display: none;">
     <h1>GAME OVER</h1>
     <h2 id="death-msg" style="color:#fff;">Survived to Round 1</h2>
-    <!-- THIS LINE IS NEEDED FOR THE FUNNY MESSAGES -->
     <div id="perf-msg" style="color: #ffd700; margin-top:10px; font-size: 18px; font-style: italic;"></div>
     
     <button onclick="requestRestart()">PLAY AGAIN</button>
@@ -136,6 +181,7 @@
 
 <!-- SCRIPTS -->
 <script src="data.js"></script>
+<script src="map.js"></script>
 <script src="rooms.js"></script>
 <script src="visuals.js"></script>
 <script src="network.js"></script>
