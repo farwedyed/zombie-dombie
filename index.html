@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>BO1 Zombies: Demake Online</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    
+    <style>
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Courier New', monospace; user-select: none; }
+        canvas { display: block; }
+        
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        .hud-text { font-weight: bold; text-shadow: 2px 2px 0 #000; position: absolute; }
+        
+        #round-box { top: 20px; left: 50%; transform: translateX(-50%); color: #a83232; font-size: 40px; }
+        #score-box { top: 20px; right: 20px; color: #ffd700; font-size: 32px; text-align: right; }
+        
+        #bottom-right-cluster { position: absolute; bottom: 20px; right: 20px; text-align: right; }
+        #gun-name { color: #fff; font-size: 28px; font-weight: bold; }
+        #ammo-text { color: #ccc; font-size: 24px; }
+        #perk-area { display: flex; gap: 10px; margin-top: 10px; justify-content: flex-end; }
+        .perk { width: 30px; height: 30px; border-radius: 50%; border: 2px solid white; display: none; box-shadow: 0 0 5px red; }
+
+        #controls-hint { position: absolute; bottom: 10px; left: 10px; color: rgba(255,255,255,0.4); font-size: 14px; }
+
+        /* TOASTS */
+        #ach-toast-container { position: absolute; bottom: 40px; left: 10px; display: flex; flex-direction: column-reverse; gap: 10px; pointer-events: none; z-index: 9999; }
+        .ach-toast { background: rgba(30, 30, 30, 0.95); border-left: 5px solid #ffd700; color: #fff; padding: 12px; width: 250px; animation: slideIn 0.5s ease-out, fadeOut 1s 4s forwards; pointer-events: auto; }
+        @keyframes slideIn { 0% {transform:translateX(-100%);opacity:0;} 100% {transform:translateX(0);opacity:1;} }
+        @keyframes fadeOut { 0% {opacity:1;} 100% {opacity:0;} }
+
+        #interact-msg { top: 60%; left: 50%; transform: translate(-50%, -50%); position: absolute; color: #fff; background: rgba(0,0,0,0.8); padding: 8px 15px; border: 1px solid #444; display: none; z-index: 900; }
+        #damage-flash { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; transition: background 0.1s; }
+
+        /* SCREENS */
+        .screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(10,10,10,0.95); display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: auto; z-index: 2000; }
+        h1 { color: #a83232; font-size: 60px; margin-bottom: 20px; text-shadow: 4px 4px 0 #000; }
+        button { background: #222; color: white; border: 1px solid #666; padding: 15px 40px; font-size: 20px; cursor: pointer; margin: 10px; width: 300px; }
+        button:hover { background: #a83232; }
+        button:disabled { background: #111; color: #555; border-color: #333; cursor: not-allowed; }
+
+        .modal { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 600px; height: 500px; background: #111; border: 2px solid #444; z-index: 2100; padding: 20px; overflow-y: auto; }
+        .list-item { background: #222; margin-bottom: 10px; padding: 10px; display: flex; justify-content: space-between; border-left: 5px solid #555; color: white; }
+        .unlocked { border-left-color: #ffd700; background: #2a2a2a; }
+
+        /* MP UI */
+        #join-input { padding: 10px; font-size: 18px; width: 280px; text-align: center; margin-bottom: 10px; background: #222; color: white; border: 1px solid #666; }
+        #lobby-status { color: #0f0; margin-top: 20px; font-family: monospace; font-size: 18px; }
+        
+        /* SCOREBOARD (TAB) */
+        #scoreboard {
+            display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 700px; background: rgba(0,0,0,0.9); border: 2px solid #444; z-index: 1500;
+            padding: 20px; color: white;
+        }
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; border-bottom: 2px solid #666; padding: 10px; color: #a83232; }
+        td { padding: 10px; border-bottom: 1px solid #333; }
+        
+        #game-ui { display: none; }
+    </style>
+</head>
+<body oncontextmenu="return false;">
+
+<!-- MAIN MENU -->
+<div id="main-menu" class="screen">
+    <h1>ZOMBIES 2D</h1>
+    <div style="color: #888; margin-bottom: 20px;">KILLS: <span id="menu-kills" style="color:#fff">0</span></div>
+    
+    <button onclick="startOffline()">PLAY OFFLINE</button>
+    <div style="border-top: 1px solid #444; width: 300px; margin: 10px;"></div>
+    
+    <button onclick="enterLobbyHost()">HOST GAME</button>
+    <div style="display:flex; flex-direction:column; align-items:center;">
+        <input type="text" id="join-input" placeholder="Paste Host ID">
+        <button onclick="enterLobbyJoin()">JOIN GAME</button>
+    </div>
+    <div style="border-top: 1px solid #444; width: 300px; margin: 10px;"></div>
+    
+    <button onclick="openMenu('ach-modal')" style="width: 140px; display:inline-block;">AWARDS</button>
+    <button onclick="openMenu('gun-modal')" style="width: 140px; display:inline-block;">GUNS</button>
+    <button onclick="resetData()" style="width: 140px; display:inline-block;">RESET</button>
+</div>
+
+<!-- LOBBY SCREEN -->
+<div id="lobby-screen" class="screen" style="display: none;">
+    <h1 style="font-size: 40px;">LOBBY</h1>
+    <div id="host-id-display" style="background:#222; padding:10px; border:1px dashed #666; color:#0ff; user-select:text; cursor:text;">ID: Generating...</div>
+    <div id="lobby-status">Waiting for players...</div>
+    <div id="player-list" style="margin-top:20px; color:#aaa;"></div>
+    <button id="start-btn" onclick="hostStartGame()" disabled style="margin-top:30px;">START MATCH</button>
+    <button onclick="location.reload()" style="background:#444">CANCEL</button>
+</div>
+
+<!-- TAB SCOREBOARD -->
+<div id="scoreboard">
+    <table>
+        <thead><tr><th>PLAYER</th><th>KILLS</th><th>STATUS</th><th>PING</th></tr></thead>
+        <tbody id="score-body"></tbody>
+    </table>
+</div>
+
+<!-- POPUPS -->
+<div id="ach-modal" class="modal">
+    <h2 style="color:white;text-align:center">ACHIEVEMENTS</h2><div id="ach-list"></div>
+    <button class="close-btn" onclick="closeMenu('ach-modal')">CLOSE</button>
+</div>
+<div id="gun-modal" class="modal"><h2 style="color:white;text-align:center">LIBRARY</h2><div id="gun-list"></div><button class="close-btn" onclick="closeMenu('gun-modal')">CLOSE</button></div>
+
+
+<div id="game-over" class="screen" style="display: none;">
+    <h1>GAME OVER</h1>
+    <h2 id="death-msg" style="color:#fff;">Survived to Round 1</h2>
+    <!-- THIS LINE IS NEEDED FOR THE FUNNY MESSAGES -->
+    <div id="perf-msg" style="color: #ffd700; margin-top:10px; font-size: 18px; font-style: italic;"></div>
+    
+    <button onclick="requestRestart()">PLAY AGAIN</button>
+    <button onclick="location.reload()">MAIN MENU</button>
+</div>
+
+<div id="game-ui">
+    <div id="damage-flash"></div>
+    <div id="round-box" class="hud-text">1</div>
+    <div id="score-box" class="hud-text">500 <span style="font-size:20px">⛃</span></div>
+    <div id="bottom-right-cluster">
+        <div id="gun-name">M1911</div>
+        <div id="ammo-text">8 / 32</div>
+        <div id="perk-area"><div id="icon-jug" class="perk" style="background: #c0392b;"></div></div>
+    </div>
+    <div id="ach-toast-container"></div>
+    <div id="controls-hint">WASD: Move | MOUSE: Shoot | R: Reload | F: Interact | TAB: Scoreboard</div>
+    <div id="interact-msg">Press F</div>
+</div>
+
+<canvas id="gameCanvas"></canvas>
+
+<!-- SCRIPTS -->
+<script src="data.js"></script>
+<script src="rooms.js"></script>
+<script src="visuals.js"></script>
+<script src="network.js"></script>
+<script src="game.js"></script>
+
+</body>
+</html>
