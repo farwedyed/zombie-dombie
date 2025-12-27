@@ -30,6 +30,11 @@ const Network = {
                 players['p2'].x = data.x;
                 players['p2'].y = data.y;
                 players['p2'].angle = data.angle;
+                
+                // --- NEW: SYNC NAME ---
+                if(data.name) players['p2'].name = data.name;
+                // ---------------------
+
                 if(data.shoot) players['p2'].triggerShoot = true;
                 if(data.reload) players['p2'].triggerReload = true;
             }
@@ -38,7 +43,6 @@ const Network = {
             }
         });
         
-        // HANDLE DISCONNECT
         this.conn.on('close', () => {
             console.log("Player 2 Disconnected");
             if(players['p2']) {
@@ -58,8 +62,8 @@ const Network = {
         if(this.conn && this.conn.open) {
             this.conn.send({
                 type: 'GAME_STATE',
-                p1: players['p1'],
-                p2: players['p2'],
+                p1: players['p1'], // This object now contains p1.name
+                p2: players['p2'], // This object now contains p2.name
                 zombies: zombies, 
                 bullets: bullets,
                 stats: stats,
@@ -84,10 +88,8 @@ const Network = {
                 launchGame();
             }
             else if(data.type === 'GAME_STATE') {
-                // ZOMBIE SYNC
                 const serverZombies = data.zombies || [];
                 const serverMap = new Map();
-                
                 serverZombies.forEach(sz => {
                     serverMap.set(sz.id, sz);
                     const local = zombies.find(z => z.id === sz.id);
@@ -101,7 +103,6 @@ const Network = {
                         zombies.push(sz);
                     }
                 });
-
                 for(let i = zombies.length - 1; i >= 0; i--) {
                     if(!serverMap.has(zombies[i].id)) zombies.splice(i, 1);
                 }
@@ -126,9 +127,8 @@ const Network = {
                 stats = data.stats;
                 gameOver();
             }
-        }); // <--- THIS WAS MISSING IN YOUR CODE
+        });
 
-        // HANDLE HOST DISCONNECT
         this.conn.on('close', () => {
             alert("Host Disconnected");
             location.reload(); 
@@ -139,6 +139,7 @@ const Network = {
         if(this.conn && this.conn.open) {
             this.conn.send({
                 type: 'P2_DATA',
+                name: p.name, // --- NEW: SEND NAME ---
                 x: p.x, y: p.y, angle: p.angle,
                 shoot: mouse.down,
                 reload: p.reloading

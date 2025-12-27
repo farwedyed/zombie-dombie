@@ -1,25 +1,15 @@
 /* --- VISUALS MODULE --- */
+
 function drawGame() {
     // 1. Clear Screen
     ctx.fillStyle = '#000'; 
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
-    // 2. Visual Fallback for Game Over
-    // If the HTML menu fails to show, this draws text on the canvas
-    if(!gameActive && document.getElementById('game-over').style.display === 'flex') {
-        ctx.fillStyle = "#a83232"; 
-        ctx.font = "bold 60px monospace"; 
-        ctx.textAlign = "center"; 
-        ctx.fillText("GAME OVER", canvas.width/2, canvas.height/2);
-        // We return here to stop drawing the game world if it's over
-        return;
-    }
-
     ctx.save();
-    // Apply Camera (Follows the local player "me")
+    // Apply Camera
     ctx.translate(-camera.x, -camera.y);
 
-    // 3. Draw Rooms (Floor)
+    // 2. Draw Rooms (Floor)
     mapData.rooms.forEach(r => {
         ctx.fillStyle = r.color;
         
@@ -34,17 +24,17 @@ function drawGame() {
         ctx.globalAlpha = 1.0; // Reset alpha
     });
 
-    // 4. Draw Furniture
+    // 3. Draw Furniture
     mapData.furniture.forEach(f => {
         ctx.fillStyle = f.color;
         ctx.fillRect(f.x, f.y, f.w, f.h);
     });
 
-    // 5. Draw Walls
+    // 4. Draw Walls
     ctx.fillStyle = '#444';
     mapData.walls.forEach(w => ctx.fillRect(w.x, w.y, w.w, w.h));
 
-    // 6. Draw Windows
+    // 5. Draw Windows
     mapData.windows.forEach(w => {
         // Frame
         ctx.strokeStyle = '#666'; 
@@ -56,17 +46,15 @@ function drawGame() {
         if(w.boards > 0) {
             for(let i=0; i<w.boards; i++) {
                 if(w.orientation === 'H') {
-                    // Horizontal Boards
                     ctx.fillRect(w.x + (i*15) + 5, w.y, 10, w.h);
                 } else {
-                    // Vertical Boards
                     ctx.fillRect(w.x, w.y + (i*15) + 5, w.w, 10);
                 }
             }
         }
     });
 
-    // 7. Draw Doors
+    // 6. Draw Doors
     mapData.rooms.forEach(r => {
         if(!r.unlocked && r.door) {
             // Door Color
@@ -85,7 +73,7 @@ function drawGame() {
         }
     });
 
-    // 8. Draw Interactables (Wallbuys, Box, Perks)
+    // 7. Draw Interactables (Wallbuys, Box, Perks)
     mapData.interactables.forEach(i => {
         ctx.fillStyle = i.type === 'BOX' ? i.color : '#555';
         ctx.fillRect(i.x, i.y, i.w, i.h);
@@ -107,33 +95,43 @@ function drawGame() {
         }
     });
 
-    // 9. Draw Players (Iterate through all connected players)
+    // 8. Draw Players
     Object.values(players).forEach(p => {
         ctx.save();
         ctx.translate(p.x, p.y);
         
-        // Handle Downed State Visuals
+        // --- DRAW USERNAME (New) ---
+        if(p.state === 'ALIVE' && p.name) {
+            ctx.fillStyle = "#fff";
+            ctx.font = "bold 12px Arial";
+            ctx.textAlign = "center";
+            ctx.shadowColor = "black";
+            ctx.shadowBlur = 2;
+            ctx.fillText(p.name, 0, -45); // Float above head
+            ctx.shadowBlur = 0;
+        }
+
+        // --- DRAW DOWNED VISUALS (Restored) ---
         if(p.state === 'DOWNED') {
             ctx.globalAlpha = 0.5; // Transparent if down
             
-            // Draw Revive Bar above head
             if(p.reviveTimer > 0) {
-                // Background
+                // Background Bar
                 ctx.fillStyle = "black"; 
                 ctx.fillRect(-20, -35, 40, 5);
                 // Green Progress
                 ctx.fillStyle = "#0f0"; 
                 ctx.fillRect(-20, -35, 40 * (p.reviveTimer/300), 5);
             } else {
-                // "Need Help" text if timer ran out (or no Jug)
+                // "NEED HELP" text
                 ctx.fillStyle = "red"; 
-                ctx.font = "12px Arial"; 
+                ctx.font = "bold 12px Arial"; 
                 ctx.textAlign = "center";
                 ctx.fillText("NEED HELP", 0, -35);
             }
         }
         
-        // Rotate Player
+        // Rotate Player Body
         ctx.rotate(p.angle);
         
         // Body Color (Jug makes you redder)
@@ -151,7 +149,7 @@ function drawGame() {
         ctx.restore();
     });
 
-    // 10. Draw Zombies
+    // 9. Draw Zombies
     zombies.forEach(z => {
         // Body
         ctx.fillStyle = '#3a4a38';
@@ -178,7 +176,7 @@ function drawGame() {
         }
     });
 
-    // 11. Draw Bullets
+    // 10. Draw Bullets
     bullets.forEach(b => {
         ctx.fillStyle = b.color;
         ctx.beginPath(); 
@@ -186,15 +184,18 @@ function drawGame() {
         ctx.fill();
     });
 
-    // 12. Draw Floating Texts
+    // 11. Draw Floating Texts
     texts.forEach(t => { 
         ctx.fillStyle = t.color; 
         ctx.textAlign = 'center'; 
-        ctx.font = "20px monospace"; 
+        ctx.font = "bold 20px monospace"; 
+        ctx.shadowColor = "black";
+        ctx.shadowBlur = 2;
         ctx.fillText(t.text, t.x, t.y); 
+        ctx.shadowBlur = 0;
     });
 
-    // 13. Draw Particles (Debris)
+    // 12. Draw Particles
     particles.forEach(p => { 
         ctx.fillStyle = p.color; 
         ctx.fillRect(p.x, p.y, 3, 3); 
@@ -203,21 +204,16 @@ function drawGame() {
     ctx.restore();
 }
 
-// UI Helper Function called by Game Loop
 function updateUI() {
-    // If 'me' (local player) isn't defined yet, don't crash
     if(!me) return;
     
-    // Update HTML Elements
     document.getElementById('score-box').innerHTML = me.score + ' <span style="font-size:20px">⛃</span>';
     document.getElementById('round-box').innerText = stats.round;
     
     const gun = me.inventory[me.weapIdx];
     document.getElementById('gun-name').innerText = gun.name;
     
-    // Show reload text or ammo count
     document.getElementById('ammo-text').innerText = me.reloading ? "RELOADING" : `${gun.clip} / ${gun.ammo}`;
     
-    // Show Jug Icon if bought
     document.getElementById('icon-jug').style.display = me.hasJug ? 'block' : 'none';
 }
