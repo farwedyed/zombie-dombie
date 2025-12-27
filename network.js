@@ -6,56 +6,35 @@ const Network = {
     lastUpdate: 0,
     
     init: function(onOpen) {
-        // 1. Keep STUN servers (Critical for finding each other)
-        this.peer = new Peer(null, { 
-            debug: 2,
-            config: {
-                iceServers: [
-                    { urls: 'stun:stun.l.google.com:19302' },
-                    { urls: 'stun:stun1.l.google.com:19302' }
-                ]
-            }
-        });
-
+        this.peer = new Peer(null, { debug: 1 });
         this.peer.on('open', (id) => { onOpen(id); });
-        
         this.peer.on('connection', (c) => {
             this.conn = c;
-            this.conn.on('open', () => {
-                this.setupHost();
-            });
+            this.setupHost();
         });
-
-        this.peer.on('error', (err) => { console.error(err); });
     },
 
     join: function(hostId, onConnected) {
         this.mode = 'CLIENT';
-        
-        // 2. USE 'none' TO BYPASS PEERJS SERIALIZATION BUGS
-        this.conn = this.peer.connect(hostId, {
-            serialization: 'none'
-        });
-
+        this.conn = this.peer.connect(hostId);
         this.conn.on('open', () => {
             if(onConnected) onConnected();
             this.setupClient();
         });
-
-        this.conn.on('error', (err) => { console.error("Connection Error:", err); });
     },
 
     /* --- HOST LOGIC --- */
     setupHost: function() {
-        this.conn.on('data', (rawData) => {
-            // 3. FIX: MANUALLY PARSE DATA
-            const data = JSON.parse(rawData);
-
+        this.conn.on('data', (data) => {
             if(data.type === 'P2_DATA' && players['p2']) {
                 players['p2'].x = data.x;
                 players['p2'].y = data.y;
                 players['p2'].angle = data.angle;
+                
+                // --- NEW: SYNC NAME ---
                 if(data.name) players['p2'].name = data.name;
+                // ---------------------
+
                 if(data.shoot) players['p2'].triggerShoot = true;
                 if(data.reload) players['p2'].triggerReload = true;
             }
@@ -81,11 +60,10 @@ const Network = {
         this.lastUpdate = now;
 
         if(this.conn && this.conn.open) {
-            // 4. FIX: MANUALLY STRINGIFY DATA
-            const payload = JSON.stringify({
+            this.conn.send({
                 type: 'GAME_STATE',
-                p1: players['p1'], 
-                p2: players['p2'], 
+                p1: players['p1'], // This object now contains p1.name
+                p2: players['p2'], // This object now contains p2.name
                 zombies: zombies, 
                 bullets: bullets,
                 stats: stats,
@@ -94,23 +72,18 @@ const Network = {
                 windows: mapData.windows.map(w => ({ boards: w.boards })),
                 doors: mapData.rooms.map(r => ({ unlocked: r.unlocked }))
             });
-            this.conn.send(payload);
         }
     },
 
     broadcastGameOver: function(finalStats) {
         if(this.conn && this.conn.open) {
-            // 5. FIX: MANUALLY STRINGIFY
-            this.conn.send(JSON.stringify({ type: 'GAME_OVER', stats: finalStats }));
+            this.conn.send({ type: 'GAME_OVER', stats: finalStats });
         }
     },
 
     /* --- CLIENT LOGIC --- */
     setupClient: function() {
-        this.conn.on('data', (rawData) => {
-            // 6. FIX: MANUALLY PARSE DATA
-            const data = JSON.parse(rawData);
-
+        this.conn.on('data', (data) => {
             if(data.type === 'START') {
                 launchGame();
             }
@@ -164,22 +137,19 @@ const Network = {
 
     sendClientData: function(p) {
         if(this.conn && this.conn.open) {
-            // 7. FIX: MANUALLY STRINGIFY
-            const payload = JSON.stringify({
+            this.conn.send({
                 type: 'P2_DATA',
-                name: p.name, 
+                name: p.name, // --- NEW: SEND NAME ---
                 x: p.x, y: p.y, angle: p.angle,
                 shoot: mouse.down,
                 reload: p.reloading
             });
-            this.conn.send(payload);
         }
     },
 
     sendInteract: function() {
         if(this.conn && this.conn.open) {
-            // 8. FIX: MANUALLY STRINGIFY
-            this.conn.send(JSON.stringify({ type: 'INTERACT' }));
+            this.conn.send({ type: 'INTERACT' });
         }
     }
 };
