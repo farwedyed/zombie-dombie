@@ -6,43 +6,47 @@ const Network = {
     lastUpdate: 0,
     
     init: function(onOpen) {
-    // We add a 'config' object here with Google's free STUN servers
-    this.peer = new Peer(null, { 
-        debug: 2,
-        config: {
-            iceServers: [
-                { urls: 'stun:stun.l.google.com:19302' },
-                { urls: 'stun:stun1.l.google.com:19302' },
-                { urls: 'stun:stun2.l.google.com:19302' },
-                { urls: 'stun:stun3.l.google.com:19302' },
-                { urls: 'stun:stun4.l.google.com:19302' }
-            ]
-        }
-    });
-
-    this.peer.on('open', (id) => { onOpen(id); });
-    
-    this.peer.on('connection', (c) => {
-        this.conn = c;
-        // Wait for the connection to be fully open before setting up host
-        this.conn.on('open', () => {
-            this.setupHost();
+        // FIX 1: Add STUN servers so routers don't block the connection
+        this.peer = new Peer(null, { 
+            debug: 2,
+            config: {
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' }
+                ]
+            }
         });
-    });
-    
-    // Add error handling to see if connection fails
-    this.peer.on('error', (err) => {
-        console.error("PeerJS Error:", err);
-        alert("Connection Error: " + err.type);
-    });
-},
+
+        this.peer.on('open', (id) => { onOpen(id); });
+        
+        this.peer.on('connection', (c) => {
+            this.conn = c;
+            // Wait for connection to be ready before setting up host
+            this.conn.on('open', () => {
+                this.setupHost();
+            });
+        });
+
+        this.peer.on('error', (err) => {
+            console.error(err);
+        });
+    },
 
     join: function(hostId, onConnected) {
         this.mode = 'CLIENT';
-        this.conn = this.peer.connect(hostId);
+        
+        // FIX 2: Add serialization: 'json' to bypass the CSP 'eval' error
+        this.conn = this.peer.connect(hostId, {
+            serialization: 'json'
+        });
+
         this.conn.on('open', () => {
             if(onConnected) onConnected();
             this.setupClient();
+        });
+
+        this.conn.on('error', (err) => {
+            console.error("Connection Error:", err);
         });
     },
 
@@ -54,9 +58,7 @@ const Network = {
                 players['p2'].y = data.y;
                 players['p2'].angle = data.angle;
                 
-                // --- NEW: SYNC NAME ---
                 if(data.name) players['p2'].name = data.name;
-                // ---------------------
 
                 if(data.shoot) players['p2'].triggerShoot = true;
                 if(data.reload) players['p2'].triggerReload = true;
@@ -85,8 +87,8 @@ const Network = {
         if(this.conn && this.conn.open) {
             this.conn.send({
                 type: 'GAME_STATE',
-                p1: players['p1'], // This object now contains p1.name
-                p2: players['p2'], // This object now contains p2.name
+                p1: players['p1'], 
+                p2: players['p2'], 
                 zombies: zombies, 
                 bullets: bullets,
                 stats: stats,
@@ -162,7 +164,7 @@ const Network = {
         if(this.conn && this.conn.open) {
             this.conn.send({
                 type: 'P2_DATA',
-                name: p.name, // --- NEW: SEND NAME ---
+                name: p.name, 
                 x: p.x, y: p.y, angle: p.angle,
                 shoot: mouse.down,
                 reload: p.reloading
