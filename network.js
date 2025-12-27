@@ -48,7 +48,7 @@ const Network = {
     /* --- HOST LOGIC --- */
     setupHost: function() {
         this.conn.on('data', (rawData) => {
-            // 3. MANUALLY PARSE DATA
+            // 3. FIX: MANUALLY PARSE DATA
             const data = JSON.parse(rawData);
 
             if(data.type === 'P2_DATA' && players['p2']) {
@@ -81,7 +81,7 @@ const Network = {
         this.lastUpdate = now;
 
         if(this.conn && this.conn.open) {
-            // 4. MANUALLY STRINGIFY DATA BEFORE SENDING
+            // 4. FIX: MANUALLY STRINGIFY DATA
             const payload = JSON.stringify({
                 type: 'GAME_STATE',
                 p1: players['p1'], 
@@ -100,7 +100,7 @@ const Network = {
 
     broadcastGameOver: function(finalStats) {
         if(this.conn && this.conn.open) {
-            // 5. MANUALLY STRINGIFY
+            // 5. FIX: MANUALLY STRINGIFY
             this.conn.send(JSON.stringify({ type: 'GAME_OVER', stats: finalStats }));
         }
     },
@@ -108,7 +108,7 @@ const Network = {
     /* --- CLIENT LOGIC --- */
     setupClient: function() {
         this.conn.on('data', (rawData) => {
-            // 6. MANUALLY PARSE DATA
+            // 6. FIX: MANUALLY PARSE DATA
             const data = JSON.parse(rawData);
 
             if(data.type === 'START') {
@@ -164,7 +164,7 @@ const Network = {
 
     sendClientData: function(p) {
         if(this.conn && this.conn.open) {
-            // 7. MANUALLY STRINGIFY
+            // 7. FIX: MANUALLY STRINGIFY
             const payload = JSON.stringify({
                 type: 'P2_DATA',
                 name: p.name, 
@@ -178,7 +178,7 @@ const Network = {
 
     sendInteract: function() {
         if(this.conn && this.conn.open) {
-            // 8. MANUALLY STRINGIFY
+            // 8. FIX: MANUALLY STRINGIFY
             this.conn.send(JSON.stringify({ type: 'INTERACT' }));
         }
     }
