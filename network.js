@@ -6,20 +6,37 @@ const Network = {
     lastUpdate: 0,
     
     init: function(onOpen) {
-        this.peer = new Peer(null, { debug: 1 });
+        // Initialize PeerJS with the free public Open Relay Project STUN & TURN servers
+        this.peer = new Peer(null, { 
+            debug: 1,
+            config: {
+                iceServers: [
+                    { 
+                        urls: "stun:openrelay.metered.ca:80" 
+                    },
+                    { 
+                        urls: "turn:openrelay.metered.ca:80", 
+                        username: "openrelayproject", 
+                        credential: "openrelayproject" 
+                    },
+                    { 
+                        urls: "turn:openrelay.metered.ca:443", 
+                        username: "openrelayproject", 
+                        credential: "openrelayproject" 
+                    },
+                    { 
+                        urls: "turn:openrelay.metered.ca:443?transport=tcp", 
+                        username: "openrelayproject", 
+                        credential: "openrelayproject" 
+                    }
+                ]
+            }
+        });
+
         this.peer.on('open', (id) => { onOpen(id); });
         this.peer.on('connection', (c) => {
             this.conn = c;
             this.setupHost();
-        });
-    },
-
-    join: function(hostId, onConnected) {
-        this.mode = 'CLIENT';
-        this.conn = this.peer.connect(hostId);
-        this.conn.on('open', () => {
-            if(onConnected) onConnected();
-            this.setupClient();
         });
     },
 
