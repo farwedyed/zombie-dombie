@@ -6,8 +6,11 @@ const Network = {
     lastUpdate: 0,
     
     init: function(onOpen) {
-        // Initialize PeerJS with the free public Open Relay Project STUN & TURN servers
+        // Force secure WebSocket connections (WSS) on port 443 for GitHub Pages
         this.peer = new Peer(null, { 
+            host: '0.peerjs.com',
+            port: 443,
+            secure: true,
             debug: 1,
             config: {
                 iceServers: [
@@ -34,9 +37,24 @@ const Network = {
         });
 
         this.peer.on('open', (id) => { onOpen(id); });
+        
         this.peer.on('connection', (c) => {
             this.conn = c;
             this.setupHost();
+        });
+
+        // Error handling to display connection issues on screen
+        this.peer.on('error', (err) => {
+            console.error("PeerJS Error:", err);
+            let statusEl = document.getElementById('lobby-status');
+            if(statusEl) {
+                statusEl.style.color = "#ff4d4d";
+                if(err.type === 'peer-unavailable') {
+                    statusEl.innerText = "Error: Host ID not found. Double check the ID.";
+                } else {
+                    statusEl.innerText = "Error: " + err.type;
+                }
+            }
         });
     },
 

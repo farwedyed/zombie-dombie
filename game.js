@@ -90,6 +90,9 @@ function enterLobbyJoin() {
     document.getElementById('lobby-screen').style.display = 'flex'; 
     document.getElementById('start-btn').style.display = 'none'; // Hide start button for guest
 
+    // UI FIX: Clear the "ID: Generating..." placeholder for the joiner
+    document.getElementById('host-id-display').innerText = "Connecting to Host: " + id;
+
     Network.init(() => { 
         document.getElementById('lobby-status').innerText = "Locating Host...";
         Network.join(id, () => { 
