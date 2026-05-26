@@ -6,55 +6,20 @@ const Network = {
     lastUpdate: 0,
     
     init: function(onOpen) {
-        // Force secure WebSocket connections (WSS) on port 443 for GitHub Pages
-        this.peer = new Peer(null, { 
-            host: '0.peerjs.com',
-            port: 443,
-            secure: true,
-            debug: 1,
-            config: {
-                iceServers: [
-                    { 
-                        urls: "stun:openrelay.metered.ca:80" 
-                    },
-                    { 
-                        urls: "turn:openrelay.metered.ca:80", 
-                        username: "openrelayproject", 
-                        credential: "openrelayproject" 
-                    },
-                    { 
-                        urls: "turn:openrelay.metered.ca:443", 
-                        username: "openrelayproject", 
-                        credential: "openrelayproject" 
-                    },
-                    { 
-                        urls: "turn:openrelay.metered.ca:443?transport=tcp", 
-                        username: "openrelayproject", 
-                        credential: "openrelayproject" 
-                    }
-                ]
-            }
-        });
-
+        this.peer = new Peer(null, { debug: 1 });
         this.peer.on('open', (id) => { onOpen(id); });
-        
         this.peer.on('connection', (c) => {
             this.conn = c;
             this.setupHost();
         });
+    },
 
-        // Error handling to display connection issues on screen
-        this.peer.on('error', (err) => {
-            console.error("PeerJS Error:", err);
-            let statusEl = document.getElementById('lobby-status');
-            if(statusEl) {
-                statusEl.style.color = "#ff4d4d";
-                if(err.type === 'peer-unavailable') {
-                    statusEl.innerText = "Error: Host ID not found. Double check the ID.";
-                } else {
-                    statusEl.innerText = "Error: " + err.type;
-                }
-            }
+    join: function(hostId, onConnected) {
+        this.mode = 'CLIENT';
+        this.conn = this.peer.connect(hostId);
+        this.conn.on('open', () => {
+            if(onConnected) onConnected();
+            this.setupClient();
         });
     },
 

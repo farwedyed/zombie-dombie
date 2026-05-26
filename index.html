@@ -112,6 +112,7 @@
         
         <!-- PLAY ACTIONS -->
         <button onclick="startOffline()" style="margin-top: 10px; border-color: #444;">PLAY SOLO</button>
+        <button onclick="openMenu('coop-modal')">PLAY LOCAL CO-OP</button>
         <button onclick="enterLobbyHost()">HOST ONLINE</button>
         
         <div class="join-row">
@@ -153,6 +154,43 @@
 </div>
 <div id="gun-modal" class="modal"><h2 style="color:white;text-align:center">LIBRARY</h2><div id="gun-list"></div><button class="close-btn" onclick="closeMenu('gun-modal')">CLOSE</button></div>
 
+<!-- LOCAL CO-OP MODAL -->
+<div id="coop-modal" class="modal">
+    <h2 style="color:white;text-align:center">LOCAL CO-OP CONFIG</h2>
+    
+    <div style="background:#222; padding:15px; border-radius:4px; margin-bottom:15px; border-left: 5px solid #3498db;">
+        <div style="color:#3498db; font-weight:bold; margin-bottom:5px;">PLAYER 1 (Blue)</div>
+        <div style="color:#ccc; font-size:14px;">Input: Keyboard + Mouse</div>
+        <div style="color:#888; font-size:12px; margin-top:5px;">WASD: Move | Mouse: Aim & Shoot | R: Reload | F: Interact</div>
+    </div>
+
+    <div style="background:#222; padding:15px; border-radius:4px; margin-bottom:15px; border-left: 5px solid #e67e22;">
+        <div style="color:#e67e22; font-weight:bold; margin-bottom:10px;">PLAYER 2 (Orange)</div>
+        
+        <label for="p2-input-select" style="color:#aaa; display:block; margin-bottom: 5px; font-size:14px;">Select Input Device:</label>
+        <select id="p2-input-select" onchange="toggleCoopHelp()" style="background:#000; border:1px solid #444; color:#fff; padding:10px; width:100%; font-family:inherit; font-size:16px; margin-bottom:15px; outline:none;">
+            <option value="keyboard">Keyboard Split (Arrows)</option>
+            <option value="gamepad0">Controller 1 (Double Controller Slot A)</option>
+            <option value="gamepad1">Controller 2 (Double Controller Slot B)</option>
+        </select>
+
+        <div id="p2-keyboard-help" style="color:#ccc; font-size:12px; line-height: 1.4;">
+            <span style="color:#e67e22; font-weight:bold;">Keyboard Controls:</span><br>
+            Arrows: Move | Comma (,): Interact | Period (.): Reload | Slash (/): Shoot<br>
+            <span style="color:#ffd700;">Aiming:</span> Automatically points to the nearest zombie or movement direction.
+        </div>
+        
+        <div id="p2-gamepad-help" style="color:#ccc; font-size:12px; line-height: 1.4; display:none;">
+            <span style="color:#e67e22; font-weight:bold;">Controller Controls:</span><br>
+            Left Stick / D-Pad: Move | Right Stick: Aim | RT / RB / Button A: Shoot | Button X: Reload | Button Y / B: Interact<br>
+            <span style="color:#ffd700;">Aiming Fallback:</span> Auto-aims at the nearest zombie if no right stick is detected (ideal for retro gamepads).
+        </div>
+    </div>
+
+    <button onclick="startLocalCoop()" style="background:#a83232; margin-top:10px;">START GAME</button>
+    <button onclick="closeMenu('coop-modal')" style="background:#333; margin-top:5px;">BACK TO MENU</button>
+</div>
+
 
 <div id="game-over" class="screen" style="display: none;">
     <h1>GAME OVER</h1>
@@ -186,6 +224,21 @@
 <script src="visuals.js"></script>
 <script src="network.js"></script>
 <script src="game.js"></script>
+
+<script>
+    function toggleCoopHelp() {
+        const selected = document.getElementById('p2-input-select').value;
+        const kbHelp = document.getElementById('p2-keyboard-help');
+        const gpHelp = document.getElementById('p2-gamepad-help');
+        if (selected === 'keyboard') {
+            kbHelp.style.display = 'block';
+            gpHelp.style.display = 'none';
+        } else {
+            kbHelp.style.display = 'none';
+            gpHelp.style.display = 'block';
+        }
+    }
+</script>
 
 </body>
 </html>

@@ -41,7 +41,7 @@ const RoomSystem = {
         return false;
     },
 
-    getNearbyInteractable: function(x, y) {
+    getNearbyInteractable: function(x, y, p) {
         // Windows (Repair)
         for(let w of mapData.windows) {
             if(w.boards < w.max && Math.hypot(x - (w.x + w.w / 2), y - (w.y + w.h / 2)) < 70) {
@@ -60,7 +60,16 @@ const RoomSystem = {
         for(let i of mapData.interactables) {
             if(Math.hypot(x - (i.x + i.w / 2), y - (i.y + i.h / 2)) < 60) {
                 let txt = "";
-                if(i.type === 'WALLBUY') txt = `[F] Buy ${i.label} (${i.price} ⛃)`;
+                if(i.type === 'WALLBUY') {
+                    // Check if player already has this weapon in their inventory
+                    const hasWeapon = p && p.inventory && p.inventory.some(w => w.name === i.label);
+                    if (hasWeapon) {
+                        const ammoPrice = Math.floor(i.price / 2);
+                        txt = `[F] Buy Ammo for ${i.label} (${ammoPrice} ⛃)`;
+                    } else {
+                        txt = `[F] Buy ${i.label} (${i.price} ⛃)`;
+                    }
+                }
                 else if(i.type === 'BOX') txt = `[F] Box (950 ⛃)`;
                 else if(i.type === 'PERK') txt = `[F] Jug (2500 ⛃)`;
                 return { type: i.type, obj: i, label: txt };

@@ -178,10 +178,27 @@ function drawGame() {
 
     // 10. Draw Bullets
     bullets.forEach(b => {
-        ctx.fillStyle = b.color;
+        // Fallback for dark colors to make bullet tracers highly visible on dark backgrounds
+        let bulletColor = b.color;
+        const darkColors = ['#000', '#222', '#333', '#444', '#3e2723', '#5c4033', '#2c3e50', '#212f3c', '#555'];
+        if (darkColors.includes(bulletColor.toLowerCase())) {
+            bulletColor = '#ffd700'; // Bright gold/yellow tracer
+        }
+        
+        ctx.save();
+        
+        // Draw a bright white core
+        ctx.fillStyle = '#ffffff';
         ctx.beginPath(); 
-        ctx.arc(b.x, b.y, 4, 0, Math.PI*2); 
+        ctx.arc(b.x, b.y, 2.5, 0, Math.PI * 2); 
         ctx.fill();
+        
+        // Draw glowing outer trace using bullet/weapon color
+        ctx.strokeStyle = bulletColor;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        
+        ctx.restore();
     });
 
     // 11. Draw Floating Texts

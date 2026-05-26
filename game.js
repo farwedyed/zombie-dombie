@@ -17,6 +17,10 @@ let bullets = [], zombies = [], particles = [], texts = [];
 let zombieIdCounter = 0; 
 let myUsername = "Survivor"; // Store local username
 
+// LOCAL CO-OP CONFIGURATION
+let p2InputConfig = 'keyboard'; // 'keyboard', 'gamepad0', or 'gamepad1'
+let p2PrevButtons = { shoot: false, reload: false, interact: false };
+
 // INPUTS
 const keys = {};
 const mouse = { x: 0, y: 0, down: false, pressHandled: false };
@@ -78,6 +82,12 @@ function checkAchievements() { achievements.forEach(a => { if(me && a.check(stat
 
 /* --- LOBBY --- */
 function startOffline() { Network.mode = 'OFFLINE'; launchGame(); }
+function startLocalCoop() {
+    p2InputConfig = document.getElementById('p2-input-select').value;
+    closeMenu('coop-modal');
+    Network.mode = 'LOCAL_COOP';
+    launchGame();
+}
 function enterLobbyHost() { document.getElementById('main-menu').style.display = 'none'; document.getElementById('lobby-screen').style.display = 'flex'; Network.mode = 'HOST'; Network.init((id) => { document.getElementById('host-id-display').innerText = id; }); }
 function enterLobbyJoin() { 
     let id = document.getElementById('join-input').value; 
@@ -89,9 +99,6 @@ function enterLobbyJoin() {
     document.getElementById('main-menu').style.display = 'none'; 
     document.getElementById('lobby-screen').style.display = 'flex'; 
     document.getElementById('start-btn').style.display = 'none'; // Hide start button for guest
-
-    // UI FIX: Clear the "ID: Generating..." placeholder for the joiner
-    document.getElementById('host-id-display').innerText = "Connecting to Host: " + id;
 
     Network.init(() => { 
         document.getElementById('lobby-status').innerText = "Locating Host...";
@@ -171,9 +178,13 @@ function loop() {
         if(stats.frame % 60 === 0) Object.values(players).forEach(p => { if(p.state === 'ALIVE' && p.hp < p.maxHp) p.hp++; });
 
         if(players['p2']) {
-            if(players['p2'].triggerReload) forceReload(players['p2']);
-            players['p2'].triggerReload = false;
-            updatePlayerPhysics(players['p2'], false);
+            if (Network.mode === 'LOCAL_COOP') {
+                updateLocalCoopP2(players['p2']);
+            } else {
+                if(players['p2'].triggerReload) forceReload(players['p2']);
+                players['p2'].triggerReload = false;
+                updatePlayerPhysics(players['p2'], false);
+            }
             if(players['p2'].triggerInteract) { processInteraction(players['p2']); players['p2'].triggerInteract = false; }
         }
 
@@ -235,6 +246,162 @@ function updatePlayerPhysics(p, isLocal) {
     }
 }
 
+function updateLocalCoopP2(p) {
+    if (p.state === 'DOWNED') {
+        if (p.reviveTimer > 0) {
+            p.reviveTimer--;
+            if (p.reviveTimer === 0) {
+                p.state = 'ALIVE';
+                p.hp = p.maxHp;
+                p.hasJug = false;
+                addText(p.x, p.y, "REVIVED!", "#0f0");
+            }
+        }
+        return;
+    }
+
+    let dx = 0;
+    let dy = 0;
+    let isShooting = false;
+    let isReloading = false;
+    let isInteracting = false;
+
+    if (p2InputConfig === 'keyboard') {
+        // --- 1. KEYBOARD CONTROLS FOR PLAYER 2 ---
+        if (keys['ArrowUp']) dy = -1;
+        if (keys['ArrowDown']) dy = 1;
+        if (keys['ArrowLeft']) dx = -1;
+        if (keys['ArrowRight']) dx = 1;
+
+        isShooting = keys['Slash'] || keys['Numpad0'];
+        isReloading = keys['Period'] || keys['NumpadDecimal'];
+        isInteracting = keys['Comma'] || keys['NumpadEnter'];
+
+        // Auto aim at closest zombie, or face direction of movement
+        let targetZ = null;
+        let minDist = 350;
+        zombies.forEach(z => {
+            let dist = Math.hypot(z.x - p.x, z.y - p.y);
+            if (dist < minDist) {
+                minDist = dist;
+                targetZ = z;
+            }
+        });
+
+        if (targetZ) {
+            p.angle = Math.atan2(targetZ.y - p.y, targetZ.x - p.x);
+        } else if (dx !== 0 || dy !== 0) {
+            p.angle = Math.atan2(dy, dx);
+        }
+    } else {
+        // --- 2. GAMEPAD CONTROLS FOR PLAYER 2 ---
+        const gpIdx = p2InputConfig === 'gamepad0' ? 0 : 1;
+        const gamepads = navigator.getGamepads();
+        const gp = gamepads[gpIdx];
+
+        if (gp) {
+            // Analog movement
+            let ax0 = gp.axes[0] || 0;
+            let ax1 = gp.axes[1] || 0;
+
+            if (Math.abs(ax0) > 0.15) dx = ax0;
+            if (Math.abs(ax1) > 0.15) dy = ax1;
+
+            // Fallback to D-pad buttons
+            if (dx === 0 && dy === 0) {
+                if (gp.buttons[12] && gp.buttons[12].pressed) dy = -1;
+                if (gp.buttons[13] && gp.buttons[13].pressed) dy = 1;
+                if (gp.buttons[14] && gp.buttons[14].pressed) dx = -1;
+                if (gp.buttons[15] && gp.buttons[15].pressed) dx = 1;
+            }
+
+            // Aiming Analog
+            let ax2 = gp.axes[2] || 0;
+            let ax3 = gp.axes[3] || 0;
+            if (Math.abs(ax2) > 0.2 || Math.abs(ax3) > 0.2) {
+                p.angle = Math.atan2(ax3, ax2);
+            } else {
+                // Secondary fallback auto-aim
+                let targetZ = null;
+                let minDist = 350;
+                zombies.forEach(z => {
+                    let dist = Math.hypot(z.x - p.x, z.y - p.y);
+                    if (dist < minDist) {
+                        minDist = dist;
+                        targetZ = z;
+                    }
+                });
+                if (targetZ) {
+                    p.angle = Math.atan2(targetZ.y - p.y, targetZ.x - p.x);
+                } else if (dx !== 0 || dy !== 0) {
+                    p.angle = Math.atan2(dy, dx);
+                }
+            }
+
+            // Button Mapping
+            isShooting = (gp.buttons[7] && gp.buttons[7].pressed) || 
+                         (gp.buttons[5] && gp.buttons[5].pressed) || 
+                         (gp.buttons[0] && gp.buttons[0].pressed);
+            
+            isReloading = (gp.buttons[2] && gp.buttons[2].pressed);
+            
+            isInteracting = (gp.buttons[3] && gp.buttons[3].pressed) || 
+                            (gp.buttons[1] && gp.buttons[1].pressed);
+        }
+    }
+
+    // Apply Movement with Collision Checks
+    if (dx !== 0 || dy !== 0) {
+        let len = Math.hypot(dx, dy);
+        dx /= len;
+        dy /= len;
+        let speed = 4;
+        if (!RoomSystem.checkCollision(p.x + (dx * speed), p.y, true)) p.x += dx * speed;
+        if (!RoomSystem.checkCollision(p.x, p.y + (dy * speed), true)) p.y += dy * speed;
+    }
+
+    const gun = p.inventory[p.weapIdx];
+
+    // Handle Shoot Triggering
+    if (isShooting) {
+        if (gun.auto) {
+            p.triggerShoot = true;
+        } else if (!p2PrevButtons.shoot) {
+            p.triggerShoot = true;
+        }
+    }
+
+    // Handle Reload Triggering
+    if (isReloading && !p2PrevButtons.reload) {
+        if (!p.reloading && gun.clip < gun.mag && gun.ammo > 0) {
+            p.reloading = true;
+            p.reloadTimer = gun.reload;
+            addText(p.x, p.y - 40, "RELOADING...", "#fff");
+        }
+    }
+
+    // Handle Interact Triggering
+    if (isInteracting && !p2PrevButtons.interact) {
+        p.triggerInteract = true;
+    }
+
+    // Progress Reload Timer
+    if (p.reloading) {
+        p.reloadTimer--;
+        if (p.reloadTimer <= 0) {
+            let needed = gun.mag - gun.clip;
+            let take = Math.min(needed, gun.ammo);
+            gun.clip += take;
+            gun.ammo -= take;
+            p.reloading = false;
+        }
+    }
+
+    p2PrevButtons.shoot = isShooting;
+    p2PrevButtons.reload = isReloading;
+    p2PrevButtons.interact = isInteracting;
+}
+
 function shootGun(p) {
     if(p.state !== 'ALIVE') return;
     const gun = p.inventory[p.weapIdx];
@@ -262,7 +429,7 @@ function checkInteractUI() {
     if(me.state !== 'ALIVE') return;
     let downed = Object.values(players).find(p => p !== me && p.state === 'DOWNED');
     if(downed && Math.hypot(me.x - downed.x, me.y - downed.y) < 50) { msg.style.display = 'block'; msg.innerText = "[F] REVIVE TEAMMATE"; me.interactionTarget = { type: 'REVIVE', obj: downed }; return; }
-    let interact = RoomSystem.getNearbyInteractable(me.x, me.y);
+    let interact = RoomSystem.getNearbyInteractable(me.x, me.y, me);
     if(interact) { msg.style.display = 'block'; msg.innerText = interact.label; me.interactionTarget = interact; }
 }
 function handleInteractAction() { if(me.state !== 'ALIVE') return; if(Network.mode === 'CLIENT') Network.sendInteract(); else processInteraction(me); }
@@ -270,12 +437,32 @@ function handleInteractAction() { if(me.state !== 'ALIVE') return; if(Network.mo
 function processInteraction(p) {
     let teammate = Object.values(players).find(pl => pl !== p && pl.state === 'DOWNED');
     if(teammate && Math.hypot(p.x - teammate.x, p.y - teammate.y) < 50) { teammate.state = 'ALIVE'; teammate.hp = teammate.maxHp; teammate.hasJug = false; addText(teammate.x, teammate.y, "REVIVED!", "#0f0"); return; }
-    let interact = RoomSystem.getNearbyInteractable(p.x, p.y);
+    let interact = RoomSystem.getNearbyInteractable(p.x, p.y, p);
     if(interact) {
         let t = interact;
         if(t.type==='WINDOW') { t.obj.boards++; p.score+=10; addText(t.obj.x+20, t.obj.y, "+10", "#fff"); }
         else if(t.type==='DOOR' && p.score >= t.obj.price) { p.score-=t.obj.price; t.obj.unlocked=true; }
-        else if(t.type==='WALLBUY' && p.score >= t.obj.price) { p.score-=t.obj.price; if(p===me) unlockGun(t.obj.label); let ext = p.inventory.find(w=>w.name===t.obj.label); if(ext) { ext.ammo=ext.reserve; addText(p.x, p.y, "MAX AMMO", "#fff"); } else { let b=weaponDB.find(w=>w.name===t.obj.label); p.inventory.push({...b, clip:b.mag, ammo:b.reserve}); p.weapIdx=p.inventory.length-1; addText(p.x, p.y, b.name, "#fff"); } }
+        else if(t.type==='WALLBUY') {
+            const hasWeapon = p.inventory.some(w => w.name === t.obj.label);
+            const cost = hasWeapon ? Math.floor(t.obj.price / 2) : t.obj.price;
+            
+            if (p.score >= cost) {
+                p.score -= cost;
+                if (hasWeapon) {
+                    let ext = p.inventory.find(w => w.name === t.obj.label);
+                    if (ext) {
+                        ext.ammo = ext.reserve;
+                        addText(p.x, p.y, "MAX AMMO", "#fff");
+                    }
+                } else {
+                    if (p === me) unlockGun(t.obj.label);
+                    let b = weaponDB.find(w => w.name === t.obj.label);
+                    p.inventory.push({ ...b, clip: b.mag, ammo: b.reserve });
+                    p.weapIdx = p.inventory.length - 1;
+                    addText(p.x, p.y, b.name, "#fff");
+                }
+            }
+        }
         else if(t.type==='BOX' && p.score>=950) { p.score-=950; let rnd=weaponDB[Math.floor(Math.random()*weaponDB.length)]; p.inventory.push({...rnd, clip:rnd.mag, ammo:rnd.reserve}); p.weapIdx=p.inventory.length-1; addText(p.x, p.y, rnd.name+"!", "#0ff"); }
         else if(t.type==='PERK' && p.score>=t.obj.price && !p.hasJug) { p.score-=t.obj.price; p.hasJug=true; p.maxHp=250; p.hp=250; if(p===me) checkAchievements(); addText(p.x, p.y, "JUGGERNOG!", "#c0392b"); }
     }
