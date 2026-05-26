@@ -396,15 +396,15 @@ function launchGame() {
     let spawnX = 200;
     let spawnY = 200;
     
-    if (activeMap === playableMaps[0]) { // The Grand Facility spawn (1600x1600 Room 0)
-        spawnX = 800;
-        spawnY = 800;
-    } else if (activeMap === playableMaps[1]) { // Bunker Outpost spawn (1600x1600 Room 0)
-        spawnX = 800;
-        spawnY = 800;
-    } else if (activeMap === playableMaps[2]) { // Sector-9 Lab Maze spawn (1200x1200 Room 0)
-        spawnX = 600;
-        spawnY = 600;
+    if (activeMap === playableMaps[0]) { // The Facility spawn (800x800 Room 0)
+        spawnX = 400;
+        spawnY = 400;
+    } else if (activeMap === playableMaps[1]) { // Bunker Outpost spawn (600x600 Room 0)
+        spawnX = 300;
+        spawnY = 300;
+    } else if (activeMap === playableMaps[2]) { // Sector-9 Lab Maze spawn (500x500 Room 0)
+        spawnX = 250;
+        spawnY = 250;
     }
     
     // Setup Player 1
@@ -530,7 +530,6 @@ function updatePlayerPhysics(p, isLocal) {
         
         // Handle Aiming
         if (isTouchDevice && isAimingTouch) {
-            // Updated dynamically in stick setup touch listeners
             p.angle = Math.atan2(touchAimVector.y, touchAimVector.x);
         } else {
             p.angle = Math.atan2((mouse.y + camera.y) - p.y, (mouse.x + camera.x) - p.x);
@@ -603,7 +602,7 @@ function updateLocalCoopP2(p) {
         const gp = gamepads[gpIdx];
 
         if (gp) {
-            // Analog movement
+            // Check Analog sticks movement
             let ax0 = gp.axes[0] || 0;
             let ax1 = gp.axes[1] || 0;
 
