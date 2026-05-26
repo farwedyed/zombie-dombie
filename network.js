@@ -6,7 +6,37 @@ const Network = {
     lastUpdate: 0,
     
     init: function(onOpen) {
-        this.peer = new Peer(null, { debug: 1 });
+        // We configure standard STUN and TURN servers inside 'config.iceServers'.
+        // This ensures the game traffic can successfully bypass NAT/firewalls
+        // and route across different Wi-Fi and mobile networks.
+        this.peer = new Peer(null, { 
+            debug: 1,
+            config: {
+                iceServers: [
+                    // Standard public Google STUN server
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:global.stun.twilio.com:3478' },
+                    
+                    // Open Relay Project (by Metered.ca) - Free WebRTC TURN Relay Servers
+                    { 
+                        urls: 'turn:openrelay.metered.ca:80', 
+                        username: 'openrelayproject', 
+                        credential: 'openrelayproject' 
+                    },
+                    { 
+                        urls: 'turn:openrelay.metered.ca:443', 
+                        username: 'openrelayproject', 
+                        credential: 'openrelayproject' 
+                    },
+                    { 
+                        urls: 'turn:openrelay.metered.ca:443?transport=tcp', 
+                        username: 'openrelayproject', 
+                        credential: 'openrelayproject' 
+                    }
+                ]
+            }
+        });
+
         this.peer.on('open', (id) => { onOpen(id); });
         this.peer.on('connection', (c) => {
             this.conn = c;
@@ -31,9 +61,8 @@ const Network = {
                 players['p2'].y = data.y;
                 players['p2'].angle = data.angle;
                 
-                // --- NEW: SYNC NAME ---
+                // --- SYNC NAME ---
                 if(data.name) players['p2'].name = data.name;
-                // ---------------------
 
                 if(data.shoot) players['p2'].triggerShoot = true;
                 if(data.reload) players['p2'].triggerReload = true;
@@ -62,15 +91,15 @@ const Network = {
         if(this.conn && this.conn.open) {
             this.conn.send({
                 type: 'GAME_STATE',
-                p1: players['p1'], // This object now contains p1.name
-                p2: players['p2'], // This object now contains p2.name
+                p1: players['p1'], 
+                p2: players['p2'], 
                 zombies: zombies, 
                 bullets: bullets,
                 stats: stats,
                 texts: texts, 
                 particles: particles, 
-                windows: mapData.windows.map(w => ({ boards: w.boards })),
-                doors: mapData.rooms.map(r => ({ unlocked: r.unlocked }))
+                windows: activeMap.windows.map(w => ({ boards: w.boards })),
+                doors: activeMap.rooms.map(r => ({ unlocked: r.unlocked }))
             });
         }
     },
@@ -85,6 +114,9 @@ const Network = {
     setupClient: function() {
         this.conn.on('data', (data) => {
             if(data.type === 'START') {
+                if (data.mapIndex !== undefined && typeof playableMaps !== 'undefined') {
+                    activeMap = playableMaps[data.mapIndex];
+                }
                 launchGame();
             }
             else if(data.type === 'GAME_STATE') {
@@ -120,8 +152,8 @@ const Network = {
                     me.angle = myAngle; 
                 }
 
-                data.windows.forEach((wData, i) => { if(mapData.windows[i]) mapData.windows[i].boards = wData.boards; });
-                data.doors.forEach((dData, i) => { if(mapData.rooms[i]) mapData.rooms[i].unlocked = dData.unlocked; });
+                data.windows.forEach((wData, i) => { if(activeMap.windows[i]) activeMap.windows[i].boards = wData.boards; });
+                data.doors.forEach((dData, i) => { if(activeMap.rooms[i]) activeMap.rooms[i].unlocked = dData.unlocked; });
             }
             else if(data.type === 'GAME_OVER') {
                 stats = data.stats;
@@ -139,7 +171,7 @@ const Network = {
         if(this.conn && this.conn.open) {
             this.conn.send({
                 type: 'P2_DATA',
-                name: p.name, // --- NEW: SEND NAME ---
+                name: p.name, 
                 x: p.x, y: p.y, angle: p.angle,
                 shoot: mouse.down,
                 reload: p.reloading

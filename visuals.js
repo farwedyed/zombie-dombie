@@ -1,5 +1,30 @@
 /* --- VISUALS MODULE --- */
 
+// Draw an arcade-style floating/bouncing guidance arrow pointing to objectives
+function drawFloatingArrow(x, y, color = '#ffd700') {
+    const bounce = Math.sin(Date.now() / 150) * 8;
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 2.5;
+    ctx.translate(x, y + bounce - 25);
+    
+    // Path drawing for custom downward-pointing 2D arrow
+    ctx.beginPath();
+    ctx.moveTo(-10, -20);
+    ctx.lineTo(10, -20);
+    ctx.lineTo(10, -10);
+    ctx.lineTo(18, -10);
+    ctx.lineTo(0, 8);
+    ctx.lineTo(-18, -10);
+    ctx.lineTo(-10, -10);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    
+    ctx.restore();
+}
+
 function drawGame() {
     // 1. Clear Screen
     ctx.fillStyle = '#000'; 
@@ -10,7 +35,7 @@ function drawGame() {
     ctx.translate(-camera.x, -camera.y);
 
     // 2. Draw Rooms (Floor)
-    mapData.rooms.forEach(r => {
+    activeMap.rooms.forEach(r => {
         ctx.fillStyle = r.color;
         
         // Locked rooms are darker/transparent
@@ -25,17 +50,17 @@ function drawGame() {
     });
 
     // 3. Draw Furniture
-    mapData.furniture.forEach(f => {
+    activeMap.furniture.forEach(f => {
         ctx.fillStyle = f.color;
         ctx.fillRect(f.x, f.y, f.w, f.h);
     });
 
     // 4. Draw Walls
     ctx.fillStyle = '#444';
-    mapData.walls.forEach(w => ctx.fillRect(w.x, w.y, w.w, w.h));
+    activeMap.walls.forEach(w => ctx.fillRect(w.x, w.y, w.w, w.h));
 
-    // 5. Draw Windows
-    mapData.windows.forEach(w => {
+    // 5. Draw Windows (With Dynamic Board/Log Scaling)
+    activeMap.windows.forEach(w => {
         // Frame
         ctx.strokeStyle = '#666'; 
         ctx.lineWidth = 2;
@@ -44,18 +69,24 @@ function drawGame() {
         // Boards
         ctx.fillStyle = '#8B4513';
         if(w.boards > 0) {
+            const isHorizontal = (w.orientation === 'H');
+            const totalLength = isHorizontal ? w.w : w.h;
+            const boardSpacing = totalLength / w.max;
+            const boardWidth = boardSpacing * 0.7; // 70% of the space is the board, 30% is gap
+            const padding = boardSpacing * 0.15; // Centering the board inside its segment
+            
             for(let i=0; i<w.boards; i++) {
-                if(w.orientation === 'H') {
-                    ctx.fillRect(w.x + (i*15) + 5, w.y, 10, w.h);
+                if(isHorizontal) {
+                    ctx.fillRect(w.x + (i * boardSpacing) + padding, w.y, boardWidth, w.h);
                 } else {
-                    ctx.fillRect(w.x, w.y + (i*15) + 5, w.w, 10);
+                    ctx.fillRect(w.x, w.y + (i * boardSpacing) + padding, w.w, boardWidth);
                 }
             }
         }
     });
 
     // 6. Draw Doors
-    mapData.rooms.forEach(r => {
+    activeMap.rooms.forEach(r => {
         if(!r.unlocked && r.door) {
             // Door Color
             ctx.fillStyle = '#8d6e63'; 
@@ -74,7 +105,7 @@ function drawGame() {
     });
 
     // 7. Draw Interactables (Wallbuys, Box, Perks)
-    mapData.interactables.forEach(i => {
+    activeMap.interactables.forEach(i => {
         ctx.fillStyle = i.type === 'BOX' ? i.color : '#555';
         ctx.fillRect(i.x, i.y, i.w, i.h);
         
@@ -218,19 +249,48 @@ function drawGame() {
         ctx.fillRect(p.x, p.y, 3, 3); 
     });
 
+    // 13. Draw Bouncing Guidance Indicators during Tutorial Mode
+    if (typeof Tutorial !== 'undefined' && Tutorial.isActive && me) {
+        Tutorial.drawIndicators();
+    }
+
     ctx.restore();
 }
 
 function updateUI() {
-    if(!me) return;
-    
-    document.getElementById('score-box').innerHTML = me.score + ' <span style="font-size:20px">⛃</span>';
     document.getElementById('round-box').innerText = stats.round;
-    
-    const gun = me.inventory[me.weapIdx];
-    document.getElementById('gun-name').innerText = gun.name;
-    
-    document.getElementById('ammo-text').innerText = me.reloading ? "RELOADING" : `${gun.clip} / ${gun.ammo}`;
-    
-    document.getElementById('icon-jug').style.display = me.hasJug ? 'block' : 'none';
+
+    // Player 1 HUD
+    const p1 = players['p1'];
+    if (p1) {
+        document.getElementById('hud-p1').style.display = 'block';
+        document.getElementById('p1-name').innerText = p1.name || "P1";
+        document.getElementById('p1-score').innerHTML = p1.score + ' <span style="font-size:16px">⛃</span>';
+        
+        const gun1 = p1.inventory[p1.weapIdx];
+        if (gun1) {
+            document.getElementById('p1-gun-name').innerText = gun1.name;
+            document.getElementById('p1-ammo-text').innerText = p1.reloading ? "RELOADING" : `${gun1.clip} / ${gun1.ammo}`;
+        }
+        document.getElementById('p1-icon-jug').style.display = p1.hasJug ? 'block' : 'none';
+    } else {
+        document.getElementById('hud-p1').style.display = 'none';
+    }
+
+    // Player 2 HUD
+    const p2 = players['p2'];
+    if (p2) {
+        document.getElementById('hud-p2').style.display = 'block';
+        document.getElementById('p2-name').innerText = p2.name || "Player 2";
+        document.getElementById('p2-score').innerHTML = p2.score + ' <span style="font-size:16px">⛃</span>';
+        
+        const gun2 = p2.inventory[p2.weapIdx];
+        if (gun2) {
+            document.getElementById('p2-gun-name').innerText = gun2.name;
+            document.getElementById('p2-ammo-text').innerText = p2.reloading ? "RELOADING" : `${gun2.clip} / ${gun2.ammo}`;
+        }
+        document.getElementById('p2-icon-jug').style.display = p2.hasJug ? 'block' : 'none';
+    } else {
+        document.getElementById('hud-p2').style.display = 'none';
+    }
 }

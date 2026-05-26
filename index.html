@@ -14,15 +14,18 @@
         .hud-text { font-weight: bold; text-shadow: 2px 2px 0 #000; position: absolute; }
         
         #round-box { top: 20px; left: 50%; transform: translateX(-50%); color: #a83232; font-size: 50px; font-weight: 900; }
-        #score-box { top: 20px; right: 20px; color: #ffd700; font-size: 32px; text-align: right; }
         
-        #bottom-right-cluster { position: absolute; bottom: 20px; right: 20px; text-align: right; }
-        #gun-name { color: #fff; font-size: 28px; font-weight: bold; }
-        #ammo-text { color: #ccc; font-size: 24px; }
-        #perk-area { display: flex; gap: 10px; margin-top: 10px; justify-content: flex-end; }
+        .hud-cluster { position: absolute; pointer-events: none; text-shadow: 2px 2px 0 #000; z-index: 1000; }
+        #hud-p1 { bottom: 20px; left: 20px; text-align: left; }
+        #hud-p2 { bottom: 20px; right: 20px; text-align: right; }
+        
+        .perk-area { display: flex; gap: 10px; margin-top: 10px; }
+        #hud-p1 .perk-area { justify-content: flex-start; }
+        #hud-p2 .perk-area { justify-content: flex-end; }
+        
         .perk { width: 30px; height: 30px; border-radius: 50%; border: 2px solid white; display: none; box-shadow: 0 0 5px red; }
 
-        #controls-hint { position: absolute; bottom: 10px; left: 10px; color: rgba(255,255,255,0.4); font-size: 14px; }
+        #controls-hint { position: absolute; bottom: 10px; left: 10px; color: rgba(255,255,255,0.4); font-size: 14px; display: none; }
         #ach-toast-container { position: absolute; bottom: 40px; left: 10px; display: flex; flex-direction: column-reverse; gap: 10px; pointer-events: none; z-index: 9999; }
         .ach-toast { background: rgba(30, 30, 30, 0.95); border-left: 5px solid #ffd700; color: #fff; padding: 12px; width: 250px; animation: slideIn 0.5s ease-out, fadeOut 1s 4s forwards; pointer-events: auto; }
         @keyframes slideIn { 0% {transform:translateX(-100%);opacity:0;} 100% {transform:translateX(0);opacity:1;} }
@@ -30,6 +33,12 @@
 
         #interact-msg { top: 60%; left: 50%; transform: translate(-50%, -50%); position: absolute; color: #fff; background: rgba(0,0,0,0.8); padding: 8px 15px; border: 1px solid #444; display: none; z-index: 900; }
         #damage-flash { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; transition: background 0.1s; }
+
+        /* Bouncing help arrow pointing to Score */
+        @keyframes arrowBounce {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-10px); }
+        }
 
         /* --- MENUS --- */
         .screen { 
@@ -54,15 +63,16 @@
         .stats-text { color: #666; margin-bottom: 25px; font-size: 14px; }
         .stats-text span { color: #ccc; }
 
-        /* INPUTS */
-        input { 
+        /* INPUTS & SELECT DROPDOWNS */
+        input, select { 
             background: #000; border: 1px solid #444; color: #fff; 
             padding: 12px; font-family: inherit; font-size: 16px; text-align: center; outline: none;
             width: 100%; box-sizing: border-box; transition: 0.2s;
         }
-        input:focus { border-color: #a83232; }
+        input:focus, select:focus { border-color: #a83232; }
         
-        #username-input { margin-bottom: 20px; border-color: #a83232; color: #ffd700; font-weight: bold; }
+        #username-input { margin-bottom: 15px; border-color: #a83232; color: #ffd700; font-weight: bold; }
+        #map-select { margin-bottom: 20px; text-align-last: center; }
 
         /* BUTTONS */
         button { 
@@ -110,8 +120,17 @@
         <!-- IDENTITY -->
         <input type="text" id="username-input" placeholder="ENTER CODENAME" maxlength="12">
         
+        <!-- MAP SELECTOR -->
+        <label for="map-select" style="color: #666; display: block; font-size: 12px; margin-bottom: 5px; text-transform: uppercase; font-weight: bold; letter-spacing: 1px; text-align: left;">DEPLOYMENT ZONE:</label>
+        <select id="map-select">
+            <option value="0">The Facility (Classic)</option>
+            <option value="1">Bunker Outpost (Tactical)</option>
+            <option value="2">Sector-9 Lab Maze (Survival)</option>
+        </select>
+
         <!-- PLAY ACTIONS -->
-        <button onclick="startOffline()" style="margin-top: 10px; border-color: #444;">PLAY SOLO</button>
+        <button onclick="startOffline()" style="border-color: #444;">PLAY SOLO</button>
+        <button onclick="startTutorial()" style="border-color: #a83232; color: #fff; background: rgba(168, 50, 50, 0.2);">BOOT CAMP (TUTORIAL)</button>
         <button onclick="openMenu('coop-modal')">PLAY LOCAL CO-OP</button>
         <button onclick="enterLobbyHost()">HOST ONLINE</button>
         
@@ -204,12 +223,35 @@
 <div id="game-ui">
     <div id="damage-flash"></div>
     <div id="round-box" class="hud-text">1</div>
-    <div id="score-box" class="hud-text">500 <span style="font-size:20px">⛃</span></div>
-    <div id="bottom-right-cluster">
-        <div id="gun-name">M1911</div>
-        <div id="ammo-text">8 / 32</div>
-        <div id="perk-area"><div id="icon-jug" class="perk" style="background: #c0392b;"></div></div>
+    
+    <!-- Tutorial Objective Box (Centered Bottom Screen Overlay) -->
+    <div id="tutorial-hud" style="position: absolute; bottom: 130px; left: 50%; transform: translateX(-50%); background: rgba(10, 10, 10, 0.95); border: 2px solid #a83232; border-top: 5px solid #a83232; padding: 20px; color: white; display: none; width: 550px; text-shadow: 2px 2px 0 #000; z-index: 1000; pointer-events: none; border-radius: 8px; box-shadow: 0 0 20px rgba(0,0,0,0.8); text-align: center;">
+        <div id="tutorial-title" style="color: #a83232; font-weight: bold; font-size: 20px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 2px;">Boot Camp Objective</div>
+        <div id="tutorial-text" style="font-size: 15px; line-height: 1.5; color: #fff; font-family: inherit;">Initializing objectives...</div>
+        <div id="tutorial-progress" style="font-size: 13px; color: #ffd700; margin-top: 8px; font-weight: bold;">Step 1 / 8</div>
     </div>
+
+    <!-- Bouncing Help Arrow (Targeting Score balance panel) -->
+    <div id="tutorial-coin-arrow" style="position: absolute; bottom: 120px; left: 40px; color: #ffd700; font-size: 20px; font-weight: bold; display: none; animation: arrowBounce 0.5s infinite alternate; z-index: 1001; text-shadow: 2px 2px 0 #000; pointer-events: none;">▲ CHECK COINS HERE</div>
+
+    <!-- Player 1 HUD (Bottom Left) -->
+    <div id="hud-p1" class="hud-cluster">
+        <div id="p1-name" style="color: #3498db; font-size: 18px; font-weight: bold;">Survivor</div>
+        <div id="p1-score" style="color: #ffd700; font-size: 28px; font-weight: bold;">500 ⛃</div>
+        <div id="p1-gun-name" style="color: #fff; font-size: 24px; font-weight: bold;">M1911</div>
+        <div id="p1-ammo-text" style="color: #ccc; font-size: 20px;">8 / 32</div>
+        <div id="p1-perks" class="perk-area"><div id="p1-icon-jug" class="perk" style="background: #c0392b;"></div></div>
+    </div>
+
+    <!-- Player 2 HUD (Bottom Right) -->
+    <div id="hud-p2" class="hud-cluster" style="display: none;">
+        <div id="p2-name" style="color: #e67e22; font-size: 18px; font-weight: bold;">Player 2</div>
+        <div id="p2-score" style="color: #ffd700; font-size: 28px; font-weight: bold;">500 ⛃</div>
+        <div id="p2-gun-name" style="color: #fff; font-size: 24px; font-weight: bold;">M1911</div>
+        <div id="p2-ammo-text" style="color: #ccc; font-size: 20px;">8 / 32</div>
+        <div id="p2-perks" class="perk-area"><div id="p2-icon-jug" class="perk" style="background: #c0392b;"></div></div>
+    </div>
+
     <div id="ach-toast-container"></div>
     <div id="controls-hint">WASD: Move | MOUSE: Shoot | R: Reload | F: Interact | TAB: Scoreboard</div>
     <div id="interact-msg">Press F</div>
@@ -219,10 +261,11 @@
 
 <!-- SCRIPTS -->
 <script src="data.js"></script>
-<script src="map.js"></script>
+<script src="maps.js"></script>
 <script src="rooms.js"></script>
 <script src="visuals.js"></script>
 <script src="network.js"></script>
+<script src="tutorial.js"></script>
 <script src="game.js"></script>
 
 <script>

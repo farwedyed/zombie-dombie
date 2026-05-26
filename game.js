@@ -10,7 +10,7 @@ let gameActive = false;
 let showScoreboard = false;
 
 // GLOBAL DATA
-let stats = { score: 500, round: 1, zombiesToSpawn: 6, zombiesAlive: 0, frame: 0, sessionKills: 0 };
+let stats = { score: 500, round: 1, zombiesToSpawn: 6, zombiesAlive: 0, frame: 0, sessionKills: 0, selectedMapIdx: 0 };
 let players = {};
 let me = null;
 let bullets = [], zombies = [], particles = [], texts = [];
@@ -81,14 +81,42 @@ function showToast(ach) {
 function checkAchievements() { achievements.forEach(a => { if(me && a.check(stats, me)) { if(unlockAch(a.id)) showToast(a); } }); }
 
 /* --- LOBBY --- */
-function startOffline() { Network.mode = 'OFFLINE'; launchGame(); }
+function startOffline() { 
+    Network.mode = 'OFFLINE'; 
+    const select = document.getElementById('map-select');
+    const mapIdx = select ? parseInt(select.value) : 0;
+    activeMap = playableMaps[mapIdx]; // Swaps active level boundaries
+    launchGame(); 
+}
 function startLocalCoop() {
     p2InputConfig = document.getElementById('p2-input-select').value;
     closeMenu('coop-modal');
     Network.mode = 'LOCAL_COOP';
+    const select = document.getElementById('map-select');
+    const mapIdx = select ? parseInt(select.value) : 0;
+    activeMap = playableMaps[mapIdx]; // Swaps active level boundaries
     launchGame();
 }
-function enterLobbyHost() { document.getElementById('main-menu').style.display = 'none'; document.getElementById('lobby-screen').style.display = 'flex'; Network.mode = 'HOST'; Network.init((id) => { document.getElementById('host-id-display').innerText = id; }); }
+function startTutorial() {
+    Network.mode = 'OFFLINE';
+    if (typeof Tutorial !== 'undefined') {
+        Tutorial.isActive = true; // Declare active state before starting engine variables setup
+    }
+    activeMap = tutorialMapData; // Hot-swap layout to Boot Camp
+    launchGame();
+    if (typeof Tutorial !== 'undefined') {
+        Tutorial.start();
+    }
+}
+function enterLobbyHost() { 
+    const select = document.getElementById('map-select');
+    stats.selectedMapIdx = select ? parseInt(select.value) : 0; // Cache selected layout index
+
+    document.getElementById('main-menu').style.display = 'none'; 
+    document.getElementById('lobby-screen').style.display = 'flex'; 
+    Network.mode = 'HOST'; 
+    Network.init((id) => { document.getElementById('host-id-display').innerText = id; }); 
+}
 function enterLobbyJoin() { 
     let id = document.getElementById('join-input').value; 
     if(!id) return alert("Please enter the Host ID"); 
@@ -109,7 +137,11 @@ function enterLobbyJoin() {
     }); 
 }
 function updateLobbyUI(connected) { if(connected) { document.getElementById('lobby-status').style.color = '#0f0'; document.getElementById('lobby-status').innerText = "PLAYER 2 JOINED!"; document.getElementById('start-btn').disabled = false; document.getElementById('start-btn').style.background = '#a83232'; } }
-function hostStartGame() { Network.conn.send({ type: 'START' }); launchGame(); }
+function hostStartGame() { 
+    Network.conn.send({ type: 'START', mapIndex: stats.selectedMapIdx }); // Synchronize level selection with guest [2]
+    activeMap = playableMaps[stats.selectedMapIdx];
+    launchGame(); 
+}
 
 function launchGame() {
     document.getElementById('lobby-screen').style.display = 'none';
@@ -117,6 +149,14 @@ function launchGame() {
     document.getElementById('game-over').style.display = 'none';
     document.getElementById('game-ui').style.display = 'block';
     
+    // Evaluate active map swapping mechanics safely
+    if (typeof Tutorial !== 'undefined' && Tutorial.isActive) {
+        activeMap = tutorialMapData;
+    } else {
+        // Keep activeMap as whatever was determined in solo/multiplayer start selectors
+        if (typeof Tutorial !== 'undefined') Tutorial.end();
+    }
+
     resetSession();
     
     // Get Username from Input (safeguard if element missing)
@@ -127,16 +167,29 @@ function launchGame() {
 
     players = {};
     
+    // Setup Player Spawning based on active Map size
+    let spawnX = 200;
+    let spawnY = 200;
+    
+    if (activeMap === playableMaps[0]) { // The Grand Facility spawn (1600x1600 Room 0)
+        spawnX = 800;
+        spawnY = 800;
+    } else if (activeMap === playableMaps[1]) { // Bunker Outpost spawn (1600x1600 Room 0)
+        spawnX = 800;
+        spawnY = 800;
+    } else if (activeMap === playableMaps[2]) { // Sector-9 Lab Maze spawn (1200x1200 Room 0)
+        spawnX = 600;
+        spawnY = 600;
+    }
+    
     // Setup Player 1
-    // If I am Host/Offline, use my name. If I am Client, P1 name will be synced from network later.
     let p1Name = (Network.mode === 'CLIENT') ? "Host" : myUsername;
-    players['p1'] = createPlayer('p1', 400, 300, '#3498db', p1Name);
+    players['p1'] = createPlayer('p1', spawnX, spawnY, '#3498db', p1Name);
     
     if(Network.mode !== 'OFFLINE') {
         // Setup Player 2
-        // If I am Client, use my name. If I am Host, P2 name will be synced from network later.
         let p2Name = (Network.mode === 'CLIENT') ? myUsername : "Player 2";
-        players['p2'] = createPlayer('p2', 450, 300, '#e67e22', p2Name);
+        players['p2'] = createPlayer('p2', spawnX + 50, spawnY, '#e67e22', p2Name);
     }
 
     me = (Network.mode === 'CLIENT') ? players['p2'] : players['p1'];
@@ -145,7 +198,7 @@ function launchGame() {
     loop();
 }
 
-function requestRestart() { if(Network.mode === 'CLIENT') return; if(Network.mode === 'HOST') Network.conn.send({ type: 'START' }); launchGame(); }
+function requestRestart() { if(Network.mode === 'CLIENT') return; if(Network.mode === 'HOST') Network.conn.send({ type: 'START', mapIndex: stats.selectedMapIdx }); launchGame(); }
 
 // UPDATED: Added 'name' parameter
 function createPlayer(id, x, y, color, name) { 
@@ -163,6 +216,11 @@ function loop() {
     if(!gameActive) return;
     
     if(me) updatePlayerPhysics(me, true);
+    
+    // Update active Boot Camp objectives checks
+    if (typeof Tutorial !== 'undefined' && Tutorial.isActive) {
+        Tutorial.update();
+    }
 
     if(Network.mode === 'CLIENT') {
         Network.sendClientData(me);
@@ -407,8 +465,14 @@ function shootGun(p) {
     const gun = p.inventory[p.weapIdx];
     if(stats.frame - (gun.lastShot||0) >= (60/(gun.rpm/60 * 10))) {
         gun.lastShot = stats.frame;
-        if(gun.clip > 0) {
-            gun.clip--;
+        
+        // Infinite ammo during early stages of boot camp
+        const isInfinite = (typeof Tutorial !== 'undefined' && Tutorial.isActive && Tutorial.currentStep < 4);
+
+        if(gun.clip > 0 || isInfinite) {
+            if (!isInfinite) {
+                gun.clip--;
+            }
             if(p === me) { camera.x += (Math.random()-0.5)*5; camera.y += (Math.random()-0.5)*5; }
             let pellets = gun.type === 'shotgun' ? gun.pellets : 1;
             if(Network.mode !== 'CLIENT') {
@@ -440,7 +504,16 @@ function processInteraction(p) {
     let interact = RoomSystem.getNearbyInteractable(p.x, p.y, p);
     if(interact) {
         let t = interact;
-        if(t.type==='WINDOW') { t.obj.boards++; p.score+=10; addText(t.obj.x+20, t.obj.y, "+10", "#fff"); }
+        if(t.type==='WINDOW') { 
+            t.obj.boards++; 
+            p.score+=10; 
+            addText(t.obj.x+20, t.obj.y, "+10", "#fff");
+            
+            // Send window repair completion hook to modular tutorial logic
+            if (typeof Tutorial !== 'undefined') {
+                Tutorial.onWindowRepaired();
+            }
+        }
         else if(t.type==='DOOR' && p.score >= t.obj.price) { p.score-=t.obj.price; t.obj.unlocked=true; }
         else if(t.type==='WALLBUY') {
             const hasWeapon = p.inventory.some(w => w.name === t.obj.label);
@@ -453,6 +526,11 @@ function processInteraction(p) {
                     if (ext) {
                         ext.ammo = ext.reserve;
                         addText(p.x, p.y, "MAX AMMO", "#fff");
+                        
+                        // Send cheap ammo refill purchase trigger to modular tutorial tracking
+                        if (typeof Tutorial !== 'undefined') {
+                            Tutorial.onAmmoPurchased();
+                        }
                     }
                 } else {
                     if (p === me) unlockGun(t.obj.label);
@@ -471,15 +549,14 @@ function processInteraction(p) {
 function checkAllDead() { if(Network.mode === 'CLIENT') return; let allDown = Object.values(players).every(p => p.state === 'DOWNED'); if(allDown && !Object.values(players).some(p => p.reviveTimer > 0)) gameOver(); }
 
 function updateZombies() {
-    // Spawning logic
-    if (stats.zombiesToSpawn > 0 && stats.frame % 100 === 0 && stats.zombiesAlive < 24) {
-        let valid = mapData.spawnPoints.filter(sp => mapData.rooms[sp.roomId].unlocked);
+    // Spawning logic (prevent spawning in tutorial mode outside of custom script instructions)
+    if (activeMap !== tutorialMapData && stats.zombiesToSpawn > 0 && stats.frame % 100 === 0 && stats.zombiesAlive < 24) {
+        let valid = activeMap.spawnPoints.filter(sp => activeMap.rooms[sp.roomId].unlocked);
         if (valid.length > 0) {
             let sp = valid[Math.floor(Math.random() * valid.length)];
             let hp = 100 + (stats.round * 30);
             zombieIdCounter++;
             
-            // NEW: Zombies start with hasEntered = false
             zombies.push({ 
                 id: zombieIdCounter, x: sp.x, y: sp.y, hp: hp, maxHp: hp, 
                 speed: 1 + (Math.random() * 1.5), r: 16, hasEntered: false 
@@ -496,20 +573,26 @@ function updateZombies() {
             // Find the closest window to the zombie
             let closestWin = null;
             let minDist = 999999;
-            mapData.windows.forEach(w => {
+            activeMap.windows.forEach(w => {
                 let d = Math.hypot(z.x - w.entryX, z.y - w.entryY);
                 if (d < minDist) { minDist = d; closestWin = w; }
             });
 
-            // Head to that window's INSIDE point
-            targetX = closestWin.entryX;
-            targetY = closestWin.entryY;
+            if (closestWin) {
+                // Head to that window's INSIDE point
+                targetX = closestWin.entryX;
+                targetY = closestWin.entryY;
 
-            // If zombie reaches the inside point, switch to player-chasing forever
-            if (Math.hypot(z.x - targetX, z.y - targetY) < 15) {
+                // If zombie reaches the inside point, switch to player-chasing forever
+                if (Math.hypot(z.x - targetX, z.y - targetY) < 15) {
+                    z.hasEntered = true;
+                }
+            } else {
                 z.hasEntered = true;
             }
-        } else {
+        }
+        
+        if (z.hasEntered) {
             // Normal behavior: Target the closest ALIVE player
             let target = null;
             let minDist = 9999;
@@ -526,7 +609,7 @@ function updateZombies() {
 
         // --- WINDOW COLLISION / BREAKING ---
         let attackingWindow = null;
-        for (let w of mapData.windows) {
+        for (let w of activeMap.windows) {
             if (w.boards > 0) {
                 // Check if zombie is touching the window area
                 if (z.x > w.x - 35 && z.x < w.x + w.w + 35 && z.y > w.y - 35 && z.y < w.y + w.h + 35) {
@@ -602,7 +685,8 @@ function updateBullets() {
 }
 
 function checkGameFlow() {
-    if(stats.zombiesAlive <= 0 && stats.zombiesToSpawn <= 0 && !stats.changingRound) {
+    // Normal maps handle endless rounds. Custom tutorial maps handle escape logic manually.
+    if(activeMap !== tutorialMapData && stats.zombiesAlive <= 0 && stats.zombiesToSpawn <= 0 && !stats.changingRound) {
         stats.changingRound = true;
         setTimeout(() => {
             stats.round++; stats.zombiesToSpawn = Math.floor(6 * Math.pow(1.15, stats.round)); stats.changingRound = false; addText(me.x, me.y-100, "ROUND "+stats.round, "#a83232"); checkAchievements();
@@ -629,9 +713,75 @@ function drawScoreboard() {
     });
 }
 
-function resetSession() { stats = { score: 0, round: 1, zombiesToSpawn: 6, zombiesAlive: 0, frame: 0, sessionKills: 0 }; zombies = []; bullets = []; particles = []; texts = []; zombieIdCounter = 0; mapData.rooms.forEach(r => r.unlocked = (r.id === 0)); mapData.windows.forEach(w => w.boards = w.max); }
+function resetSession() { 
+    stats = { score: 0, round: 1, zombiesToSpawn: 6, zombiesAlive: 0, frame: 0, sessionKills: 0 }; 
+    zombies = []; bullets = []; particles = []; texts = []; zombieIdCounter = 0; 
+    activeMap.rooms.forEach(r => r.unlocked = (r.id === 0)); 
+    
+    // Evaluate map layout and assign suitable barriers count
+    if (activeMap === tutorialMapData) {
+        activeMap.windows.forEach(w => w.boards = 0); // Start empty so player can build them
+    } else {
+        activeMap.windows.forEach(w => w.boards = w.max); // Start fully completed in normal play
+    }
+}
 function spawnParticles(x, y, c, n) { for(let i=0; i<n; i++) particles.push({x, y, vx:(Math.random()-0.5)*5, vy:(Math.random()-0.5)*5, life:20, color:c}); }
 function addText(x, y, t, c) { texts.push({x, y, text:t, color:c, life:60}); }
-function gameOver() { if(!gameActive) return; gameActive = false; if(Network.mode === 'HOST') Network.broadcastGameOver(stats); let msg = ""; try { msg = saveGame(stats.round, stats.sessionKills, me.score); } catch(e) {} document.getElementById('game-ui').style.display='none'; document.getElementById('game-over').style.display='flex'; document.getElementById('death-msg').innerText="Survived to Round "+stats.round; if(document.getElementById('perf-msg')) document.getElementById('perf-msg').innerText = msg; }
+function gameOver() { 
+    if(!gameActive) return; 
+    gameActive = false; 
+    if(Network.mode === 'HOST') Network.broadcastGameOver(stats); 
+    
+    // Check if Tutorial is active - instantly retry instead of displaying high scores or returning to main menu
+    if (typeof Tutorial !== 'undefined' && Tutorial.isActive) {
+        Tutorial.resetOnDeath();
+        return;
+    }
+
+    let msg = ""; 
+    try { msg = saveGame(stats.round, stats.sessionKills, me.score); } catch(e) {} 
+    document.getElementById('game-ui').style.display='none'; 
+    document.getElementById('game-over').style.display='flex'; 
+    document.getElementById('death-msg').innerText="Survived to Round "+stats.round; 
+    if(document.getElementById('perf-msg')) document.getElementById('perf-msg').innerText = msg; 
+}
+
+function updateUI() {
+    document.getElementById('round-box').innerText = stats.round;
+
+    // Player 1 HUD
+    const p1 = players['p1'];
+    if (p1) {
+        document.getElementById('hud-p1').style.display = 'block';
+        document.getElementById('p1-name').innerText = p1.name || "P1";
+        document.getElementById('p1-score').innerHTML = p1.score + ' <span style="font-size:16px">⛃</span>';
+        
+        const gun1 = p1.inventory[p1.weapIdx];
+        if (gun1) {
+            document.getElementById('p1-gun-name').innerText = gun1.name;
+            document.getElementById('p1-ammo-text').innerText = p1.reloading ? "RELOADING" : `${gun1.clip} / ${gun1.ammo}`;
+        }
+        document.getElementById('p1-icon-jug').style.display = p1.hasJug ? 'block' : 'none';
+    } else {
+        document.getElementById('hud-p1').style.display = 'none';
+    }
+
+    // Player 2 HUD
+    const p2 = players['p2'];
+    if (p2) {
+        document.getElementById('hud-p2').style.display = 'block';
+        document.getElementById('p2-name').innerText = p2.name || "Player 2";
+        document.getElementById('p2-score').innerHTML = p2.score + ' <span style="font-size:16px">⛃</span>';
+        
+        const gun2 = p2.inventory[p2.weapIdx];
+        if (gun2) {
+            document.getElementById('p2-gun-name').innerText = gun2.name;
+            document.getElementById('p2-ammo-text').innerText = p2.reloading ? "RELOADING" : `${gun2.clip} / ${gun2.ammo}`;
+        }
+        document.getElementById('p2-icon-jug').style.display = p2.hasJug ? 'block' : 'none';
+    } else {
+        document.getElementById('hud-p2').style.display = 'none';
+    }
+}
 
 init();
