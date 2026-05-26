@@ -21,6 +21,13 @@ let myUsername = "Survivor"; // Store local username
 let p2InputConfig = 'keyboard'; // 'keyboard', 'gamepad0', or 'gamepad1'
 let p2PrevButtons = { shoot: false, reload: false, interact: false };
 
+// MOBILE TOUCH STATE
+let isTouchDevice = false;
+let touchMoveVector = { x: 0, y: 0 };
+let touchAimVector = { x: 0, y: 0 };
+let isMovingTouch = false;
+let isAimingTouch = false;
+
 // INPUTS
 const keys = {};
 const mouse = { x: 0, y: 0, down: false, pressHandled: false };
@@ -33,12 +40,21 @@ function init() {
         document.getElementById('menu-round').innerText = saveData.highestRound;
     }
     
+    // Desktop Keyboard Listeners
     window.addEventListener('keydown', e => { 
         if(e.code === 'Tab') { e.preventDefault(); showScoreboard = true; }
         else {
             keys[e.code] = true; 
             if(gameActive && e.code==='KeyR') handleReload(); 
             if(gameActive && e.code==='KeyF') handleInteractAction(); 
+            
+            // Q Key: Switch Weapons on PC
+            if(gameActive && e.code==='KeyQ') {
+                if(me && me.inventory.length > 1) {
+                    me.weapIdx = (me.weapIdx + 1) % me.inventory.length;
+                    addText(me.x, me.y - 40, me.inventory[me.weapIdx].name, "#fff");
+                }
+            }
         }
     });
     window.addEventListener('keyup', e => { 
@@ -46,9 +62,219 @@ function init() {
         else keys[e.code] = false; 
     });
     
+    // Scroll Wheel: Switch Weapons on PC
+    window.addEventListener('wheel', e => {
+        if(gameActive && me && me.inventory.length > 1) {
+            if(e.deltaY > 0) {
+                me.weapIdx = (me.weapIdx + 1) % me.inventory.length;
+            } else {
+                me.weapIdx = (me.weapIdx - 1 + me.inventory.length) % me.inventory.length;
+            }
+            addText(me.x, me.y - 40, me.inventory[me.weapIdx].name, "#fff");
+        }
+    }, { passive: true });
+    
     window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
     window.addEventListener('mousedown', (e) => { if(e.button===0) mouse.down = true; });
     window.addEventListener('mouseup', () => { mouse.down = false; mouse.pressHandled = false; });
+
+    // Handle Resize cleanly
+    window.addEventListener('resize', () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    });
+
+    // Detect and Initialize Mobile Interface if active
+    checkTouchDevice();
+}
+
+/* --- MOBILE DETECTION & JOYSTICKS --- */
+function checkTouchDevice() {
+    isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    if (isTouchDevice) {
+        document.getElementById('mobile-overlay').style.display = 'block';
+        document.getElementById('controls-hint').style.display = 'none'; // Hide desktop binds
+        setupTouchControls();
+    }
+}
+
+function setupTouchControls() {
+    const stickLeft = document.getElementById('touch-stick-left');
+    const knobLeft = document.getElementById('touch-knob-left');
+    const stickRight = document.getElementById('touch-stick-right');
+    const knobRight = document.getElementById('touch-knob-right');
+    
+    const maxRadius = 45; // Max radius to boundary of virtual stick
+    
+    // --- Left Stick Logic (Movement) ---
+    let leftTouchId = null;
+    let leftStartPos = { x: 0, y: 0 };
+    
+    stickLeft.addEventListener('touchstart', e => {
+        if (leftTouchId !== null) return;
+        const touch = e.changedTouches[0];
+        leftTouchId = touch.identifier;
+        const rect = stickLeft.getBoundingClientRect();
+        leftStartPos = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+        isMovingTouch = true;
+        handleLeftMove(touch.clientX, touch.clientY);
+    });
+    
+    stickLeft.addEventListener('touchmove', e => {
+        if (leftTouchId === null) return;
+        for (let touch of e.changedTouches) {
+            if (touch.identifier === leftTouchId) {
+                handleLeftMove(touch.clientX, touch.clientY);
+            }
+        }
+    });
+    
+    function handleLeftMove(clientX, clientY) {
+        let dx = clientX - leftStartPos.x;
+        let dy = clientY - leftStartPos.y;
+        let dist = Math.hypot(dx, dy);
+        
+        if (dist > maxRadius) {
+            dx = (dx / dist) * maxRadius;
+            dy = (dy / dist) * maxRadius;
+            dist = maxRadius;
+        }
+        
+        knobLeft.style.transform = `translate(${dx}px, ${dy}px)`;
+        touchMoveVector.x = dx / maxRadius;
+        touchMoveVector.y = dy / maxRadius;
+    }
+    
+    stickLeft.addEventListener('touchend', e => {
+        for (let touch of e.changedTouches) {
+            if (touch.identifier === leftTouchId) {
+                leftTouchId = null;
+                isMovingTouch = false;
+                knobLeft.style.transform = `translate(0px, 0px)`;
+                touchMoveVector = { x: 0, y: 0 };
+            }
+        }
+    });
+    
+    stickLeft.addEventListener('touchcancel', e => {
+        for (let touch of e.changedTouches) {
+            if (touch.identifier === leftTouchId) {
+                leftTouchId = null;
+                isMovingTouch = false;
+                knobLeft.style.transform = `translate(0px, 0px)`;
+                touchMoveVector = { x: 0, y: 0 };
+            }
+        }
+    });
+
+    // --- Right Stick Logic (Aiming & Shooting) ---
+    let rightTouchId = null;
+    let rightStartPos = { x: 0, y: 0 };
+    
+    stickRight.addEventListener('touchstart', e => {
+        if (rightTouchId !== null) return;
+        const touch = e.changedTouches[0];
+        rightTouchId = touch.identifier;
+        const rect = stickRight.getBoundingClientRect();
+        rightStartPos = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+        isAimingTouch = true;
+        handleRightMove(touch.clientX, touch.clientY);
+    });
+    
+    stickRight.addEventListener('touchmove', e => {
+        if (rightTouchId === null) return;
+        for (let touch of e.changedTouches) {
+            if (touch.identifier === rightTouchId) {
+                handleRightMove(touch.clientX, touch.clientY);
+            }
+        }
+    });
+    
+    function handleRightMove(clientX, clientY) {
+        let dx = clientX - rightStartPos.x;
+        let dy = clientY - rightStartPos.y;
+        let dist = Math.hypot(dx, dy);
+        
+        if (dist > maxRadius) {
+            dx = (dx / dist) * maxRadius;
+            dy = (dy / dist) * maxRadius;
+            dist = maxRadius;
+        }
+        
+        knobRight.style.transform = `translate(${dx}px, ${dy}px)`;
+        
+        if (dist > 5) {
+            touchAimVector.x = dx / dist;
+            touchAimVector.y = dy / dist;
+            
+            // Aim character
+            if (me) {
+                me.angle = Math.atan2(dy, dx);
+            }
+            
+            // Auto-fire whenever deflected past 40% threshold
+            if (dist > maxRadius * 0.40) {
+                mouse.down = true;
+            } else {
+                // If returned near center, allow semi-auto weapon resets
+                mouse.down = false;
+                mouse.pressHandled = false;
+            }
+        } else {
+            mouse.down = false;
+            mouse.pressHandled = false;
+        }
+    }
+    
+    stickRight.addEventListener('touchend', e => {
+        for (let touch of e.changedTouches) {
+            if (touch.identifier === rightTouchId) {
+                rightTouchId = null;
+                isAimingTouch = false;
+                knobRight.style.transform = `translate(0px, 0px)`;
+                mouse.down = false;
+                mouse.pressHandled = false;
+            }
+        }
+    });
+    
+    stickRight.addEventListener('touchcancel', e => {
+        for (let touch of e.changedTouches) {
+            if (touch.identifier === rightTouchId) {
+                rightTouchId = null;
+                isAimingTouch = false;
+                knobRight.style.transform = `translate(0px, 0px)`;
+                mouse.down = false;
+                mouse.pressHandled = false;
+            }
+        }
+    });
+
+    // --- Action Button Handlers ---
+    const btnInteract = document.getElementById('btn-touch-interact');
+    const btnReload = document.getElementById('btn-touch-reload');
+    const btnSwitch = document.getElementById('btn-touch-switch');
+    
+    btnInteract.addEventListener('touchstart', e => {
+        e.preventDefault();
+        if (gameActive) handleInteractAction();
+    });
+    
+    btnReload.addEventListener('touchstart', e => {
+        e.preventDefault();
+        if (gameActive) handleReload();
+    });
+    
+    btnSwitch.addEventListener('touchstart', e => {
+        e.preventDefault();
+        if (gameActive && me && me.inventory.length > 1) {
+            me.weapIdx = (me.weapIdx + 1) % me.inventory.length;
+            addText(me.x, me.y - 40, me.inventory[me.weapIdx].name, "#fff");
+            if (Network.mode === 'CLIENT') {
+                Network.sendClientData(me);
+            }
+        }
+    });
 }
 
 /* --- UI FUNCTIONS --- */
@@ -153,7 +379,6 @@ function launchGame() {
     if (typeof Tutorial !== 'undefined' && Tutorial.isActive) {
         activeMap = tutorialMapData;
     } else {
-        // Keep activeMap as whatever was determined in solo/multiplayer start selectors
         if (typeof Tutorial !== 'undefined') Tutorial.end();
     }
 
@@ -200,7 +425,6 @@ function launchGame() {
 
 function requestRestart() { if(Network.mode === 'CLIENT') return; if(Network.mode === 'HOST') Network.conn.send({ type: 'START', mapIndex: stats.selectedMapIdx }); launchGame(); }
 
-// UPDATED: Added 'name' parameter
 function createPlayer(id, x, y, color, name) { 
     return { 
         id: id, name: name, x: x, y: y, r: 15, hp: 100, maxHp: 100, state: 'ALIVE', 
@@ -283,14 +507,35 @@ function updatePlayerPhysics(p, isLocal) {
     }
     if(isLocal) {
         let dx = 0, dy = 0;
+        
+        // Priority 1: Check physical keyboard bindings
         if(keys['KeyW']) dy = -1; if(keys['KeyS']) dy = 1;
         if(keys['KeyA']) dx = -1; if(keys['KeyD']) dx = 1;
+        
+        if (dx || dy) {
+            let len = Math.hypot(dx,dy); 
+            dx /= len; 
+            dy /= len;
+        } else if (isTouchDevice && isMovingTouch) {
+            // Priority 2: Process touch joysticks if keyboard is silent
+            dx = touchMoveVector.x;
+            dy = touchMoveVector.y;
+        }
+        
         if(dx||dy) {
-            let len = Math.hypot(dx,dy); dx/=len; dy/=len; let speed = 4;
+            let speed = 4;
             if(!RoomSystem.checkCollision(p.x+(dx*speed), p.y, true)) p.x += dx*speed;
             if(!RoomSystem.checkCollision(p.x, p.y+(dy*speed), true)) p.y += dy*speed;
         }
-        p.angle = Math.atan2((mouse.y + camera.y) - p.y, (mouse.x + camera.x) - p.x);
+        
+        // Handle Aiming
+        if (isTouchDevice && isAimingTouch) {
+            // Updated dynamically in stick setup touch listeners
+            p.angle = Math.atan2(touchAimVector.y, touchAimVector.x);
+        } else {
+            p.angle = Math.atan2((mouse.y + camera.y) - p.y, (mouse.x + camera.x) - p.x);
+        }
+        
         let gun = p.inventory[p.weapIdx];
         if(mouse.down) {
             if(gun.auto) p.triggerShoot = true;
@@ -685,7 +930,6 @@ function updateBullets() {
 }
 
 function checkGameFlow() {
-    // Normal maps handle endless rounds. Custom tutorial maps handle escape logic manually.
     if(activeMap !== tutorialMapData && stats.zombiesAlive <= 0 && stats.zombiesToSpawn <= 0 && !stats.changingRound) {
         stats.changingRound = true;
         setTimeout(() => {
@@ -702,7 +946,6 @@ function checkGameFlow() {
     }
 }
 
-// UPDATED: Now displays player name
 function drawScoreboard() {
     const board = document.getElementById('scoreboard'); board.style.display = 'block';
     const tbody = document.getElementById('score-body'); tbody.innerHTML = '';

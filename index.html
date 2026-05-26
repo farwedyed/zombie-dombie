@@ -3,10 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <title>BO1 Zombies: Demake Online</title>
+    <!-- Responsive viewport tag to handle mobile zooming and scaling -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-select=none">
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     
     <style>
-        body { margin: 0; overflow: hidden; background: #080808; font-family: 'Courier New', monospace; user-select: none; }
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background: #080808; 
+            font-family: 'Courier New', monospace; 
+            user-select: none; 
+            touch-action: manipulation; /* Prevent double-tap delay on mobile */
+        }
         canvas { display: block; }
         
         /* --- UI OVERLAY --- */
@@ -52,11 +61,13 @@
         /* CONTAINER FOR MAIN MENU */
         .menu-container {
             width: 400px;
+            max-width: 90%;
             padding: 30px;
             background: rgba(20, 20, 20, 0.9);
             border: 1px solid #333;
             box-shadow: 0 0 20px rgba(0,0,0,0.8);
             text-align: center;
+            box-sizing: border-box;
         }
 
         h1 { color: #a83232; font-size: 50px; margin: 0 0 10px 0; letter-spacing: 5px; text-shadow: 4px 4px 0 #000; }
@@ -68,6 +79,7 @@
             background: #000; border: 1px solid #444; color: #fff; 
             padding: 12px; font-family: inherit; font-size: 16px; text-align: center; outline: none;
             width: 100%; box-sizing: border-box; transition: 0.2s;
+            touch-action: manipulation;
         }
         input:focus, select:focus { border-color: #a83232; }
         
@@ -79,6 +91,7 @@
             background: #1a1a1a; color: #ccc; border: 1px solid #333; 
             padding: 12px; width: 100%; margin: 5px 0; cursor: pointer; 
             font-family: inherit; font-size: 18px; transition: 0.2s; 
+            touch-action: manipulation;
         }
         button:hover { background: #a83232; color: #fff; border-color: #a83232; transform: translateX(5px); }
         button:active { transform: translateX(2px); }
@@ -94,17 +107,56 @@
         .footer-btns button { font-size: 12px; padding: 10px; background: #0e0e0e; }
 
         /* MODALS */
-        .modal { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 600px; height: 500px; background: #111; border: 2px solid #444; z-index: 2100; padding: 20px; overflow-y: auto; }
+        .modal { 
+            display: none; 
+            position: absolute; 
+            top: 50%; 
+            left: 50%; 
+            transform: translate(-50%, -50%); 
+            width: 600px; 
+            max-width: 90%;
+            height: 500px; 
+            max-height: 80vh;
+            background: #111; 
+            border: 2px solid #444; 
+            z-index: 2100; 
+            padding: 20px; 
+            overflow-y: auto; 
+            box-sizing: border-box;
+        }
         .list-item { background: #222; margin-bottom: 10px; padding: 10px; display: flex; justify-content: space-between; border-left: 5px solid #555; color: white; }
         .unlocked { border-left-color: #ffd700; background: #2a2a2a; }
 
         /* TAB SCOREBOARD */
-        #scoreboard { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 700px; background: rgba(0,0,0,0.95); border: 2px solid #a83232; z-index: 1500; padding: 20px; color: white; }
+        #scoreboard { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 700px; max-width: 95%; background: rgba(0,0,0,0.95); border: 2px solid #a83232; z-index: 1500; padding: 20px; color: white; box-sizing: border-box; }
         table { width: 100%; border-collapse: collapse; }
         th { text-align: left; border-bottom: 2px solid #666; padding: 10px; color: #a83232; }
         td { padding: 10px; border-bottom: 1px solid #333; }
         
         #game-ui { display: none; }
+
+        /* --- MOBILE ADAPTATIONS --- */
+        @media (max-width: 768px) {
+            h1 { font-size: 36px; }
+            button { font-size: 16px; padding: 10px; }
+            #round-box { font-size: 36px; top: 15px; }
+            
+            /* Move HUD up to prevent obstruction from virtual sticks */
+            #hud-p1 { bottom: auto; top: 80px; left: 15px; }
+            #hud-p2 { bottom: auto; top: 80px; right: 15px; }
+            #hud-p1 .perk-area { margin-top: 5px; }
+            #hud-p2 .perk-area { margin-top: 5px; }
+            .perk { width: 24px; height: 24px; }
+
+            #tutorial-hud {
+                width: 90%;
+                bottom: auto;
+                top: 170px;
+                padding: 10px;
+            }
+            #tutorial-title { font-size: 16px; }
+            #tutorial-text { font-size: 13px; }
+        }
     </style>
 </head>
 <body oncontextmenu="return false;">
@@ -255,6 +307,26 @@
     <div id="ach-toast-container"></div>
     <div id="controls-hint">WASD: Move | MOUSE: Shoot | R: Reload | F: Interact | TAB: Scoreboard</div>
     <div id="interact-msg">Press F</div>
+</div>
+
+<!-- VIRTUAL JOYSTICKS & MOBILE BUTTON OVERLAY -->
+<div id="mobile-overlay" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; user-select: none; z-index: 1005;">
+    <!-- Left Joystick (Movement) -->
+    <div id="touch-stick-left" style="position: absolute; bottom: 30px; left: 30px; width: 120px; height: 120px; background: rgba(255, 255, 255, 0.08); border: 2px solid rgba(255, 255, 255, 0.25); border-radius: 50%; pointer-events: auto;">
+        <div id="touch-knob-left" style="position: absolute; top: 35px; left: 35px; width: 50px; height: 50px; background: rgba(255, 255, 255, 0.45); border-radius: 50%; pointer-events: none; box-shadow: 0 0 10px rgba(0,0,0,0.5);"></div>
+    </div>
+    
+    <!-- Right Joystick (Aiming & Shooting) -->
+    <div id="touch-stick-right" style="position: absolute; bottom: 30px; right: 30px; width: 120px; height: 120px; background: rgba(255, 255, 255, 0.08); border: 2px solid rgba(255, 255, 255, 0.25); border-radius: 50%; pointer-events: auto;">
+        <div id="touch-knob-right" style="position: absolute; top: 35px; left: 35px; width: 50px; height: 50px; background: rgba(168, 50, 50, 0.6); border: 2px solid rgba(255, 255, 255, 0.2); border-radius: 50%; pointer-events: none; box-shadow: 0 0 10px rgba(0,0,0,0.5);"></div>
+    </div>
+
+    <!-- Action Buttons Row (Above the Right Joystick) -->
+    <div style="position: absolute; bottom: 170px; right: 30px; display: flex; gap: 15px; pointer-events: auto;">
+        <button id="btn-touch-interact" style="width: 55px; height: 55px; border-radius: 50%; background: rgba(30, 30, 30, 0.85); border: 2px solid #a83232; color: #fff; font-size: 13px; font-weight: bold; margin: 0; padding: 0; transform: none; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: none; display: flex; align-items: center; justify-content: center;">INT</button>
+        <button id="btn-touch-reload" style="width: 55px; height: 55px; border-radius: 50%; background: rgba(30, 30, 30, 0.85); border: 2px solid #fff; color: #fff; font-size: 13px; font-weight: bold; margin: 0; padding: 0; transform: none; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: none; display: flex; align-items: center; justify-content: center;">REL</button>
+        <button id="btn-touch-switch" style="width: 55px; height: 55px; border-radius: 50%; background: rgba(30, 30, 30, 0.85); border: 2px solid #3498db; color: #fff; font-size: 13px; font-weight: bold; margin: 0; padding: 0; transform: none; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: none; display: flex; align-items: center; justify-content: center;">GUN</button>
+    </div>
 </div>
 
 <canvas id="gameCanvas"></canvas>
