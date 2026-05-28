@@ -145,7 +145,8 @@ const Network = {
                         name: myUsername,
                         mapIndex: stats.selectedMapIdx,
                         assignedId: c.playerId,
-                        lobbyPlayers: window.lobbyPlayers
+                        lobbyPlayers: window.lobbyPlayers,
+                        difficulty: stats.difficulty || 'medium' // Propagate lobby difficulty settings on join handshake
                     });
                 } catch(e) {
                     console.warn("Failed to send LOBBY_WELCOME:", e);
@@ -266,6 +267,8 @@ const Network = {
                 window.myPlayerId = data.assignedId;
                 window.lobbyPlayers = data.lobbyPlayers;
                 stats.selectedMapIdx = data.mapIndex;
+                stats.difficulty = data.difficulty || 'medium'; // Sync Host selected difficulty configuration
+                
                 if (typeof updateLobbyPlayersList === 'function') updateLobbyPlayersList();
                 
                 const mapDisplay = document.getElementById('lobby-map-display-client');
@@ -273,6 +276,11 @@ const Network = {
                     const mapName = (typeof playableMaps !== 'undefined' && playableMaps[data.mapIndex]) ? playableMaps[data.mapIndex].name : "Unknown Map";
                     mapDisplay.innerText = mapName;
                 }
+                const diffDisplay = document.getElementById('lobby-diff-display-client');
+                if (diffDisplay) {
+                    diffDisplay.innerText = "Difficulty: " + capitalizeFirstLetter(stats.difficulty);
+                }
+                
                 document.getElementById('lobby-status').innerText = "Connected! Ready to play.";
                 document.getElementById('lobby-status').style.color = "#0f0";
             }
@@ -286,6 +294,13 @@ const Network = {
                 if (mapDisplay) {
                     const mapName = (typeof playableMaps !== 'undefined' && playableMaps[data.mapIndex]) ? playableMaps[data.mapIndex].name : "Unknown Map";
                     mapDisplay.innerText = mapName;
+                }
+            }
+            else if (data.type === 'LOBBY_DIFF_CHANGE') {
+                stats.difficulty = data.difficulty || 'medium';
+                const diffDisplay = document.getElementById('lobby-diff-display-client');
+                if (diffDisplay) {
+                    diffDisplay.innerText = "Difficulty: " + capitalizeFirstLetter(stats.difficulty);
                 }
             }
             else if (data.type === 'RETURN_TO_LOBBY') {
@@ -509,4 +524,9 @@ function syncPlayerInventory(p, serverWeapIdx, serverGunName) {
     } else {
         p.weapIdx = 0; // Fallback to starting pistol
     }
+}
+
+function capitalizeFirstLetter(string) {
+    if (!string) return "Medium";
+    return string.charAt(0).toUpperCase() + string.slice(1);
 }

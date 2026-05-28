@@ -64,7 +64,7 @@ let accumulator = 0;
 const tickRate = 1000 / 60; // Locked game logic tick rate (Exactly 60Hz)
 
 // GLOBAL DATA
-let stats = { score: 500, round: 1, zombiesToSpawn: 6, zombiesAlive: 0, frame: 0, sessionKills: 0, selectedMapIdx: 0 };
+let stats = { score: 500, round: 1, zombiesToSpawn: 6, zombiesAlive: 0, frame: 0, sessionKills: 0, selectedMapIdx: 0, difficulty: "medium" };
 let players = {};
 let me = null;
 let bullets = [], zombies = [], particles = [], texts = [];
@@ -365,6 +365,7 @@ function startOffline() {
     Network.mode = 'OFFLINE'; 
     window.myPlayerId = 'p1';
     window.lobbyPlayers = { p1: "Survivor", p2: "", p3: "", p4: "" };
+    stats.difficulty = "medium"; // Standard fallback
     const select = document.getElementById('map-select');
     const mapIdx = select ? parseInt(select.value) : 0;
     activeMap = playableMaps[mapIdx]; // Swaps active level boundaries
@@ -376,6 +377,7 @@ function startLocalCoop() {
     Network.mode = 'LOCAL_COOP';
     window.myPlayerId = 'p1';
     window.lobbyPlayers = { p1: "Survivor", p2: "Player 2", p3: "", p4: "" };
+    stats.difficulty = "medium";
     const select = document.getElementById('map-select');
     const mapIdx = select ? parseInt(select.value) : 0;
     activeMap = playableMaps[mapIdx]; // Swaps active level boundaries
@@ -385,6 +387,7 @@ function startTutorial() {
     Network.mode = 'OFFLINE';
     window.myPlayerId = 'p1';
     window.lobbyPlayers = { p1: "Survivor", p2: "", p3: "", p4: "" };
+    stats.difficulty = "medium";
     if (typeof Tutorial !== 'undefined') {
         Tutorial.isActive = true; // Declare active state before starting engine variables setup
     }
@@ -397,6 +400,7 @@ function startTutorial() {
 function enterLobbyHost() { 
     const select = document.getElementById('map-select');
     stats.selectedMapIdx = select ? parseInt(select.value) : 0; // Cache selected layout index
+    stats.difficulty = "medium";
 
     // Sync menu map dropdown to the lobby map dropdown
     const lobbySelect = document.getElementById('lobby-map-select');
@@ -404,9 +408,17 @@ function enterLobbyHost() {
         lobbySelect.value = stats.selectedMapIdx;
     }
 
+    const diffSelect = document.getElementById('lobby-diff-select');
+    if (diffSelect) {
+        diffSelect.value = stats.difficulty;
+    }
+
     // Set lobby screen displays: Host can select, client cannot
     document.getElementById('lobby-map-select').style.display = 'block';
     document.getElementById('lobby-map-display-client').style.display = 'none';
+
+    document.getElementById('lobby-diff-select').style.display = 'block';
+    document.getElementById('lobby-diff-display-client').style.display = 'none';
 
     // Identify username
     let nameInput = document.getElementById('username-input');
@@ -442,6 +454,11 @@ function enterLobbyJoin() {
     clientMapDisplay.style.display = 'block';
     clientMapDisplay.innerText = "Retrieving map...";
 
+    document.getElementById('lobby-diff-select').style.display = 'none';
+    const clientDiffDisplay = document.getElementById('lobby-diff-display-client');
+    clientDiffDisplay.style.display = 'block';
+    clientDiffDisplay.innerText = "Retrieving difficulty...";
+
     // Retrieve username
     let nameInput = document.getElementById('username-input');
     myUsername = nameInput ? (nameInput.value || "Survivor") : "Survivor";
@@ -474,6 +491,23 @@ function lobbyChangeMap() {
             });
         } catch (e) {
             console.warn("Failed to broadcast map change to clients:", e);
+        }
+    }
+}
+
+function lobbyChangeDifficulty() {
+    const select = document.getElementById('lobby-diff-select');
+    if (!select) return;
+    stats.difficulty = select.value;
+    
+    if (Network.mode === 'HOST') {
+        try {
+            Network.broadcastToAll({
+                type: 'LOBBY_DIFF_CHANGE',
+                difficulty: stats.difficulty
+            });
+        } catch (e) {
+            console.warn("Failed to broadcast difficulty change to clients:", e);
         }
     }
 }
@@ -598,8 +632,12 @@ function requestRestart() {
 }
 
 function createPlayer(id, x, y, color, name) { 
+    const currentDiff = stats.difficulty || 'medium';
+    let startingHp = 100;
+    if (currentDiff === 'easy') startingHp = 150; // Increased starting health on Easy Mode
+
     return { 
-        id: id, name: name, x: x, y: y, r: 15, hp: 100, maxHp: 100, state: 'ALIVE', 
+        id: id, name: name, x: x, y: y, r: 15, hp: startingHp, maxHp: startingHp, state: 'ALIVE', 
         inventory: [{ ...weaponDB[0], clip: 8, ammo: 32 }], 
         weapIdx: 0, angle: 0, reloading: false, reloadTimer: 0, hasJug: false, reviveTimer: 0, 
         color: color, kills: 0, score: 500, 
@@ -704,6 +742,10 @@ function updateGameLogic() {
 
         updateZombies();
         updateBullets();
+        
+        // STRICT GAMEPLAY LOOP SYNC: Bind counters to eliminate round desync bugs
+        stats.zombiesAlive = zombies.length;
+
         checkGameFlow();
         checkAllDead(); 
         
@@ -774,7 +816,7 @@ function updatePlayerPhysics(p, isLocal) {
         }
         
         if(dx||dy) {
-            let speed = 4;
+            let speed = 7; // Faster player movement to match high refresh rate pacing
             if(!RoomSystem.checkCollision(p.x+(dx*speed), p.y, true)) p.x += dx*speed;
             if(!RoomSystem.checkCollision(p.x, p.y+(dy*speed), true)) p.y += dy*speed;
         }
@@ -913,7 +955,7 @@ function updateLocalCoopP2(p) {
         let len = Math.hypot(dx, dy);
         dx /= len;
         dy /= len;
-        let speed = 4;
+        let speed = 7; // Matching fast P1 speeds
         if (!RoomSystem.checkCollision(p.x + (dx * speed), p.y, true)) p.x += dx * speed;
         if (!RoomSystem.checkCollision(p.x, p.y + (dy * speed), true)) p.y += dy * speed;
     }
@@ -1064,24 +1106,53 @@ function processInteraction(p) {
             }
         }
         else if(t.type==='BOX' && p.score>=950) { p.score-=950; let rnd=weaponDB[Math.floor(Math.random()*weaponDB.length)]; p.inventory.push({...rnd, clip:rnd.mag, ammo:rnd.reserve}); p.weapIdx=p.inventory.length-1; addText(p.x, p.y, rnd.name+"!", "#0ff"); }
-        else if(t.type==='PERK' && p.score>=t.obj.price && !p.hasJug) { p.score-=t.obj.price; p.hasJug=true; p.maxHp=250; p.hp=250; if(p===me) checkAchievements(); addText(p.x, p.y, "JUGGERNOG!", "#c0392b"); }
+        else if(t.type==='PERK' && p.score>=t.obj.price && !p.hasJug) { 
+            p.score-=t.obj.price; 
+            p.hasJug=true; 
+            
+            // Scale Jug HP based on difficulty configurations
+            const currentDiff = stats.difficulty || 'medium';
+            let jugHp = 250;
+            if (currentDiff === 'easy') jugHp = 350;
+            p.maxHp=jugHp; 
+            p.hp=jugHp; 
+
+            if(p===me) checkAchievements(); 
+            addText(p.x, p.y, "JUGGERNOG!", "#c0392b"); 
+        }
     }
 }
 
 function checkAllDead() { if(Network.mode === 'CLIENT') return; let allDown = Object.values(players).every(p => p.state === 'DOWNED'); if(allDown && !Object.values(players).some(p => p.reviveTimer > 0)) gameOver(); }
 
 function updateZombies() {
+    const currentDiff = stats.difficulty || 'medium';
+    let spawnRate = 100;
+    if (currentDiff === 'easy') spawnRate = 130;
+    else if (currentDiff === 'hard') spawnRate = 70;
+
     // Spawning logic (prevent spawning in tutorial mode outside of custom script instructions)
-    if (activeMap !== tutorialMapData && stats.zombiesToSpawn > 0 && stats.frame % 100 === 0 && stats.zombiesAlive < 24) {
+    if (activeMap !== tutorialMapData && stats.zombiesToSpawn > 0 && stats.frame % spawnRate === 0 && stats.zombiesAlive < 24) {
         let valid = activeMap.spawnPoints.filter(sp => activeMap.rooms[sp.roomId].unlocked);
         if (valid.length > 0) {
             let sp = valid[Math.floor(Math.random() * valid.length)];
-            let hp = 100 + (stats.round * 30);
-            zombieIdCounter++;
             
+            // Scale Zombie HP by Difficulty
+            let hpMultiplier = 1.0;
+            if (currentDiff === 'easy') hpMultiplier = 0.7;
+            else if (currentDiff === 'hard') hpMultiplier = 1.3;
+            let hp = Math.floor((100 + (stats.round * 30)) * hpMultiplier);
+            
+            // Scale Zombie Speed by Difficulty (Higher base speeds for 144Hz feel)
+            let speedMin = 1.8, speedMax = 4.5;
+            if (currentDiff === 'easy') { speedMin = 1.2; speedMax = 2.5; }
+            else if (currentDiff === 'hard') { speedMin = 2.5; speedMax = 5.5; }
+            let zombieSpeed = speedMin + (Math.random() * (speedMax - speedMin));
+
+            zombieIdCounter++;
             zombies.push({ 
                 id: zombieIdCounter, x: sp.x, y: sp.y, hp: hp, maxHp: hp, 
-                speed: 1 + (Math.random() * 1.5), r: 16, hasEntered: false 
+                speed: zombieSpeed, r: 16, hasEntered: false 
             });
             stats.zombiesToSpawn--; stats.zombiesAlive++;
         }
@@ -1239,7 +1310,18 @@ function checkGameFlow() {
     if(activeMap !== tutorialMapData && stats.zombiesAlive <= 0 && stats.zombiesToSpawn <= 0 && !stats.changingRound) {
         stats.changingRound = true;
         setTimeout(() => {
-            stats.round++; stats.zombiesToSpawn = Math.floor(6 * Math.pow(1.15, stats.round)); stats.changingRound = false; 
+            stats.round++; 
+            
+            // Adjust zombie counts based on active game difficulty
+            const currentDiff = stats.difficulty || 'medium';
+            let spawnScalar = 1.15;
+            let spawnMultiplier = 6;
+            if (currentDiff === 'easy') { spawnMultiplier = 4; spawnScalar = 1.10; }
+            else if (currentDiff === 'hard') { spawnMultiplier = 10; spawnScalar = 1.25; }
+
+            stats.zombiesToSpawn = Math.floor(spawnMultiplier * Math.pow(spawnScalar, stats.round)); 
+            stats.changingRound = false; 
+            
             addText(me ? me.x : 200, (me ? me.y : 200) - 100, "ROUND "+stats.round, "#a83232"); 
             checkAchievements();
             Object.values(players).forEach(p => {
@@ -1267,7 +1349,24 @@ function drawScoreboard() {
 function resetSession() { 
     // Preserve map index across resets so synchronization doesn't fail on restarts
     const currentMapIdx = stats.selectedMapIdx !== undefined ? stats.selectedMapIdx : 0;
-    stats = { score: 0, round: 1, zombiesToSpawn: 6, zombiesAlive: 0, frame: 0, sessionKills: 0, selectedMapIdx: currentMapIdx }; 
+    const currentDiff = stats.difficulty || 'medium';
+    
+    // Scale initial spawns based on active difficulty
+    let zombiesToSpawnBase = 6;
+    if (currentDiff === 'easy') zombiesToSpawnBase = 4;
+    else if (currentDiff === 'hard') zombiesToSpawnBase = 10;
+
+    stats = { 
+        score: 0, 
+        round: 1, 
+        zombiesToSpawn: zombiesToSpawnBase, 
+        zombiesAlive: 0, 
+        frame: 0, 
+        sessionKills: 0, 
+        selectedMapIdx: currentMapIdx,
+        difficulty: currentDiff
+    }; 
+
     zombies = []; bullets = []; particles = []; texts = []; zombieIdCounter = 0; 
     activeMap.rooms.forEach(r => r.unlocked = (r.id === 0)); 
     
