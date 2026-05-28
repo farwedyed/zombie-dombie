@@ -277,8 +277,20 @@ const Network = {
                 
                 if(me && players['p2'] && data.p2) {
                     let myAngle = me.angle;
+                    let myX = me.x;
+                    let myY = me.y;
+                    
+                    // If Host's position is very far away, accept it (e.g. respawn / teleport)
+                    if (Math.hypot(me.x - data.p2.x, me.y - data.p2.y) > 100) {
+                        myX = data.p2.x;
+                        myY = data.p2.y;
+                    }
+                    
                     Object.assign(me, data.p2);
+                    
                     me.angle = myAngle; 
+                    me.x = myX;
+                    me.y = myY;
                 }
 
                 data.windows.forEach((wData, i) => { if(activeMap.windows[i]) activeMap.windows[i].boards = wData.boards; });
