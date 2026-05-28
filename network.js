@@ -81,8 +81,9 @@ const Network = {
     setupHost: function() {
         this.conn.on('data', (data) => {
             if(data.type === 'P2_DATA' && players['p2']) {
-                players['p2'].x = data.x;
-                players['p2'].y = data.y;
+                // MODIFIED: Store target visual coordinates instead of overwriting instantly
+                players['p2'].serverX = data.x;
+                players['p2'].serverY = data.y;
                 players['p2'].angle = data.angle;
                 
                 // --- SYNC NAME ---
@@ -168,11 +169,26 @@ const Network = {
                 texts = data.texts || [];
                 particles = data.particles || [];
 
-                if(players['p1']) players['p1'] = data.p1;
+                // MODIFIED: Store Host (P1) target visual coordinates and prevent physical snapping
+                if(players['p1'] && data.p1) {
+                    players['p1'].serverX = data.p1.x;
+                    players['p1'].serverY = data.p1.y;
+                    
+                    let visualX = players['p1'].x;
+                    let visualY = players['p1'].y;
+                    Object.assign(players['p1'], data.p1);
+                    players['p1'].x = visualX;
+                    players['p1'].y = visualY;
+                }
                 
+                // MODIFIED: Maintain local Client (P2) coordinates to eliminate input loop stutters
                 if(me && players['p2'] && data.p2) {
                     let myAngle = me.angle;
+                    let localX = me.x;
+                    let localY = me.y;
                     Object.assign(me, data.p2);
+                    me.x = localX;
+                    me.y = localY;
                     me.angle = myAngle; 
                 }
 

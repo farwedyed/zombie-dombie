@@ -364,7 +364,7 @@ function enterLobbyJoin() {
 }
 function updateLobbyUI(connected) { if(connected) { document.getElementById('lobby-status').style.color = '#0f0'; document.getElementById('lobby-status').innerText = "PLAYER 2 JOINED!"; document.getElementById('start-btn').disabled = false; document.getElementById('start-btn').style.background = '#a83232'; } }
 function hostStartGame() { 
-    Network.conn.send({ type: 'START', mapIndex: stats.selectedMapIdx }); // Synchronize level selection with guest [2]
+    Network.conn.send({ type: 'START', mapIndex: stats.selectedMapIdx }); // Synchronize level selection with guest
     activeMap = playableMaps[stats.selectedMapIdx];
     launchGame(); 
 }
@@ -431,7 +431,8 @@ function createPlayer(id, x, y, color, name) {
         inventory: [{ ...weaponDB[0], clip: 8, ammo: 32 }], 
         weapIdx: 0, angle: 0, reloading: false, reloadTimer: 0, hasJug: false, reviveTimer: 0, 
         color: color, kills: 0, score: 500, 
-        triggerShoot: false, triggerReload: false, triggerInteract: false 
+        triggerShoot: false, triggerReload: false, triggerInteract: false,
+        serverX: x, serverY: y // MODIFIED: Target variables configured for network visual interpolation
     }; 
 }
 
@@ -448,13 +449,26 @@ function loop() {
 
     if(Network.mode === 'CLIENT') {
         Network.sendClientData(me);
-        // Client Smoothing
+        
+        // Client Smoothing for Zombies
         zombies.forEach(z => {
             if(z.serverX !== undefined) {
                 z.x += (z.serverX - z.x) * 0.2;
                 z.y += (z.serverY - z.y) * 0.2;
             }
         });
+
+        // MODIFIED: Client visual interpolation for Host (P1) movement
+        if (players['p1'] && players['p1'].serverX !== undefined) {
+            let dist = Math.hypot(players['p1'].serverX - players['p1'].x, players['p1'].serverY - players['p1'].y);
+            if (dist > 150) {
+                players['p1'].x = players['p1'].serverX;
+                players['p1'].y = players['p1'].serverY;
+            } else {
+                players['p1'].x += (players['p1'].serverX - players['p1'].x) * 0.25;
+                players['p1'].y += (players['p1'].serverY - players['p1'].y) * 0.25;
+            }
+        }
     } else {
         stats.frame++;
         if(stats.frame % 60 === 0) Object.values(players).forEach(p => { if(p.state === 'ALIVE' && p.hp < p.maxHp) p.hp++; });
@@ -466,6 +480,18 @@ function loop() {
                 if(players['p2'].triggerReload) forceReload(players['p2']);
                 players['p2'].triggerReload = false;
                 updatePlayerPhysics(players['p2'], false);
+
+                // MODIFIED: Host visual interpolation for Guest (P2) movement
+                if (players['p2'].serverX !== undefined) {
+                    let dist = Math.hypot(players['p2'].serverX - players['p2'].x, players['p2'].serverY - players['p2'].y);
+                    if (dist > 150) {
+                        players['p2'].x = players['p2'].serverX;
+                        players['p2'].y = players['p2'].serverY;
+                    } else {
+                        players['p2'].x += (players['p2'].serverX - players['p2'].x) * 0.25;
+                        players['p2'].y += (players['p2'].serverY - players['p2'].y) * 0.25;
+                    }
+                }
             }
             if(players['p2'].triggerInteract) { processInteraction(players['p2']); players['p2'].triggerInteract = false; }
         }
@@ -537,7 +563,8 @@ function updatePlayerPhysics(p, isLocal) {
         
         let gun = p.inventory[p.weapIdx];
         if(mouse.down) {
-            if(gun.auto) p.triggerShoot = true;
+            // MODIFIED: Bypasses manual tapping resets for mobile users so semi-autos continuously fire on-hold
+            if(gun.auto || isTouchDevice) p.triggerShoot = true;
             else if(!mouse.pressHandled) { p.triggerShoot = true; mouse.pressHandled = true; }
         } else mouse.pressHandled = false;
     }
@@ -1023,6 +1050,46 @@ function updateUI() {
         document.getElementById('p2-icon-jug').style.display = p2.hasJug ? 'block' : 'none';
     } else {
         document.getElementById('hud-p2').style.display = 'none';
+    }
+}
+
+// MODIFIED: Added copy triggers for the Lobby ID Clipboard API
+function copyHostId() {
+    const display = document.getElementById('host-id-display');
+    if (!display) return;
+    
+    let idText = display.innerText.replace("ID: ", "").trim();
+    if (idText === "Generating..." || idText === "") return;
+    
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(idText).then(() => {
+            feedbackCopyButton();
+        }).catch(() => fallbackCopy(idText));
+    } else {
+        fallbackCopy(idText);
+    }
+}
+
+function fallbackCopy(text) {
+    const tempInput = document.createElement("input");
+    tempInput.value = text;
+    document.body.appendChild(tempInput);
+    tempInput.select();
+    try {
+        document.execCommand("copy");
+        feedbackCopyButton();
+    } catch (e) {
+        alert("Copy failed. Your Host ID is: " + text);
+    }
+    document.body.removeChild(tempInput);
+}
+
+function feedbackCopyButton() {
+    const btn = document.getElementById('copy-id-btn');
+    if (btn) {
+        const originalText = btn.innerHTML;
+        btn.innerHTML = "✅ Copied!";
+        setTimeout(() => { btn.innerHTML = originalText; }, 2000);
     }
 }
 

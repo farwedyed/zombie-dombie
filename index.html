@@ -203,7 +203,13 @@
 <!-- LOBBY SCREEN -->
 <div id="lobby-screen" class="screen" style="display: none;">
     <h1 style="font-size: 40px;">LOBBY</h1>
-    <div id="host-id-display" style="background:#222; padding:10px; border:1px dashed #666; color:#0ff; user-select:text; cursor:text;">ID: Generating...</div>
+    <!-- MODIFIED: Wrapped display and copy button in a flexible layout container -->
+    <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap;">
+        <div id="host-id-display" style="background:#222; padding:10px; border:1px dashed #666; color:#0ff; user-select:text; cursor:text; font-family: monospace;">ID: Generating...</div>
+        <button id="copy-id-btn" onclick="copyHostId()" style="width: auto; padding: 10px 15px; margin: 0; font-size: 14px; background: #333; border-color: #555; display: flex; align-items: center; gap: 5px;">
+            📋 Copy
+        </button>
+    </div>
     <div id="lobby-status">Waiting for players...</div>
     <div id="player-list" style="margin-top:20px; color:#aaa;"></div>
     <button id="start-btn" onclick="hostStartGame()" disabled style="margin-top:30px;">START MATCH</button>
