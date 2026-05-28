@@ -280,10 +280,13 @@ const Network = {
                     let myX = me.x;
                     let myY = me.y;
                     
-                    // If Host's position is very far away, accept it (e.g. respawn / teleport)
-                    if (Math.hypot(me.x - data.p2.x, me.y - data.p2.y) > 100) {
-                        myX = data.p2.x;
-                        myY = data.p2.y;
+                    // Teleport Client to Host on respawn (transitioning from DOWNED to ALIVE)
+                    if (me.state === 'DOWNED' && data.p2.state === 'ALIVE') {
+                        const p1 = players['p1'];
+                        if (p1) {
+                            myX = p1.x;
+                            myY = p1.y;
+                        }
                     }
                     
                     Object.assign(me, data.p2);
