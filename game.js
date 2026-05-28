@@ -1276,11 +1276,12 @@ function updateUI() {
                 document.getElementById(pId + '-name').innerText = p.name || pId.toUpperCase();
                 document.getElementById(pId + '-score').innerHTML = p.score + ' <span style="font-size:16px">⛃</span>';
                 
-                const gun = p.inventory[p.weapIdx];
-                if (gun) {
-                    document.getElementById(pId + '-gun-name').innerText = gun.name;
-                    document.getElementById(pId + '-ammo-text').innerText = p.reloading ? "RELOADING" : `${gun.clip} / ${gun.ammo}`;
-                }
+                const gun = p.inventory && p.inventory[p.weapIdx] ? p.inventory[p.weapIdx] : null;
+                const gunName = p.gunName || (gun ? gun.name : "M1911");
+                const ammoText = p.reloading ? "RELOADING" : (p.clip !== undefined && p.ammo !== undefined ? `${p.clip} / ${p.ammo}` : (gun ? `${gun.clip} / ${gun.ammo}` : "8 / 32"));
+                
+                document.getElementById(pId + '-gun-name').innerText = gunName;
+                document.getElementById(pId + '-ammo-text').innerText = ammoText;
                 document.getElementById(pId + '-icon-jug').style.display = p.hasJug ? 'block' : 'none';
             } else {
                 hud.style.display = 'none';

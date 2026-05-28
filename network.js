@@ -343,11 +343,10 @@ const Network = {
                             me.x = myX;
                             me.y = myY;
 
-                            // Sync local ammo counters
-                            if (me.inventory && me.inventory[me.weapIdx]) {
-                                me.inventory[me.weapIdx].clip = data[pId].clip;
-                                me.inventory[me.weapIdx].ammo = data[pId].ammo;
-                            }
+                            me.gunName = data[pId].gunName;
+                            me.gunColor = data[pId].gunColor;
+                            me.clip = data[pId].clip;
+                            me.ammo = data[pId].ammo;
                         }
                     } else {
                         // Update target coordinates for LERPing of other survivors
@@ -366,12 +365,10 @@ const Network = {
                             p.reloading = data[pId].reloading;
                             p.weapIdx = data[pId].weapIdx;
                             p.name = data[pId].name;
-
-                            // Sync other survivors' gun ammo/clip locally on client
-                            if (p.inventory && p.inventory[p.weapIdx]) {
-                                p.inventory[p.weapIdx].clip = data[pId].clip;
-                                p.inventory[p.weapIdx].ammo = data[pId].ammo;
-                            }
+                            p.gunName = data[pId].gunName;
+                            p.gunColor = data[pId].gunColor;
+                            p.clip = data[pId].clip;
+                            p.ammo = data[pId].ammo;
                         } else {
                             if (players[pId]) delete players[pId];
                         }
@@ -440,6 +437,8 @@ function getPrunedPlayer(p) {
         weapIdx: p.weapIdx,
         clip: activeGun ? activeGun.clip : 0,
         ammo: activeGun ? activeGun.ammo : 0,
+        gunName: activeGun ? activeGun.name : "M1911",
+        gunColor: activeGun ? activeGun.color : "#999",
         name: p.name
     };
 }

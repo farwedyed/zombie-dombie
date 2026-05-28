@@ -178,8 +178,9 @@ function drawGame() {
         ctx.arc(0, 0, p.r, 0, Math.PI*2); 
         ctx.fill();
         
-        // Draw Gun Barrel
-        ctx.fillStyle = p.inventory[p.weapIdx].color;
+        // Draw Gun Barrel (Includes safety checks to prevent thread crashes)
+        const activeGunColor = p.gunColor || (p.inventory && p.inventory[p.weapIdx] ? p.inventory[p.weapIdx].color : '#999');
+        ctx.fillStyle = activeGunColor;
         ctx.fillRect(0, -5, 25, 10);
         
         ctx.restore();
@@ -265,37 +266,25 @@ function drawGame() {
 function updateUI() {
     document.getElementById('round-box').innerText = stats.round;
 
-    // Player 1 HUD
-    const p1 = players['p1'];
-    if (p1) {
-        document.getElementById('hud-p1').style.display = 'block';
-        document.getElementById('p1-name').innerText = p1.name || "P1";
-        document.getElementById('p1-score').innerHTML = p1.score + ' <span style="font-size:16px">⛃</span>';
-        
-        const gun1 = p1.inventory[p1.weapIdx];
-        if (gun1) {
-            document.getElementById('p1-gun-name').innerText = gun1.name;
-            document.getElementById('p1-ammo-text').innerText = p1.reloading ? "RELOADING" : `${gun1.clip} / ${gun1.ammo}`;
+    ['p1', 'p2', 'p3', 'p4'].forEach(pId => {
+        const p = players[pId];
+        const hud = document.getElementById('hud-' + pId);
+        if (hud) {
+            if (p) {
+                hud.style.display = 'block';
+                document.getElementById(pId + '-name').innerText = p.name || pId.toUpperCase();
+                document.getElementById(pId + '-score').innerHTML = p.score + ' <span style="font-size:16px">⛃</span>';
+                
+                const gun = p.inventory && p.inventory[p.weapIdx] ? p.inventory[p.weapIdx] : null;
+                const gunName = p.gunName || (gun ? gun.name : "M1911");
+                const ammoText = p.reloading ? "RELOADING" : (p.clip !== undefined && p.ammo !== undefined ? `${p.clip} / ${p.ammo}` : (gun ? `${gun.clip} / ${gun.ammo}` : "8 / 32"));
+                
+                document.getElementById(pId + '-gun-name').innerText = gunName;
+                document.getElementById(pId + '-ammo-text').innerText = ammoText;
+                document.getElementById(pId + '-icon-jug').style.display = p.hasJug ? 'block' : 'none';
+            } else {
+                hud.style.display = 'none';
+            }
         }
-        document.getElementById('p1-icon-jug').style.display = p1.hasJug ? 'block' : 'none';
-    } else {
-        document.getElementById('hud-p1').style.display = 'none';
-    }
-
-    // Player 2 HUD
-    const p2 = players['p2'];
-    if (p2) {
-        document.getElementById('hud-p2').style.display = 'block';
-        document.getElementById('p2-name').innerText = p2.name || "Player 2";
-        document.getElementById('p2-score').innerHTML = p2.score + ' <span style="font-size:16px">⛃</span>';
-        
-        const gun2 = p2.inventory[p2.weapIdx];
-        if (gun2) {
-            document.getElementById('p2-gun-name').innerText = gun2.name;
-            document.getElementById('p2-ammo-text').innerText = p2.reloading ? "RELOADING" : `${gun2.clip} / ${gun2.ammo}`;
-        }
-        document.getElementById('p2-icon-jug').style.display = p2.hasJug ? 'block' : 'none';
-    } else {
-        document.getElementById('hud-p2').style.display = 'none';
-    }
+    });
 }
