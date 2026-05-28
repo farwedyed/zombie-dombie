@@ -14,6 +14,11 @@ let gameActive = false;
 let showScoreboard = false;
 let animationFrameId = null; // Track loop ID to prevent concurrent duplicate game loops
 
+// FIXED TIMESTEP VARIABLES
+let lastLoopTime = performance.now();
+let accumulator = 0;
+const tickRate = 1000 / 60; // Locked game logic tick rate (Exactly 60Hz)
+
 // GLOBAL DATA
 let stats = { score: 500, round: 1, zombiesToSpawn: 6, zombiesAlive: 0, frame: 0, sessionKills: 0, selectedMapIdx: 0 };
 let players = {};
@@ -508,6 +513,10 @@ function launchGame() {
 
     me = (Network.mode === 'CLIENT') ? players['p2'] : players['p1'];
 
+    // Initialize/Reset loop timestep parameters
+    lastLoopTime = performance.now();
+    accumulator = 0;
+
     gameActive = true;
     loop();
 }
@@ -528,10 +537,47 @@ function createPlayer(id, x, y, color, name) {
     }; 
 }
 
-/* --- LOOP --- */
-function loop() {
+/* --- LOOP (WITH LOCKED 60HZ TIMESTEP ACCUMULATOR) --- */
+function loop(currentTime) {
     if(!gameActive) return;
-    
+
+    if (!currentTime) currentTime = performance.now();
+    let elapsed = currentTime - lastLoopTime;
+    lastLoopTime = currentTime;
+
+    // Guard against "spiral of death" during extreme lags or window blur
+    if (elapsed > 250) elapsed = 250;
+
+    accumulator += elapsed;
+
+    // Run core game physics/logic ticks at a strict 60Hz rate
+    while (accumulator >= tickRate) {
+        updateGameLogic();
+        accumulator -= tickRate;
+    }
+
+    // Render operations run at the monitor's native hardware FPS rate (60, 144, 240, etc.)
+    let camTarget = me;
+    if(me && me.state !== 'ALIVE') {
+        let survivor = Object.values(players).find(p => p.state === 'ALIVE');
+        if(survivor) camTarget = survivor;
+    }
+
+    if(camTarget) {
+        camera.x = camTarget.x - canvas.width/2; camera.y = camTarget.y - canvas.height/2;
+        drawGame(); updateUI();
+    } else {
+        ctx.fillStyle = "black"; ctx.fillRect(0,0,canvas.width,canvas.height);
+        ctx.fillStyle = "white"; ctx.font = "20px monospace"; ctx.fillText("GAME OVER...", 100, 100);
+    }
+
+    if(showScoreboard) drawScoreboard(); else document.getElementById('scoreboard').style.display='none';
+
+    animationFrameId = requestAnimationFrame(loop);
+}
+
+/* --- ISOLATED GAME PHYSICS & COGNITIVE LOGIC TICK (LOCKED 60 FPS) --- */
+function updateGameLogic() {
     if(me) updatePlayerPhysics(me, true);
 
     // Smoothly interpolate other players' positions to eliminate raw network jitter
@@ -581,25 +627,9 @@ function loop() {
     }
 
     checkInteractUI();
-    let camTarget = me;
-    if(me && me.state !== 'ALIVE') {
-        let survivor = Object.values(players).find(p => p.state === 'ALIVE');
-        if(survivor) camTarget = survivor;
-    }
-
-    if(camTarget) {
-        camera.x = camTarget.x - canvas.width/2; camera.y = camTarget.y - canvas.height/2;
-        drawGame(); updateUI();
-    } else {
-        ctx.fillStyle = "black"; ctx.fillRect(0,0,canvas.width,canvas.height);
-        ctx.fillStyle = "white"; ctx.font = "20px monospace"; ctx.fillText("GAME OVER...", 100, 100);
-    }
 
     particles.forEach((p,i) => { p.x+=p.vx; p.y+=p.vy; p.life--; if(p.life<=0) particles.splice(i,1); });
     texts.forEach((t,i) => { t.y-=1; t.life--; if(t.life<=0) texts.splice(i,1); });
-    if(showScoreboard) drawScoreboard(); else document.getElementById('scoreboard').style.display='none';
-
-    animationFrameId = requestAnimationFrame(loop);
 }
 
 function updatePlayerPhysics(p, isLocal) {
