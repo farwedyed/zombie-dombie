@@ -569,9 +569,15 @@ function loop(currentTime) {
     accumulator += elapsed;
 
     // Run core game physics/logic ticks at a strict 60Hz rate
-    while (accumulator >= tickRate) {
+    let loopCount = 0;
+    while (accumulator >= tickRate && loopCount < 10) {
         updateGameLogic();
         accumulator -= tickRate;
+        loopCount++;
+    }
+    // Prevent backlog buildup under extreme thread lag
+    if (accumulator >= tickRate) {
+        accumulator = 0;
     }
 
     // Render operations run at the monitor's native hardware FPS rate (60, 144, 240, etc.)
@@ -668,8 +674,26 @@ function updateGameLogic() {
 
     checkInteractUI();
 
-    particles.forEach((p,i) => { p.x+=p.vx; p.y+=p.vy; p.life--; if(p.life<=0) particles.splice(i,1); });
-    texts.forEach((t,i) => { t.y-=1; t.life--; if(t.life<=0) texts.splice(i,1); });
+    // Safely cleanup particles backwards to prevent shifting issues
+    for (let i = particles.length - 1; i >= 0; i--) {
+        let p = particles[i];
+        p.x += p.vx;
+        p.y += p.vy;
+        p.life--;
+        if (p.life <= 0) {
+            particles.splice(i, 1);
+        }
+    }
+
+    // Safely cleanup floating texts backwards to prevent shifting issues
+    for (let i = texts.length - 1; i >= 0; i--) {
+        let t = texts[i];
+        t.y -= 1;
+        t.life--;
+        if (t.life <= 0) {
+            texts.splice(i, 1);
+        }
+    }
 }
 
 function updatePlayerPhysics(p, isLocal) {
@@ -898,20 +922,25 @@ function handleReload() { forceReload(me); }
 function forceReload(p) { let gun = p.inventory[p.weapIdx]; if(!p.reloading && gun.clip < gun.mag && gun.ammo > 0) { p.reloading = true; p.reloadTimer = gun.reload; addText(p.x, p.y-40, "RELOADING...", "#fff"); } }
 
 function checkInteractUI() {
-    let msg = document.getElementById('interact-msg'); msg.style.display = 'none'; me.interactionTarget = null;
+    if (!me) return;
+    let msg = document.getElementById('interact-msg'); 
+    if (msg) msg.style.display = 'none'; 
+    me.interactionTarget = null;
     if(me.state !== 'ALIVE') return;
     
     // Find a downed teammate who is actually close to us
     let downed = Object.values(players).find(p => p !== me && p.state === 'DOWNED' && Math.hypot(me.x - p.x, me.y - p.y) < 50);
     if(downed) { 
-        msg.style.display = 'block'; 
-        msg.innerText = "[F] REVIVE " + (downed.name || "TEAMMATE"); 
+        if (msg) {
+            msg.style.display = 'block'; 
+            msg.innerText = "[F] REVIVE " + (downed.name || "TEAMMATE"); 
+        }
         me.interactionTarget = { type: 'REVIVE', obj: downed }; 
         return; 
     }
     
     let interact = RoomSystem.getNearbyInteractable(me.x, me.y, me);
-    if(interact) { msg.style.display = 'block'; msg.innerText = interact.label; me.interactionTarget = interact; }
+    if(interact && msg) { msg.style.display = 'block'; msg.innerText = interact.label; me.interactionTarget = interact; }
 }
 function handleInteractAction() { if(me.state !== 'ALIVE') return; if(Network.mode === 'CLIENT') Network.sendInteract(); else processInteraction(me); }
 
@@ -1111,12 +1140,12 @@ function updateBullets() {
                     players[b.ownerId].score += 10; 
                     stats.score += 10;
                 }
-                if(b.ownerId === me.id) { 
+                if(me && b.ownerId === me.id) { 
                     addText(z.x, z.y, "+10", "#fff"); 
                 }
 
                 if(z.hp <= 0) {
-                    zombies.splice(zi, 1); 
+                    z.dead = true; // Mark for batch cleanup (prevents indexing glitches)
                     stats.score += 50; // Give 50 coins upon death
                     stats.zombiesAlive--;
                     
@@ -1124,7 +1153,7 @@ function updateBullets() {
                         players[b.ownerId].score += 50; 
                         players[b.ownerId].kills++; 
                     }
-                    if(b.ownerId === me.id) { 
+                    if(me && b.ownerId === me.id) { 
                         stats.sessionKills++; 
                         checkAchievements(); 
                         addText(z.x, z.y, "+50", "#ff0"); 
@@ -1134,13 +1163,18 @@ function updateBullets() {
         });
         if(hit || b.life<=0) bullets.splice(i,1);
     }
+
+    // Safely remove dead zombies once outside the hit loops
+    zombies = zombies.filter(z => !z.dead);
 }
 
 function checkGameFlow() {
     if(activeMap !== tutorialMapData && stats.zombiesAlive <= 0 && stats.zombiesToSpawn <= 0 && !stats.changingRound) {
         stats.changingRound = true;
         setTimeout(() => {
-            stats.round++; stats.zombiesToSpawn = Math.floor(6 * Math.pow(1.15, stats.round)); stats.changingRound = false; addText(me.x, me.y-100, "ROUND "+stats.round, "#a83232"); checkAchievements();
+            stats.round++; stats.zombiesToSpawn = Math.floor(6 * Math.pow(1.15, stats.round)); stats.changingRound = false; 
+            addText(me ? me.x : 200, (me ? me.y : 200) - 100, "ROUND "+stats.round, "#a83232"); 
+            checkAchievements();
             Object.values(players).forEach(p => {
                 if(p.state !== 'ALIVE') {
                     p.state = 'ALIVE'; p.hp = 100; p.maxHp = 100; p.hasJug = false;
