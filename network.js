@@ -139,8 +139,8 @@ const Network = {
                     p.angle = data.angle;
                     
                     if(data.name) p.name = data.name;
-                    if(data.shoot) p.triggerShoot = true;
-                    if(data.reload) p.triggerReload = true;
+                    p.isShooting = data.shoot; // Directly capture persistent hold state!
+                    if (data.reload) p.triggerReload = true;
                 }
             }
             else if(data.type === 'INTERACT') {
@@ -304,7 +304,7 @@ const Network = {
 
                 bullets = data.bullets || [];
                 
-                // Spawn local point indicators (+10 / +60 text) locally when score increases
+                // Spawn local point indicators (+10 / +50 text) locally when score increases
                 if (data.stats && stats) {
                     if (data.stats.score > stats.score) {
                         let diff = data.stats.score - stats.score;
@@ -379,6 +379,7 @@ const Network = {
     },
 
     sendClientData: function(p) {
+        // Throttle client send ticks to prevent network buffer overflow
         const now = Date.now();
         if (now - this.lastClientUpdate < 45) return;
         this.lastClientUpdate = now;

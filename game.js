@@ -546,9 +546,10 @@ function createPlayer(id, x, y, color, name) {
         inventory: [{ ...weaponDB[0], clip: 8, ammo: 32 }], 
         weapIdx: 0, angle: 0, reloading: false, reloadTimer: 0, hasJug: false, reviveTimer: 0, 
         color: color, kills: 0, score: 500, 
-        triggerShoot: false, triggerReload: false, triggerInteract: false,
-        lastRepairTime: 0, // Track rebuild speed cooldown (500ms limit)
-        invincibleTimer: 0 // Track temporary damage immunity frames
+        isShooting: false,       // Current weapon fire trigger hold state
+        pressHandled: false,     // Semi-auto click handler state
+        lastRepairTime: 0,       // Track rebuild speed cooldown (500ms limit)
+        invincibleTimer: 0       // Track temporary damage immunity frames
     }; 
 }
 
@@ -642,7 +643,24 @@ function updateGameLogic() {
         updateBullets();
         checkGameFlow();
         checkAllDead(); 
-        Object.values(players).forEach(p => { if(p.triggerShoot) { shootGun(p); p.triggerShoot = false; } });
+        
+        // Unified weapon firing routine for automatic and semi-automatic weapons
+        Object.values(players).forEach(p => {
+            if (p.isShooting) {
+                const gun = p.inventory[p.weapIdx];
+                if (gun.auto) {
+                    shootGun(p);
+                } else {
+                    if (!p.pressHandled) {
+                        shootGun(p);
+                        p.pressHandled = true;
+                    }
+                }
+            } else {
+                p.pressHandled = false;
+            }
+        });
+
         if(Network.mode === 'HOST') Network.broadcastState();
     }
 
@@ -687,12 +705,7 @@ function updatePlayerPhysics(p, isLocal) {
             p.angle = Math.atan2((mouse.y + camera.y) - p.y, (mouse.x + camera.x) - p.x);
         }
         
-        let gun = p.inventory[p.weapIdx];
-        if(mouse.down) {
-            // Keep: Allows continuous holding to shoot all weapons automatically on mobile devices
-            if(gun.auto || isTouchDevice) p.triggerShoot = true;
-            else if(!mouse.pressHandled) { p.triggerShoot = true; mouse.pressHandled = true; }
-        } else mouse.pressHandled = false;
+        p.isShooting = mouse.down; // Directly bind mouse hold state
     }
     const gun = p.inventory[p.weapIdx];
     if(p.reloading) {
@@ -819,13 +832,7 @@ function updateLocalCoopP2(p) {
     const gun = p.inventory[p.weapIdx];
 
     // Handle Shoot Triggering
-    if (isShooting) {
-        if (gun.auto) {
-            p.triggerShoot = true;
-        } else if (!p2PrevButtons.shoot) {
-            p.triggerShoot = true;
-        }
-    }
+    p.isShooting = isShooting; // Directly capture persistent hold state!
 
     // Handle Reload Triggering
     if (isReloading && !p2PrevButtons.reload) {
@@ -1094,10 +1101,30 @@ function updateBullets() {
         if(!hit) zombies.forEach((z, zi) => {
             if(!hit && Math.hypot(b.x-z.x, b.y-z.y) < z.r+5) {
                 hit = true; z.hp -= b.dmg; spawnParticles(z.x, z.y, '#800', 3);
+                
+                // Reward 10 coins for EVERY bullet hit on a zombie
+                if(players[b.ownerId]) { 
+                    players[b.ownerId].score += 10; 
+                    stats.score += 10;
+                }
+                if(b.ownerId === me.id) { 
+                    addText(z.x, z.y, "+10", "#fff"); 
+                }
+
                 if(z.hp <= 0) {
-                    zombies.splice(zi, 1); stats.score += 60; stats.zombiesAlive--;
-                    if(players[b.ownerId]) { players[b.ownerId].score += 60; players[b.ownerId].kills++; }
-                    if(b.ownerId === me.id) { stats.sessionKills++; checkAchievements(); addText(z.x, z.y, "+60", "#ff0"); }
+                    zombies.splice(zi, 1); 
+                    stats.score += 50; // Give 50 coins upon death
+                    stats.zombiesAlive--;
+                    
+                    if(players[b.ownerId]) { 
+                        players[b.ownerId].score += 50; 
+                        players[b.ownerId].kills++; 
+                    }
+                    if(b.ownerId === me.id) { 
+                        stats.sessionKills++; 
+                        checkAchievements(); 
+                        addText(z.x, z.y, "+50", "#ff0"); 
+                    }
                 }
             }
         });
