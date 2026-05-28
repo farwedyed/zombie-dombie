@@ -188,6 +188,11 @@ const Network = {
                     mapDisplay.innerText = mapName;
                 }
             }
+            else if (data.type === 'RETURN_TO_LOBBY') {
+                if (typeof goToLobbyScreen === 'function') {
+                    goToLobbyScreen();
+                }
+            }
             else if(data.type === 'START') {
                 if (data.mapIndex !== undefined && typeof playableMaps !== 'undefined') {
                     activeMap = playableMaps[data.mapIndex];

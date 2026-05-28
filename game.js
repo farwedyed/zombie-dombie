@@ -12,6 +12,7 @@ canvas.height = window.innerHeight;
 let camera = { x: 0, y: 0 };
 let gameActive = false;
 let showScoreboard = false;
+let animationFrameId = null; // Track loop ID to prevent concurrent duplicate game loops
 
 // GLOBAL DATA
 let stats = { score: 500, round: 1, zombiesToSpawn: 6, zombiesAlive: 0, frame: 0, sessionKills: 0, selectedMapIdx: 0 };
@@ -377,6 +378,9 @@ function enterLobbyJoin() {
     document.getElementById('lobby-screen').style.display = 'flex'; 
     document.getElementById('start-btn').style.display = 'none'; // Hide start button for guest
 
+    // Display the target Host's lobby ID to the guest immediately
+    document.getElementById('host-id-display').innerText = "ID: " + id;
+
     // Hide lobby map select dropdown and show client map display text
     document.getElementById('lobby-map-select').style.display = 'none';
     const clientMapDisplay = document.getElementById('lobby-map-display-client');
@@ -449,6 +453,12 @@ function hostStartGame() {
 }
 
 function launchGame() {
+    // Prevent concurrent multiple requestAnimationFrame loops from running
+    if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+    }
+
     document.getElementById('lobby-screen').style.display = 'none';
     document.getElementById('main-menu').style.display = 'none';
     document.getElementById('game-over').style.display = 'none';
@@ -502,7 +512,11 @@ function launchGame() {
     loop();
 }
 
-function requestRestart() { if(Network.mode === 'CLIENT') return; if(Network.mode === 'HOST') Network.conn.send({ type: 'START', mapIndex: stats.selectedMapIdx }); launchGame(); }
+function requestRestart() { 
+    if(Network.mode === 'CLIENT') return; 
+    if(Network.mode === 'HOST') Network.conn.send({ type: 'START', mapIndex: stats.selectedMapIdx }); 
+    launchGame(); 
+}
 
 function createPlayer(id, x, y, color, name) { 
     return { 
@@ -577,7 +591,7 @@ function loop() {
     texts.forEach((t,i) => { t.y-=1; t.life--; if(t.life<=0) texts.splice(i,1); });
     if(showScoreboard) drawScoreboard(); else document.getElementById('scoreboard').style.display='none';
 
-    requestAnimationFrame(loop);
+    animationFrameId = requestAnimationFrame(loop);
 }
 
 function updatePlayerPhysics(p, isLocal) {
@@ -1037,7 +1051,9 @@ function drawScoreboard() {
 }
 
 function resetSession() { 
-    stats = { score: 0, round: 1, zombiesToSpawn: 6, zombiesAlive: 0, frame: 0, sessionKills: 0 }; 
+    // Preserve map index across resets so synchronization doesn't fail on restarts
+    const currentMapIdx = stats.selectedMapIdx !== undefined ? stats.selectedMapIdx : 0;
+    stats = { score: 0, round: 1, zombiesToSpawn: 6, zombiesAlive: 0, frame: 0, sessionKills: 0, selectedMapIdx: currentMapIdx }; 
     zombies = []; bullets = []; particles = []; texts = []; zombieIdCounter = 0; 
     activeMap.rooms.forEach(r => r.unlocked = (r.id === 0)); 
     
@@ -1067,6 +1083,74 @@ function gameOver() {
     document.getElementById('game-over').style.display='flex'; 
     document.getElementById('death-msg').innerText="Survived to Round "+stats.round; 
     if(document.getElementById('perf-msg')) document.getElementById('perf-msg').innerText = msg; 
+
+    // Handle return to lobby button visibility and interactivity
+    const returnLobbyBtn = document.getElementById('return-lobby-btn');
+    if (returnLobbyBtn) {
+        if (Network.mode === 'HOST') {
+            returnLobbyBtn.style.display = 'block';
+            returnLobbyBtn.innerText = "RETURN TO LOBBY";
+            returnLobbyBtn.disabled = false;
+        } else if (Network.mode === 'CLIENT') {
+            returnLobbyBtn.style.display = 'block';
+            returnLobbyBtn.innerText = "WAITING FOR HOST...";
+            returnLobbyBtn.disabled = true;
+        } else {
+            returnLobbyBtn.style.display = 'none';
+        }
+    }
+}
+
+function returnToLobby() {
+    if (Network.mode === 'HOST' && Network.conn && Network.conn.open) {
+        Network.conn.send({ type: 'RETURN_TO_LOBBY' });
+    }
+    goToLobbyScreen();
+}
+
+function goToLobbyScreen() {
+    gameActive = false;
+    // Clean up loop to ensure it doesn't leak or run concurrently
+    if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+    }
+    
+    // Hide game screens and show lobby
+    document.getElementById('game-ui').style.display = 'none';
+    document.getElementById('game-over').style.display = 'none';
+    document.getElementById('main-menu').style.display = 'none';
+    document.getElementById('lobby-screen').style.display = 'flex';
+    
+    // Clean up temporary in-game state objects to prevent lingering artifacts
+    zombies = [];
+    bullets = [];
+    particles = [];
+    texts = [];
+    
+    if (Network.mode === 'HOST') {
+        document.getElementById('lobby-status').innerText = "PLAYER 2 JOINED!";
+        document.getElementById('lobby-status').style.color = '#0f0';
+        document.getElementById('start-btn').style.display = 'block';
+        document.getElementById('start-btn').disabled = false;
+        document.getElementById('start-btn').style.background = '#a83232';
+        
+        // Let the host change the map
+        document.getElementById('lobby-map-select').style.display = 'block';
+        document.getElementById('lobby-map-display-client').style.display = 'none';
+    } else if (Network.mode === 'CLIENT') {
+        document.getElementById('lobby-status').innerText = "Connected! Waiting for Host to start...";
+        document.getElementById('lobby-status').style.color = "#0f0";
+        document.getElementById('start-btn').style.display = 'none';
+        
+        // Keep map locked for client, but display chosen layout name
+        document.getElementById('lobby-map-select').style.display = 'none';
+        const clientMapDisplay = document.getElementById('lobby-map-display-client');
+        clientMapDisplay.style.display = 'block';
+        
+        const mapName = (typeof playableMaps !== 'undefined' && playableMaps[stats.selectedMapIdx]) ? playableMaps[stats.selectedMapIdx].name : "Unknown Map";
+        clientMapDisplay.innerText = mapName;
+    }
 }
 
 function updateUI() {
