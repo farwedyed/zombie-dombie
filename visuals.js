@@ -165,6 +165,11 @@ function drawGame() {
         // Rotate Player Body
         ctx.rotate(p.angle);
         
+        // Render blinking/flashing effect if player is currently invincible
+        if (p.invincibleTimer > 0 && Math.floor(p.invincibleTimer / 4) % 2 === 0) {
+            ctx.globalAlpha = 0.3; 
+        }
+        
         // Body Color (Jug makes you redder)
         ctx.fillStyle = p.hasJug ? '#c0392b' : p.color;
         

@@ -533,7 +533,9 @@ function createPlayer(id, x, y, color, name) {
         inventory: [{ ...weaponDB[0], clip: 8, ammo: 32 }], 
         weapIdx: 0, angle: 0, reloading: false, reloadTimer: 0, hasJug: false, reviveTimer: 0, 
         color: color, kills: 0, score: 500, 
-        triggerShoot: false, triggerReload: false, triggerInteract: false 
+        triggerShoot: false, triggerReload: false, triggerInteract: false,
+        lastRepairTime: 0, // Track rebuild speed cooldown (500ms limit)
+        invincibleTimer: 0 // Track temporary damage immunity frames
     }; 
 }
 
@@ -580,11 +582,16 @@ function loop(currentTime) {
 function updateGameLogic() {
     if(me) updatePlayerPhysics(me, true);
 
-    // Smoothly interpolate other players' positions to eliminate raw network jitter
+    // Smoothly interpolate positions and progress internal frames
     Object.values(players).forEach(p => {
         if (p !== me && p.serverX !== undefined) {
             p.x += (p.serverX - p.x) * 0.15;
             p.y += (p.serverY - p.y) * 0.15;
+        }
+
+        // Progress damage immunity frames
+        if (p.invincibleTimer > 0) {
+            p.invincibleTimer--;
         }
     });
     
@@ -634,7 +641,7 @@ function updateGameLogic() {
 
 function updatePlayerPhysics(p, isLocal) {
     if(p.state === 'DOWNED') {
-        if(p.reviveTimer > 0) { p.reviveTimer--; if(p.reviveTimer === 0) { p.state = 'ALIVE'; p.hp = p.maxHp; p.hasJug = false; addText(p.x, p.y, "REVIVED!", "#0f0"); } }
+        if(p.reviveTimer > 0) { p.reviveTimer--; if(p.reviveTimer === 0) { p.state = 'ALIVE'; p.hp = p.maxHp; p.hasJug = false; p.invincibleTimer = 120; addText(p.x, p.y, "REVIVED (+INVINCIBLE!)", "#0f0"); } }
         return;
     }
     if(isLocal) {
@@ -689,6 +696,7 @@ function updateLocalCoopP2(p) {
                 p.state = 'ALIVE';
                 p.hp = p.maxHp;
                 p.hasJug = false;
+                p.invincibleTimer = 120;
                 addText(p.x, p.y, "REVIVED!", "#0f0");
             }
         }
@@ -877,11 +885,22 @@ function handleInteractAction() { if(me.state !== 'ALIVE') return; if(Network.mo
 
 function processInteraction(p) {
     let teammate = Object.values(players).find(pl => pl !== p && pl.state === 'DOWNED');
-    if(teammate && Math.hypot(p.x - teammate.x, p.y - teammate.y) < 50) { teammate.state = 'ALIVE'; teammate.hp = teammate.maxHp; teammate.hasJug = false; addText(teammate.x, teammate.y, "REVIVED!", "#0f0"); return; }
+    if(teammate && Math.hypot(p.x - teammate.x, p.y - teammate.y) < 50) { 
+        teammate.state = 'ALIVE'; 
+        teammate.hp = teammate.maxHp; 
+        teammate.hasJug = false; 
+        teammate.invincibleTimer = 120; // 2 seconds of damage immunity
+        addText(teammate.x, teammate.y, "REVIVED (+INVINCIBLE!)", "#0f0"); 
+        return; 
+    }
     let interact = RoomSystem.getNearbyInteractable(p.x, p.y, p);
     if(interact) {
         let t = interact;
         if(t.type==='WINDOW') { 
+            const now = Date.now();
+            if (now - (p.lastRepairTime || 0) < 500) return; // 500ms repair cooldown
+            p.lastRepairTime = now;
+
             t.obj.boards++; 
             p.score+=10; 
             addText(t.obj.x+20, t.obj.y, "+10", "#fff");
@@ -1027,6 +1046,9 @@ function updateZombies() {
         // Damage Players
         Object.values(players).forEach(p => {
             if (Math.hypot(p.x - z.x, p.y - z.y) < 30 && p.state === 'ALIVE') {
+                // Skip damage calculations if the target has active invincibility frames
+                if (p.invincibleTimer && p.invincibleTimer > 0) return;
+
                 p.hp -= 5;
                 if (p === me) {
                     document.getElementById('damage-flash').style.background = "rgba(255,0,0,0.3)";
