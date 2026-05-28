@@ -99,16 +99,19 @@ const Network = {
 
     /* --- HOST MULTI-CONNECTION LOGIC --- */
     setupHostConnection: function(c) {
-        // Assign a free player slot (p2, p3, or p4)
+        // Assign and immediately reserve slot to prevent race conditions on parallel joining
         let assignedId = "";
-        if (!window.lobbyPlayers.p2) { assignedId = "p2"; }
-        else if (!window.lobbyPlayers.p3) { assignedId = "p3"; }
-        else if (!window.lobbyPlayers.p4) { assignedId = "p4"; }
+        if (!window.lobbyPlayers.p2 || window.lobbyPlayers.p2 === "Reserved") { assignedId = "p2"; }
+        else if (!window.lobbyPlayers.p3 || window.lobbyPlayers.p3 === "Reserved") { assignedId = "p3"; }
+        else if (!window.lobbyPlayers.p4 || window.lobbyPlayers.p4 === "Reserved") { assignedId = "p4"; }
         else {
             c.close();
             return;
         }
+        
         c.playerId = assignedId;
+        // Lock slot state immediately
+        window.lobbyPlayers[assignedId] = "Reserved";
 
         c.on('data', (data) => {
             if (data.type === 'JOIN_LOBBY') {
@@ -164,7 +167,7 @@ const Network = {
 
             if (typeof updateLobbyUI === 'function') {
                 // If everyone leaves, update lobby status
-                const activeGuests = Object.values(window.lobbyPlayers).slice(1).some(name => name !== "");
+                const activeGuests = Object.values(window.lobbyPlayers).slice(1).some(name => name !== "" && name !== "Reserved");
                 if (!activeGuests) {
                     const startBtn = document.getElementById('start-btn');
                     if (startBtn) {

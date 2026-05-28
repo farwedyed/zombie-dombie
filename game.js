@@ -445,8 +445,10 @@ function updateLobbyPlayersList() {
     ['p2', 'p3', 'p4'].forEach((pId, idx) => {
         const pName = window.lobbyPlayers[pId];
         const pColor = getPlayerColor(pId);
-        if (pName) {
+        if (pName && pName !== "Reserved") {
             html += `<div style="color: ${pColor}; font-size: 15px; margin-bottom: 5px;">👤 P${idx+2}: <strong>${pName}</strong></div>`;
+        } else if (pName === "Reserved") {
+            html += `<div style="color: #888; font-size: 14px; margin-bottom: 5px; font-style: italic;">👤 P${idx+2}: Connecting...</div>`;
         } else {
             html += `<div style="color: #666; font-size: 14px; margin-bottom: 5px; font-style: italic;">👤 P${idx+2}: Open Slot</div>`;
         }
@@ -517,7 +519,7 @@ function launchGame() {
         // Spawn existing lobby players
         if (Network.mode === 'HOST') {
             ['p2', 'p3', 'p4'].forEach((pId, idx) => {
-                if (window.lobbyPlayers[pId]) {
+                if (window.lobbyPlayers[pId] && window.lobbyPlayers[pId] !== "Reserved") {
                     players[pId] = createPlayer(pId, spawnX + 40 * (idx + 1), spawnY, getPlayerColor(pId), window.lobbyPlayers[pId]);
                 }
             });
