@@ -6,39 +6,56 @@ const Network = {
     lastUpdate: 0,
     
     init: function(onOpen) {
-        // These are your generated, dedicated TURN credentials from Metered.ca
-        const USERNAME_VAL = "ec41d9c5a5a8f7a1a1b19e9e";
-        const CREDENTIAL_VAL = "rzCBD4AfbDn7JjG8";
+        // Provider 1: Metered.ca Credentials
+        const METERED_USER = "ec41d9c5a5a8f7a1a1b19e9e";
+        const METERED_PASS = "rzCBD4AfbDn7JjG8";
+
+        // Provider 2: ExpressTURN Credentials
+        const EXPRESSTURN_USER = "000000002095335910";
+        const EXPRESSTURN_PASS = "GK3y4yS5fDUutl+1ITp1BTxZgR4=";
 
         this.peer = new Peer(undefined, { 
             debug: 1,
             config: {
                 iceServers: [
-                    // Redundant STUN servers for address discovery
+                    // --- STUN SERVERS (Discovery) ---
                     { urls: 'stun:stun.l.google.com:19302' },
                     { urls: 'stun:global.stun.twilio.com:3478' },
                     { urls: 'stun:stun.relay.metered.ca:80' },
+                    { urls: 'stun:free.expressturn.com:3478' },
                     
-                    // Your Private Dedicated global TURN Relay servers (UDP & TCP fallback)
+                    // --- TURN SERVER GROUP 1: METERED.CA ---
                     { 
                         urls: 'turn:global.relay.metered.ca:80', 
-                        username: USERNAME_VAL, 
-                        credential: CREDENTIAL_VAL 
+                        username: METERED_USER, 
+                        credential: METERED_PASS 
                     },
                     { 
                         urls: 'turn:global.relay.metered.ca:80?transport=tcp', 
-                        username: USERNAME_VAL, 
-                        credential: CREDENTIAL_VAL 
+                        username: METERED_USER, 
+                        credential: METERED_PASS 
                     },
                     { 
                         urls: 'turn:global.relay.metered.ca:443', 
-                        username: USERNAME_VAL, 
-                        credential: CREDENTIAL_VAL 
+                        username: METERED_USER, 
+                        credential: METERED_PASS 
                     },
                     { 
                         urls: 'turns:global.relay.metered.ca:443?transport=tcp', 
-                        username: USERNAME_VAL, 
-                        credential: CREDENTIAL_VAL 
+                        username: METERED_USER, 
+                        credential: METERED_PASS 
+                    },
+
+                    // --- TURN SERVER GROUP 2: EXPRESSTURN (Automatic Failover) ---
+                    { 
+                        urls: 'turn:free.expressturn.com:3478', 
+                        username: EXPRESSTURN_USER, 
+                        credential: EXPRESSTURN_PASS 
+                    },
+                    { 
+                        urls: 'turn:free.expressturn.com:3478?transport=tcp', 
+                        username: EXPRESSTURN_USER, 
+                        credential: EXPRESSTURN_PASS 
                     }
                 ]
             }
