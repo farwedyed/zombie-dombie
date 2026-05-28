@@ -70,11 +70,17 @@ const Network = {
             }
         });
 
+        // Global Signaling Error Boundary
+        this.peer.on('error', (err) => {
+            console.warn("PeerJS global error caught gracefully:", err);
+        });
+
         this.peer.on('open', (id) => { onOpen(id); });
         this.peer.on('connection', (c) => {
             if (this.conns.length >= 3) {
-                // Lobby full
-                setTimeout(() => c.close(), 500);
+                setTimeout(() => {
+                    try { c.close(); } catch(e) {}
+                }, 500);
                 return;
             }
             this.conns.push(c);
@@ -84,16 +90,25 @@ const Network = {
 
     join: function(hostId, onConnected) {
         this.mode = 'CLIENT';
-        // Connect in reliable mode with queue mitigations
         this.conn = this.peer.connect(hostId, {
             reliable: true,
             serialization: 'json'
         });
+
+        // Connection Error Boundary
+        this.conn.on('error', (err) => {
+            console.warn("Client data channel error caught gracefully:", err);
+        });
+
         this.conn.on('open', () => {
             if(onConnected) onConnected();
             this.setupClient();
-            // Send client's username to the host immediately
-            this.conn.send({ type: 'JOIN_LOBBY', name: myUsername });
+            
+            try {
+                this.conn.send({ type: 'JOIN_LOBBY', name: myUsername });
+            } catch (e) {
+                console.warn("Failed to send JOIN_LOBBY packet:", e);
+            }
         });
     },
 
@@ -105,13 +120,17 @@ const Network = {
         else if (!window.lobbyPlayers.p3 || window.lobbyPlayers.p3 === "Reserved") { assignedId = "p3"; }
         else if (!window.lobbyPlayers.p4 || window.lobbyPlayers.p4 === "Reserved") { assignedId = "p4"; }
         else {
-            c.close();
+            try { c.close(); } catch(e) {}
             return;
         }
         
         c.playerId = assignedId;
-        // Lock slot state immediately
         window.lobbyPlayers[assignedId] = "Reserved";
+
+        // Error boundary for this client connection
+        c.on('error', (err) => {
+            console.warn(`Host Connection Error for ${c.playerId} caught gracefully:`, err);
+        });
 
         c.on('data', (data) => {
             if (data.type === 'JOIN_LOBBY') {
@@ -119,16 +138,18 @@ const Network = {
                 if (typeof updateLobbyPlayersList === 'function') updateLobbyPlayersList();
                 if (typeof updateLobbyUI === 'function') updateLobbyUI(true);
                 
-                // Welcome client with their assigned slot ID and current lobby states
-                c.send({
-                    type: 'LOBBY_WELCOME',
-                    name: myUsername,
-                    mapIndex: stats.selectedMapIdx,
-                    assignedId: c.playerId,
-                    lobbyPlayers: window.lobbyPlayers
-                });
+                try {
+                    c.send({
+                        type: 'LOBBY_WELCOME',
+                        name: myUsername,
+                        mapIndex: stats.selectedMapIdx,
+                        assignedId: c.playerId,
+                        lobbyPlayers: window.lobbyPlayers
+                    });
+                } catch(e) {
+                    console.warn("Failed to send LOBBY_WELCOME:", e);
+                }
 
-                // Propagate the updated player list to all other connected clients
                 this.broadcastToAll({
                     type: 'LOBBY_UPDATE',
                     lobbyPlayers: window.lobbyPlayers
@@ -142,7 +163,7 @@ const Network = {
                     p.angle = data.angle;
                     
                     if(data.name) p.name = data.name;
-                    p.isShooting = data.shoot; // Directly capture persistent hold state!
+                    p.isShooting = data.shoot; 
                     if (data.reload) p.triggerReload = true;
                 }
             }
@@ -159,14 +180,12 @@ const Network = {
 
             if (typeof updateLobbyPlayersList === 'function') updateLobbyPlayersList();
             
-            // Notify other clients of disconnect
             this.broadcastToAll({
                 type: 'LOBBY_UPDATE',
                 lobbyPlayers: window.lobbyPlayers
             });
 
             if (typeof updateLobbyUI === 'function') {
-                // If everyone leaves, update lobby status
                 const activeGuests = Object.values(window.lobbyPlayers).slice(1).some(name => name !== "" && name !== "Reserved");
                 if (!activeGuests) {
                     const startBtn = document.getElementById('start-btn');
@@ -192,14 +211,18 @@ const Network = {
     broadcastToAll: function(data) {
         this.conns.forEach(c => {
             if (c && c.open) {
-                c.send(data);
+                try {
+                    c.send(data);
+                } catch (e) {
+                    console.warn(`Failed to broadcast packet to ${c.playerId || "unknown guest"}:`, e);
+                }
             }
         });
     },
 
     broadcastState: function() {
         const now = Date.now();
-        if(now - this.lastUpdate < 45) return; // Throttled to 22 updates/sec
+        if(now - this.lastUpdate < 45) return; 
         this.lastUpdate = now;
 
         // Build the pruned state payload ONCE to save CPU cycles
@@ -216,16 +239,17 @@ const Network = {
             doors: activeMap.rooms.map(r => ({ unlocked: r.unlocked }))
         };
 
-        // Send to each guest individually, checking their specific WebRTC buffer status
         this.conns.forEach(c => {
             if (c && c.open) {
-                const dc = c._dc || c.dataChannel;
-                // Per-client congestion check: if this specific client's buffer is clogged,
-                // skip sending this frame to them without freezing other players.
-                if (dc && dc.bufferedAmount > 65536) {
-                    return; 
+                try {
+                    const dc = c._dc || c.dataChannel;
+                    if (dc && dc.bufferedAmount > 65536) {
+                        return; 
+                    }
+                    c.send(statePayload);
+                } catch(e) {
+                    console.warn(`Failed to send state payload to ${c.playerId || "unknown guest"}:`, e);
                 }
-                c.send(statePayload);
             }
         });
     },
@@ -282,7 +306,6 @@ const Network = {
                     serverMap.set(sz.id, sz);
                     const local = zombies.find(z => z.id === sz.id);
                     if(local) {
-                        // Spawn blood particles locally on damage detection
                         if (local.hp > sz.hp && typeof spawnParticles === 'function') {
                             spawnParticles(local.x, local.y, '#800', 3);
                         }
@@ -291,7 +314,6 @@ const Network = {
                         local.hp = sz.hp; 
                         local.maxHp = sz.maxHp;
                     } else {
-                        // Add new zombie
                         zombies.push({
                             id: sz.id,
                             x: sz.x,
@@ -311,7 +333,6 @@ const Network = {
 
                 bullets = data.bullets || [];
                 
-                // Spawn local point indicators (+10 / +50 text) locally when score increases
                 if (data.stats && stats) {
                     if (data.stats.score > stats.score) {
                         let diff = data.stats.score - stats.score;
@@ -323,17 +344,16 @@ const Network = {
                 
                 stats = data.stats;
 
-                // Sync positions and properties of all players from Host broadcast
+                // Sync with deep fallback properties to guarantee no unhandled exception crash
                 ['p1', 'p2', 'p3', 'p4'].forEach(pId => {
                     if (pId === window.myPlayerId) {
-                        // Keep prediction local coordinates for yourself, avoiding snaps
-                        if (data[pId] && me) {
+                        const fallbackPId = data[pId];
+                        if (fallbackPId && me) {
                             let myAngle = me.angle;
                             let myX = me.x;
                             let myY = me.y;
                             
-                            // Teleport Client on respawn
-                            if (me.state === 'DOWNED' && data[pId].state === 'ALIVE') {
+                            if (me.state === 'DOWNED' && fallbackPId.state === 'ALIVE') {
                                 const spawnSource = data.p1;
                                 if (spawnSource) {
                                     myX = spawnSource.x;
@@ -341,37 +361,36 @@ const Network = {
                                 }
                             }
                             
-                            Object.assign(me, data[pId]);
+                            Object.assign(me, fallbackPId);
                             me.angle = myAngle; 
                             me.x = myX;
                             me.y = myY;
 
-                            me.gunName = data[pId].gunName;
-                            me.gunColor = data[pId].gunColor;
-                            me.clip = data[pId].clip;
-                            me.ammo = data[pId].ammo;
+                            me.gunName = fallbackPId.gunName !== undefined ? fallbackPId.gunName : "M1911";
+                            me.gunColor = fallbackPId.gunColor !== undefined ? fallbackPId.gunColor : "#999";
+                            me.clip = fallbackPId.clip !== undefined ? fallbackPId.clip : 8;
+                            me.ammo = fallbackPId.ammo !== undefined ? fallbackPId.ammo : 32;
                         }
                     } else {
-                        // Update target coordinates for LERPing of other survivors
                         if (data[pId]) {
                             if (!players[pId]) {
                                 players[pId] = createPlayer(pId, data[pId].x, data[pId].y, getPlayerColor(pId), data[pId].name);
                             }
                             const p = players[pId];
-                            p.serverX = data[pId].x;
-                            p.serverY = data[pId].y;
-                            p.angle = data[pId].angle;
-                            p.hp = data[pId].hp;
-                            p.score = data[pId].score;
-                            p.state = data[pId].state;
-                            p.hasJug = data[pId].hasJug;
-                            p.reloading = data[pId].reloading;
-                            p.weapIdx = data[pId].weapIdx;
-                            p.name = data[pId].name;
-                            p.gunName = data[pId].gunName;
-                            p.gunColor = data[pId].gunColor;
-                            p.clip = data[pId].clip;
-                            p.ammo = data[pId].ammo;
+                            p.serverX = data[pId].x !== undefined ? data[pId].x : p.x;
+                            p.serverY = data[pId].y !== undefined ? data[pId].y : p.y;
+                            p.angle = data[pId].angle !== undefined ? data[pId].angle : p.angle;
+                            p.hp = data[pId].hp !== undefined ? data[pId].hp : p.hp;
+                            p.score = data[pId].score !== undefined ? data[pId].score : p.score;
+                            p.state = data[pId].state !== undefined ? data[pId].state : p.state;
+                            p.hasJug = data[pId].hasJug !== undefined ? data[pId].hasJug : p.hasJug;
+                            p.reloading = data[pId].reloading !== undefined ? data[pId].reloading : p.reloading;
+                            p.weapIdx = data[pId].weapIdx !== undefined ? data[pId].weapIdx : p.weapIdx;
+                            p.name = data[pId].name !== undefined ? data[pId].name : p.name;
+                            p.gunName = data[pId].gunName !== undefined ? data[pId].gunName : "M1911";
+                            p.gunColor = data[pId].gunColor !== undefined ? data[pId].gunColor : "#999";
+                            p.clip = data[pId].clip !== undefined ? data[pId].clip : 8;
+                            p.ammo = data[pId].ammo !== undefined ? data[pId].ammo : 32;
                         } else {
                             if (players[pId]) delete players[pId];
                         }
@@ -394,25 +413,32 @@ const Network = {
     },
 
     sendClientData: function(p) {
-        // Throttle client send ticks to prevent network buffer overflow
         const now = Date.now();
         if (now - this.lastClientUpdate < 45) return;
         this.lastClientUpdate = now;
 
         if(this.conn && this.conn.open) {
-            this.conn.send({
-                type: 'P_DATA',
-                x: p.x, y: p.y, angle: p.angle,
-                shoot: mouse.down,
-                reload: p.reloading,
-                name: p.name
-            });
+            try {
+                this.conn.send({
+                    type: 'P_DATA',
+                    x: p.x, y: p.y, angle: p.angle,
+                    shoot: mouse.down,
+                    reload: p.reloading,
+                    name: p.name
+                });
+            } catch (e) {
+                console.warn("Failed to send client data payload:", e);
+            }
         }
     },
 
     sendInteract: function() {
         if(this.conn && this.conn.open) {
-            this.conn.send({ type: 'INTERACT' });
+            try {
+                this.conn.send({ type: 'INTERACT' });
+            } catch(e) {
+                console.warn("Failed to send INTERACT command:", e);
+            }
         }
     }
 };

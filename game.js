@@ -426,10 +426,14 @@ function lobbyChangeMap() {
     
     // Synchronize to guest if connected and channel is active
     if (Network.mode === 'HOST') {
-        Network.broadcastToAll({
-            type: 'LOBBY_MAP_CHANGE',
-            mapIndex: stats.selectedMapIdx
-        });
+        try {
+            Network.broadcastToAll({
+                type: 'LOBBY_MAP_CHANGE',
+                mapIndex: stats.selectedMapIdx
+            });
+        } catch (e) {
+            console.warn("Failed to broadcast map change to clients:", e);
+        }
     }
 }
 
@@ -467,7 +471,11 @@ function updateLobbyUI(connected) {
     } 
 }
 function hostStartGame() { 
-    Network.broadcastToAll({ type: 'START', mapIndex: stats.selectedMapIdx }); // Synchronize level selection with guests
+    try {
+        Network.broadcastToAll({ type: 'START', mapIndex: stats.selectedMapIdx }); // Synchronize level selection with guests
+    } catch (e) {
+        console.warn("Failed to broadcast START match packet:", e);
+    }
     activeMap = playableMaps[stats.selectedMapIdx];
     launchGame(); 
 }
@@ -538,7 +546,13 @@ function launchGame() {
 
 function requestRestart() { 
     if(Network.mode === 'CLIENT') return; 
-    if(Network.mode === 'HOST') Network.broadcastToAll({ type: 'START', mapIndex: stats.selectedMapIdx }); 
+    if(Network.mode === 'HOST') {
+        try {
+            Network.broadcastToAll({ type: 'START', mapIndex: stats.selectedMapIdx }); 
+        } catch (e) {
+            console.warn("Failed to broadcast restart match:", e);
+        }
+    }
     launchGame(); 
 }
 
@@ -893,7 +907,8 @@ function updateLocalCoopP2(p) {
 
 function shootGun(p) {
     if(p.state !== 'ALIVE') return;
-    const gun = p.inventory[p.weapIdx];
+    const gun = p.inventory && p.inventory[p.weapIdx] ? p.inventory[p.weapIdx] : null;
+    if (!gun) return;
     
     // Core ROF fix: Reading the database value directly as a frame delay
     if(stats.frame - (gun.lastShot||0) >= gun.rpm) {
@@ -906,7 +921,7 @@ function shootGun(p) {
             if (!isInfinite) {
                 gun.clip--;
             }
-            if(p === me) { camera.x += (Math.random()-0.5)*5; camera.y += (Math.random()-0.5)*5; }
+            if(me && p === me) { camera.x += (Math.random()-0.5)*5; camera.y += (Math.random()-0.5)*5; }
             let pellets = gun.type === 'shotgun' ? gun.pellets : 1;
             if(Network.mode !== 'CLIENT') {
                 for(let i=0; i<pellets; i++) {
@@ -1129,9 +1144,12 @@ function updateZombies() {
 
 function updateBullets() {
     for(let i=bullets.length-1; i>=0; i--) {
-        let b = bullets[i]; b.x+=b.vx; b.y+=b.vy; b.life--; let hit = false;
+        let b = bullets[i]; 
+        if (!b) continue;
+        b.x+=b.vx; b.y+=b.vy; b.life--; let hit = false;
         if(RoomSystem.checkCollision(b.x, b.y, false)) hit = true;
         if(!hit) zombies.forEach((z, zi) => {
+            if (!z) return;
             if(!hit && Math.hypot(b.x-z.x, b.y-z.y) < z.r+5) {
                 hit = true; z.hp -= b.dmg; spawnParticles(z.x, z.y, '#800', 3);
                 
@@ -1165,7 +1183,7 @@ function updateBullets() {
     }
 
     // Safely remove dead zombies once outside the hit loops
-    zombies = zombies.filter(z => !z.dead);
+    zombies = zombies.filter(z => z && !z.dead);
 }
 
 function checkGameFlow() {
@@ -1249,8 +1267,12 @@ function gameOver() {
 }
 
 function returnToLobby() {
-    if (Network.mode === 'HOST' && Network.conn && Network.conn.open) {
-        Network.conn.send({ type: 'RETURN_TO_LOBBY' });
+    if (Network.mode === 'HOST') {
+        try {
+            Network.broadcastToAll({ type: 'RETURN_TO_LOBBY' });
+        } catch (e) {
+            console.warn("Failed to broadcast return to lobby:", e);
+        }
     }
     goToLobbyScreen();
 }
