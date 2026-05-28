@@ -197,30 +197,34 @@ const Network = {
     broadcastState: function() {
         const now = Date.now();
         if(now - this.lastUpdate < 45) return; // Throttled to 22 updates/sec
-
-        // Congestion control check: if any WebRTC data buffer is clogged, drop frame
-        let congested = false;
-        this.conns.forEach(c => {
-            const dc = c._dc || c.dataChannel;
-            if (dc && dc.bufferedAmount > 65536) congested = true;
-        });
-        if (congested) return;
         this.lastUpdate = now;
 
-        if(this.conns.length > 0) {
-            this.broadcastToAll({
-                type: 'GAME_STATE',
-                p1: players['p1'], 
-                p2: players['p2'], 
-                p3: players['p3'], 
-                p4: players['p4'], 
-                zombies: zombies.map(z => ({ id: z.id, x: z.x, y: z.y, hp: z.hp, maxHp: z.maxHp })), 
-                bullets: bullets.map(b => ({ x: b.x, y: b.y, color: b.color })),
-                stats: stats,
-                windows: activeMap.windows.map(w => ({ boards: w.boards })),
-                doors: activeMap.rooms.map(r => ({ unlocked: r.unlocked }))
-            });
-        }
+        // Build the pruned state payload ONCE to save CPU cycles
+        const statePayload = {
+            type: 'GAME_STATE',
+            p1: getPrunedPlayer(players['p1']), 
+            p2: getPrunedPlayer(players['p2']), 
+            p3: getPrunedPlayer(players['p3']), 
+            p4: getPrunedPlayer(players['p4']), 
+            zombies: zombies.map(z => ({ id: z.id, x: z.x, y: z.y, hp: z.hp, maxHp: z.maxHp })), 
+            bullets: bullets.map(b => ({ x: b.x, y: b.y, color: b.color })),
+            stats: stats,
+            windows: activeMap.windows.map(w => ({ boards: w.boards })),
+            doors: activeMap.rooms.map(r => ({ unlocked: r.unlocked }))
+        };
+
+        // Send to each guest individually, checking their specific WebRTC buffer status
+        this.conns.forEach(c => {
+            if (c && c.open) {
+                const dc = c._dc || c.dataChannel;
+                // Per-client congestion check: if this specific client's buffer is clogged,
+                // skip sending this frame to them without freezing other players.
+                if (dc && dc.bufferedAmount > 65536) {
+                    return; 
+                }
+                c.send(statePayload);
+            }
+        });
     },
 
     broadcastGameOver: function(finalStats) {
@@ -338,6 +342,12 @@ const Network = {
                             me.angle = myAngle; 
                             me.x = myX;
                             me.y = myY;
+
+                            // Sync local ammo counters
+                            if (me.inventory && me.inventory[me.weapIdx]) {
+                                me.inventory[me.weapIdx].clip = data[pId].clip;
+                                me.inventory[me.weapIdx].ammo = data[pId].ammo;
+                            }
                         }
                     } else {
                         // Update target coordinates for LERPing of other survivors
@@ -355,8 +365,13 @@ const Network = {
                             p.hasJug = data[pId].hasJug;
                             p.reloading = data[pId].reloading;
                             p.weapIdx = data[pId].weapIdx;
-                            p.inventory = data[pId].inventory;
                             p.name = data[pId].name;
+
+                            // Sync other survivors' gun ammo/clip locally on client
+                            if (p.inventory && p.inventory[p.weapIdx]) {
+                                p.inventory[p.weapIdx].clip = data[pId].clip;
+                                p.inventory[p.weapIdx].ammo = data[pId].ammo;
+                            }
                         } else {
                             if (players[pId]) delete players[pId];
                         }
@@ -407,4 +422,24 @@ function getPlayerColor(id) {
     if (id === 'p2') return '#e67e22'; // Orange
     if (id === 'p3') return '#2ecc71'; // Green
     return '#9b59b6'; // Purple (p4)
+}
+
+// Pruning routine to strip bulky database properties from networked updates
+function getPrunedPlayer(p) {
+    if (!p) return null;
+    const activeGun = p.inventory && p.inventory[p.weapIdx] ? p.inventory[p.weapIdx] : null;
+    return {
+        x: p.x,
+        y: p.y,
+        angle: p.angle,
+        hp: p.hp,
+        score: p.score,
+        state: p.state,
+        hasJug: p.hasJug,
+        reloading: p.reloading,
+        weapIdx: p.weapIdx,
+        clip: activeGun ? activeGun.clip : 0,
+        ammo: activeGun ? activeGun.ammo : 0,
+        name: p.name
+    };
 }
