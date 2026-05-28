@@ -1,6 +1,9 @@
 /* --- GAME LOGIC --- */
 if (!window.lobbyPlayers) {
-    window.lobbyPlayers = { host: "", guest: "" };
+    window.lobbyPlayers = { p1: "Survivor", p2: "", p3: "", p4: "" };
+}
+if (!window.myPlayerId) {
+    window.myPlayerId = "p1";
 }
 
 const canvas = document.getElementById('gameCanvas');
@@ -316,9 +319,11 @@ function showToast(ach) {
 }
 function checkAchievements() { achievements.forEach(a => { if(me && a.check(stats, me)) { if(unlockAch(a.id)) showToast(a); } }); }
 
-/* --- LOBBY --- */
+/* --- LOBBY survivors LISTS --- */
 function startOffline() { 
     Network.mode = 'OFFLINE'; 
+    window.myPlayerId = 'p1';
+    window.lobbyPlayers = { p1: "Survivor", p2: "", p3: "", p4: "" };
     const select = document.getElementById('map-select');
     const mapIdx = select ? parseInt(select.value) : 0;
     activeMap = playableMaps[mapIdx]; // Swaps active level boundaries
@@ -328,6 +333,8 @@ function startLocalCoop() {
     p2InputConfig = document.getElementById('p2-input-select').value;
     closeMenu('coop-modal');
     Network.mode = 'LOCAL_COOP';
+    window.myPlayerId = 'p1';
+    window.lobbyPlayers = { p1: "Survivor", p2: "Player 2", p3: "", p4: "" };
     const select = document.getElementById('map-select');
     const mapIdx = select ? parseInt(select.value) : 0;
     activeMap = playableMaps[mapIdx]; // Swaps active level boundaries
@@ -335,6 +342,8 @@ function startLocalCoop() {
 }
 function startTutorial() {
     Network.mode = 'OFFLINE';
+    window.myPlayerId = 'p1';
+    window.lobbyPlayers = { p1: "Survivor", p2: "", p3: "", p4: "" };
     if (typeof Tutorial !== 'undefined') {
         Tutorial.isActive = true; // Declare active state before starting engine variables setup
     }
@@ -363,8 +372,8 @@ function enterLobbyHost() {
     myUsername = nameInput ? (nameInput.value || "Survivor") : "Survivor";
     myUsername = myUsername.substring(0, 12);
 
-    window.lobbyPlayers.host = myUsername;
-    window.lobbyPlayers.guest = "Waiting...";
+    window.myPlayerId = 'p1';
+    window.lobbyPlayers = { p1: myUsername, p2: "", p3: "", p4: "" };
     updateLobbyPlayersList();
 
     document.getElementById('main-menu').style.display = 'none'; 
@@ -397,8 +406,7 @@ function enterLobbyJoin() {
     myUsername = nameInput ? (nameInput.value || "Survivor") : "Survivor";
     myUsername = myUsername.substring(0, 12);
 
-    window.lobbyPlayers.guest = myUsername;
-    window.lobbyPlayers.host = "Connecting...";
+    window.lobbyPlayers = { p1: "Host", p2: "", p3: "", p4: "" };
     updateLobbyPlayersList();
 
     Network.init(() => { 
@@ -417,8 +425,8 @@ function lobbyChangeMap() {
     stats.selectedMapIdx = parseInt(select.value);
     
     // Synchronize to guest if connected and channel is active
-    if (Network.mode === 'HOST' && Network.conn && Network.conn.open) {
-        Network.conn.send({
+    if (Network.mode === 'HOST') {
+        Network.broadcastToAll({
             type: 'LOBBY_MAP_CHANGE',
             mapIndex: stats.selectedMapIdx
         });
@@ -430,15 +438,20 @@ function updateLobbyPlayersList() {
     const listEl = document.getElementById('player-list');
     if (!listEl) return;
     let html = `<div style="text-align: left; background: rgba(255,255,255,0.05); padding: 15px; border: 1px solid #333; border-radius: 4px; min-width: 280px; box-sizing: border-box;">`;
-    html += `<div style="border-bottom: 1px solid #444; padding-bottom: 5px; margin-bottom: 10px; font-weight: bold; color: #a83232;">CONNECTED PLAYERS:</div>`;
-    html += `<div style="color: #3498db; font-size: 16px;">👑 Host: <strong>${window.lobbyPlayers.host || "Survivor"}</strong></div>`;
-    if (window.lobbyPlayers.guest && window.lobbyPlayers.guest !== "Waiting..." && window.lobbyPlayers.guest !== "Disconnected") {
-        html += `<div style="color: #e67e22; font-size: 16px; margin-top: 8px;">👤 Guest: <strong>${window.lobbyPlayers.guest}</strong></div>`;
-    } else if (window.lobbyPlayers.guest === "Disconnected") {
-        html += `<div style="color: #c0392b; font-size: 16px; margin-top: 8px; font-style: italic;">👤 Guest: Player Disconnected</div>`;
-    } else {
-        html += `<div style="color: #666; font-size: 14px; margin-top: 8px; font-style: italic;">👤 Guest: Waiting for guest...</div>`;
-    }
+    html += `<div style="border-bottom: 1px solid #444; padding-bottom: 5px; margin-bottom: 10px; font-weight: bold; color: #a83232;">LOBBY survivors:</div>`;
+    
+    html += `<div style="color: #3498db; font-size: 15px; margin-bottom: 5px;">👑 P1 (Host): <strong>${window.lobbyPlayers.p1 || "Survivor"}</strong></div>`;
+    
+    ['p2', 'p3', 'p4'].forEach((pId, idx) => {
+        const pName = window.lobbyPlayers[pId];
+        const pColor = getPlayerColor(pId);
+        if (pName) {
+            html += `<div style="color: ${pColor}; font-size: 15px; margin-bottom: 5px;">👤 P${idx+2}: <strong>${pName}</strong></div>`;
+        } else {
+            html += `<div style="color: #666; font-size: 14px; margin-bottom: 5px; font-style: italic;">👤 P${idx+2}: Open Slot</div>`;
+        }
+    });
+    
     html += `</div>`;
     listEl.innerHTML = html;
 }
@@ -446,13 +459,13 @@ function updateLobbyPlayersList() {
 function updateLobbyUI(connected) { 
     if(connected) { 
         document.getElementById('lobby-status').style.color = '#0f0'; 
-        document.getElementById('lobby-status').innerText = "PLAYER 2 JOINED!"; 
+        document.getElementById('lobby-status').innerText = "PLAYERS CONNECTED!"; 
         document.getElementById('start-btn').disabled = false; 
         document.getElementById('start-btn').style.background = '#a83232'; 
     } 
 }
 function hostStartGame() { 
-    Network.conn.send({ type: 'START', mapIndex: stats.selectedMapIdx }); // Synchronize level selection with guest
+    Network.broadcastToAll({ type: 'START', mapIndex: stats.selectedMapIdx }); // Synchronize level selection with guests
     activeMap = playableMaps[stats.selectedMapIdx];
     launchGame(); 
 }
@@ -487,31 +500,31 @@ function launchGame() {
     players = {};
     
     // Setup Player Spawning based on active Map size
-    let spawnX = 200;
-    let spawnY = 200;
+    let spawnX = 200, spawnY = 200;
+    if (activeMap === playableMaps[0]) { spawnX = 400; spawnY = 400; }
+    else if (activeMap === playableMaps[1]) { spawnX = 300; spawnY = 300; }
+    else if (activeMap === playableMaps[2]) { spawnX = 250; spawnY = 250; }
     
-    if (activeMap === playableMaps[0]) { // The Facility spawn (800x800 Room 0)
-        spawnX = 400;
-        spawnY = 400;
-    } else if (activeMap === playableMaps[1]) { // Bunker Outpost spawn (600x600 Room 0)
-        spawnX = 300;
-        spawnY = 300;
-    } else if (activeMap === playableMaps[2]) { // Sector-9 Lab Maze spawn (500x500 Room 0)
-        spawnX = 250;
-        spawnY = 250;
-    }
-    
-    // Setup Player 1 using final synchronized codenames
-    let p1Name = (Network.mode === 'CLIENT') ? (window.lobbyPlayers.host || "Host") : myUsername;
-    players['p1'] = createPlayer('p1', spawnX, spawnY, '#3498db', p1Name);
-    
-    if(Network.mode !== 'OFFLINE') {
-        // Setup Player 2 using final synchronized codenames
-        let p2Name = (Network.mode === 'CLIENT') ? myUsername : (window.lobbyPlayers.guest || "Player 2");
-        players['p2'] = createPlayer('p2', spawnX + 50, spawnY, '#e67e22', p2Name);
-    }
+    if (Network.mode === 'CLIENT') {
+        // Clients spawn local client player 'me' locally
+        me = createPlayer(window.myPlayerId, spawnX, spawnY, getPlayerColor(window.myPlayerId), myUsername);
+        players[window.myPlayerId] = me;
+    } else {
+        // Spawn host player P1
+        players['p1'] = createPlayer('p1', spawnX, spawnY, getPlayerColor('p1'), myUsername);
+        me = players['p1'];
 
-    me = (Network.mode === 'CLIENT') ? players['p2'] : players['p1'];
+        // Spawn existing lobby players
+        if (Network.mode === 'HOST') {
+            ['p2', 'p3', 'p4'].forEach((pId, idx) => {
+                if (window.lobbyPlayers[pId]) {
+                    players[pId] = createPlayer(pId, spawnX + 40 * (idx + 1), spawnY, getPlayerColor(pId), window.lobbyPlayers[pId]);
+                }
+            });
+        } else if (Network.mode === 'LOCAL_COOP') {
+            players['p2'] = createPlayer('p2', spawnX + 40, spawnY, getPlayerColor('p2'), "Player 2");
+        }
+    }
 
     // Initialize/Reset loop timestep parameters
     lastLoopTime = performance.now();
@@ -523,7 +536,7 @@ function launchGame() {
 
 function requestRestart() { 
     if(Network.mode === 'CLIENT') return; 
-    if(Network.mode === 'HOST') Network.conn.send({ type: 'START', mapIndex: stats.selectedMapIdx }); 
+    if(Network.mode === 'HOST') Network.broadcastToAll({ type: 'START', mapIndex: stats.selectedMapIdx }); 
     launchGame(); 
 }
 
@@ -614,16 +627,16 @@ function updateGameLogic() {
         stats.frame++;
         if(stats.frame % 60 === 0) Object.values(players).forEach(p => { if(p.state === 'ALIVE' && p.hp < p.maxHp) p.hp++; });
 
-        if(players['p2']) {
-            if (Network.mode === 'LOCAL_COOP') {
-                updateLocalCoopP2(players['p2']);
-            } else {
-                if(players['p2'].triggerReload) forceReload(players['p2']);
-                players['p2'].triggerReload = false;
-                updatePlayerPhysics(players['p2'], false);
+        // Update connected multi-players
+        ['p2', 'p3', 'p4'].forEach(pId => {
+            const p = players[pId];
+            if (p) {
+                if (p.triggerReload) forceReload(p);
+                p.triggerReload = false;
+                updatePlayerPhysics(p, false);
+                if (p.triggerInteract) { processInteraction(p); p.triggerInteract = false; }
             }
-            if(players['p2'].triggerInteract) { processInteraction(players['p2']); players['p2'].triggerInteract = false; }
-        }
+        });
 
         updateZombies();
         updateBullets();
@@ -876,16 +889,25 @@ function forceReload(p) { let gun = p.inventory[p.weapIdx]; if(!p.reloading && g
 function checkInteractUI() {
     let msg = document.getElementById('interact-msg'); msg.style.display = 'none'; me.interactionTarget = null;
     if(me.state !== 'ALIVE') return;
-    let downed = Object.values(players).find(p => p !== me && p.state === 'DOWNED');
-    if(downed && Math.hypot(me.x - downed.x, me.y - downed.y) < 50) { msg.style.display = 'block'; msg.innerText = "[F] REVIVE TEAMMATE"; me.interactionTarget = { type: 'REVIVE', obj: downed }; return; }
+    
+    // Find a downed teammate who is actually close to us
+    let downed = Object.values(players).find(p => p !== me && p.state === 'DOWNED' && Math.hypot(me.x - p.x, me.y - p.y) < 50);
+    if(downed) { 
+        msg.style.display = 'block'; 
+        msg.innerText = "[F] REVIVE " + (downed.name || "TEAMMATE"); 
+        me.interactionTarget = { type: 'REVIVE', obj: downed }; 
+        return; 
+    }
+    
     let interact = RoomSystem.getNearbyInteractable(me.x, me.y, me);
     if(interact) { msg.style.display = 'block'; msg.innerText = interact.label; me.interactionTarget = interact; }
 }
 function handleInteractAction() { if(me.state !== 'ALIVE') return; if(Network.mode === 'CLIENT') Network.sendInteract(); else processInteraction(me); }
 
 function processInteraction(p) {
-    let teammate = Object.values(players).find(pl => pl !== p && pl.state === 'DOWNED');
-    if(teammate && Math.hypot(p.x - teammate.x, p.y - teammate.y) < 50) { 
+    // Find a downed teammate who is actually close to us
+    let teammate = Object.values(players).find(pl => pl !== p && pl.state === 'DOWNED' && Math.hypot(p.x - pl.x, p.y - pl.y) < 50);
+    if(teammate) { 
         teammate.state = 'ALIVE'; 
         teammate.hp = teammate.maxHp; 
         teammate.hasJug = false; 
@@ -1189,7 +1211,7 @@ function goToLobbyScreen() {
     texts = [];
     
     if (Network.mode === 'HOST') {
-        document.getElementById('lobby-status').innerText = "PLAYER 2 JOINED!";
+        document.getElementById('lobby-status').innerText = "LOBBY ACTIVE!";
         document.getElementById('lobby-status').style.color = '#0f0';
         document.getElementById('start-btn').style.display = 'block';
         document.getElementById('start-btn').disabled = false;
@@ -1216,39 +1238,26 @@ function goToLobbyScreen() {
 function updateUI() {
     document.getElementById('round-box').innerText = stats.round;
 
-    // Player 1 HUD
-    const p1 = players['p1'];
-    if (p1) {
-        document.getElementById('hud-p1').style.display = 'block';
-        document.getElementById('p1-name').innerText = p1.name || "P1";
-        document.getElementById('p1-score').innerHTML = p1.score + ' <span style="font-size:16px">⛃</span>';
-        
-        const gun1 = p1.inventory[p1.weapIdx];
-        if (gun1) {
-            document.getElementById('p1-gun-name').innerText = gun1.name;
-            document.getElementById('p1-ammo-text').innerText = p1.reloading ? "RELOADING" : `${gun1.clip} / ${gun1.ammo}`;
+    ['p1', 'p2', 'p3', 'p4'].forEach(pId => {
+        const p = players[pId];
+        const hud = document.getElementById('hud-' + pId);
+        if (hud) {
+            if (p) {
+                hud.style.display = 'block';
+                document.getElementById(pId + '-name').innerText = p.name || pId.toUpperCase();
+                document.getElementById(pId + '-score').innerHTML = p.score + ' <span style="font-size:16px">⛃</span>';
+                
+                const gun = p.inventory[p.weapIdx];
+                if (gun) {
+                    document.getElementById(pId + '-gun-name').innerText = gun.name;
+                    document.getElementById(pId + '-ammo-text').innerText = p.reloading ? "RELOADING" : `${gun.clip} / ${gun.ammo}`;
+                }
+                document.getElementById(pId + '-icon-jug').style.display = p.hasJug ? 'block' : 'none';
+            } else {
+                hud.style.display = 'none';
+            }
         }
-        document.getElementById('p1-icon-jug').style.display = p1.hasJug ? 'block' : 'none';
-    } else {
-        document.getElementById('hud-p1').style.display = 'none';
-    }
-
-    // Player 2 HUD
-    const p2 = players['p2'];
-    if (p2) {
-        document.getElementById('hud-p2').style.display = 'block';
-        document.getElementById('p2-name').innerText = p2.name || "Player 2";
-        document.getElementById('p2-score').innerHTML = p2.score + ' <span style="font-size:16px">⛃</span>';
-        
-        const gun2 = p2.inventory[p2.weapIdx];
-        if (gun2) {
-            document.getElementById('p2-gun-name').innerText = gun2.name;
-            document.getElementById('p2-ammo-text').innerText = p2.reloading ? "RELOADING" : `${gun2.clip} / ${gun2.ammo}`;
-        }
-        document.getElementById('p2-icon-jug').style.display = p2.hasJug ? 'block' : 'none';
-    } else {
-        document.getElementById('hud-p2').style.display = 'none';
-    }
+    });
 }
 
 // Keep: Lobby Copy Trigger Helpers for Clipboard copy

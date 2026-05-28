@@ -24,13 +24,15 @@
         
         #round-box { top: 20px; left: 50%; transform: translateX(-50%); color: #a83232; font-size: 50px; font-weight: 900; }
         
-        .hud-cluster { position: absolute; pointer-events: none; text-shadow: 2px 2px 0 #000; z-index: 1000; }
+        .hud-cluster { position: absolute; pointer-events: none; text-shadow: 2px 2px 0 #000; z-index: 1000; display: none; }
         #hud-p1 { bottom: 20px; left: 20px; text-align: left; }
         #hud-p2 { bottom: 20px; right: 20px; text-align: right; }
+        #hud-p3 { top: 20px; left: 20px; text-align: left; }
+        #hud-p4 { top: 20px; right: 20px; text-align: right; }
         
         .perk-area { display: flex; gap: 10px; margin-top: 10px; }
-        #hud-p1 .perk-area { justify-content: flex-start; }
-        #hud-p2 .perk-area { justify-content: flex-end; }
+        #hud-p1 .perk-area, #hud-p3 .perk-area { justify-content: flex-start; }
+        #hud-p2 .perk-area, #hud-p4 .perk-area { justify-content: flex-end; }
         
         .perk { width: 30px; height: 30px; border-radius: 50%; border: 2px solid white; display: none; box-shadow: 0 0 5px red; }
 
@@ -141,11 +143,14 @@
             button { font-size: 16px; padding: 10px; }
             #round-box { font-size: 36px; top: 15px; }
             
-            /* Move HUD up to prevent obstruction from virtual sticks */
-            #hud-p1 { bottom: auto; top: 80px; left: 15px; }
-            #hud-p2 { bottom: auto; top: 80px; right: 15px; }
-            #hud-p1 .perk-area { margin-top: 5px; }
-            #hud-p2 .perk-area { margin-top: 5px; }
+            /* Raise P1 and P2 to prevent overlap with virtual joysticks */
+            #hud-p1 { bottom: 160px; left: 15px; }
+            #hud-p2 { bottom: 160px; right: 15px; }
+            
+            /* Position P3 and P4 on top */
+            #hud-p3 { top: 80px; left: 15px; }
+            #hud-p4 { top: 80px; right: 15px; }
+            
             .perk { width: 24px; height: 24px; }
 
             #tutorial-hud {
@@ -315,12 +320,30 @@
     </div>
 
     <!-- Player 2 HUD (Bottom Right) -->
-    <div id="hud-p2" class="hud-cluster" style="display: none;">
+    <div id="hud-p2" class="hud-cluster">
         <div id="p2-name" style="color: #e67e22; font-size: 18px; font-weight: bold;">Player 2</div>
         <div id="p2-score" style="color: #ffd700; font-size: 28px; font-weight: bold;">500 ⛃</div>
         <div id="p2-gun-name" style="color: #fff; font-size: 24px; font-weight: bold;">M1911</div>
         <div id="p2-ammo-text" style="color: #ccc; font-size: 20px;">8 / 32</div>
         <div id="p2-perks" class="perk-area"><div id="p2-icon-jug" class="perk" style="background: #c0392b;"></div></div>
+    </div>
+
+    <!-- Player 3 HUD (Top Left) -->
+    <div id="hud-p3" class="hud-cluster">
+        <div id="p3-name" style="color: #2ecc71; font-size: 18px; font-weight: bold;">Player 3</div>
+        <div id="p3-score" style="color: #ffd700; font-size: 28px; font-weight: bold;">500 ⛃</div>
+        <div id="p3-gun-name" style="color: #fff; font-size: 24px; font-weight: bold;">M1911</div>
+        <div id="p3-ammo-text" style="color: #ccc; font-size: 20px;">8 / 32</div>
+        <div id="p3-perks" class="perk-area"><div id="p3-icon-jug" class="perk" style="background: #c0392b;"></div></div>
+    </div>
+
+    <!-- Player 4 HUD (Top Right) -->
+    <div id="hud-p4" class="hud-cluster">
+        <div id="p4-name" style="color: #9b59b6; font-size: 18px; font-weight: bold;">Player 4</div>
+        <div id="p4-score" style="color: #ffd700; font-size: 28px; font-weight: bold;">500 ⛃</div>
+        <div id="p4-gun-name" style="color: #fff; font-size: 24px; font-weight: bold;">M1911</div>
+        <div id="p4-ammo-text" style="color: #ccc; font-size: 20px;">8 / 32</div>
+        <div id="p4-perks" class="perk-area"><div id="p4-icon-jug" class="perk" style="background: #c0392b;"></div></div>
     </div>
 
     <div id="ach-toast-container"></div>
