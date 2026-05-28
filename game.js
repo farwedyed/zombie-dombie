@@ -1,3 +1,44 @@
+/* --- GLOBAL ON-SCREEN DEBUG LOGGER --- */
+window.addEventListener('error', function(e) {
+    showOnScreenDebug(e.message, e.filename, e.lineno, e.colno);
+});
+window.addEventListener('unhandledrejection', function(e) {
+    showOnScreenDebug("Promise Rejected: " + e.reason, "", 0, 0);
+});
+
+function showOnScreenDebug(msg, file, line, col) {
+    console.error("CRASH CAPTURED:", msg, file, line);
+    let dbg = document.getElementById('debug-console-overlay');
+    if (!dbg) {
+        dbg = document.createElement('div');
+        dbg.id = 'debug-console-overlay';
+        dbg.style.position = 'absolute';
+        dbg.style.bottom = '10px';
+        dbg.style.left = '10px';
+        dbg.style.right = '10px';
+        dbg.style.maxHeight = '140px';
+        dbg.style.background = 'rgba(180, 0, 0, 0.95)';
+        dbg.style.color = '#fff';
+        dbg.style.fontFamily = 'monospace';
+        dbg.style.fontSize = '12px';
+        dbg.style.padding = '10px';
+        dbg.style.zIndex = '99999';
+        dbg.style.overflowY = 'auto';
+        dbg.style.border = '2px solid white';
+        dbg.style.borderRadius = '4px';
+        dbg.style.pointerEvents = 'auto';
+        document.body.appendChild(dbg);
+    }
+    const cleanFile = file ? file.substring(file.lastIndexOf('/') + 1) : "unknown";
+    const logMsg = document.createElement('div');
+    logMsg.style.marginBottom = '5px';
+    logMsg.style.borderBottom = '1px dashed rgba(255,255,255,0.3)';
+    logMsg.style.paddingBottom = '3px';
+    logMsg.innerHTML = `<strong>CRASH:</strong> ${msg}<br><span style="color:#ffd700;">File: ${cleanFile} | Line: ${line}:${col}</span>`;
+    dbg.appendChild(logMsg);
+    dbg.scrollTop = dbg.scrollHeight;
+}
+
 /* --- GAME LOGIC --- */
 if (!window.lobbyPlayers) {
     window.lobbyPlayers = { p1: "Survivor", p2: "", p3: "", p4: "" };
