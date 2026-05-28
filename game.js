@@ -138,6 +138,15 @@ function init() {
         canvas.height = window.innerHeight;
     });
 
+    // Restore saved username if present in localStorage
+    let nameInput = document.getElementById('username-input');
+    if (nameInput) {
+        let savedName = localStorage.getItem('zombieUsername');
+        if (savedName) {
+            nameInput.value = savedName;
+        }
+    }
+
     // Detect and Initialize Mobile Interface if active
     checkTouchDevice();
 }
@@ -360,12 +369,46 @@ function showToast(ach) {
 }
 function checkAchievements() { achievements.forEach(a => { if(me && a.check(stats, me)) { if(unlockAch(a.id)) showToast(a); } }); }
 
+/* --- PROFILE & HANDSHAKE HELPERS --- */
+function saveLocalUsername() {
+    let nameInput = document.getElementById('username-input');
+    if (nameInput) {
+        let nameVal = nameInput.value.trim();
+        if (nameVal) {
+            localStorage.setItem('zombieUsername', nameVal);
+        }
+    }
+}
+
+function validateOnlineName() {
+    let nameInput = document.getElementById('username-input');
+    let nameVal = nameInput ? nameInput.value.trim() : "";
+    if (!nameVal) {
+        if (nameInput) {
+            nameInput.classList.remove('shake-anim');
+            void nameInput.offsetWidth; // Trigger reflow to reset shake animation
+            nameInput.classList.add('shake-anim');
+            nameInput.focus();
+            setTimeout(() => nameInput.classList.remove('shake-anim'), 400);
+        }
+        return false;
+    }
+    saveLocalUsername();
+    return true;
+}
+
 /* --- LOBBY survivors LISTS --- */
 function startOffline() { 
     Network.mode = 'OFFLINE'; 
     window.myPlayerId = 'p1';
     window.lobbyPlayers = { p1: "Survivor", p2: "", p3: "", p4: "" };
-    stats.difficulty = "medium"; // Standard fallback
+    
+    // Choose difficulty in Solo
+    const selectDiff = document.getElementById('menu-diff-select');
+    stats.difficulty = selectDiff ? selectDiff.value : "medium";
+
+    saveLocalUsername();
+
     const select = document.getElementById('map-select');
     const mapIdx = select ? parseInt(select.value) : 0;
     activeMap = playableMaps[mapIdx]; // Swaps active level boundaries
@@ -377,7 +420,13 @@ function startLocalCoop() {
     Network.mode = 'LOCAL_COOP';
     window.myPlayerId = 'p1';
     window.lobbyPlayers = { p1: "Survivor", p2: "Player 2", p3: "", p4: "" };
-    stats.difficulty = "medium";
+    
+    // Choose difficulty in local co-op
+    const selectDiff = document.getElementById('menu-diff-select');
+    stats.difficulty = selectDiff ? selectDiff.value : "medium";
+
+    saveLocalUsername();
+
     const select = document.getElementById('map-select');
     const mapIdx = select ? parseInt(select.value) : 0;
     activeMap = playableMaps[mapIdx]; // Swaps active level boundaries
@@ -388,6 +437,9 @@ function startTutorial() {
     window.myPlayerId = 'p1';
     window.lobbyPlayers = { p1: "Survivor", p2: "", p3: "", p4: "" };
     stats.difficulty = "medium";
+    
+    saveLocalUsername();
+
     if (typeof Tutorial !== 'undefined') {
         Tutorial.isActive = true; // Declare active state before starting engine variables setup
     }
@@ -398,6 +450,8 @@ function startTutorial() {
     }
 }
 function enterLobbyHost() { 
+    if (!validateOnlineName()) return; // Block lobby creation if username is missing
+
     const select = document.getElementById('map-select');
     stats.selectedMapIdx = select ? parseInt(select.value) : 0; // Cache selected layout index
     stats.difficulty = "medium";
@@ -420,7 +474,7 @@ function enterLobbyHost() {
     document.getElementById('lobby-diff-select').style.display = 'block';
     document.getElementById('lobby-diff-display-client').style.display = 'none';
 
-    // Identify username
+    // Retrieve validated username
     let nameInput = document.getElementById('username-input');
     myUsername = nameInput ? (nameInput.value || "Survivor") : "Survivor";
     myUsername = myUsername.substring(0, 12);
@@ -435,6 +489,8 @@ function enterLobbyHost() {
     Network.init((id) => { document.getElementById('host-id-display').innerText = id; }); 
 }
 function enterLobbyJoin() { 
+    if (!validateOnlineName()) return; // Block joining if username is missing
+
     let id = document.getElementById('join-input').value; 
     if(!id) return alert("Please enter the Host ID"); 
     
@@ -459,7 +515,7 @@ function enterLobbyJoin() {
     clientDiffDisplay.style.display = 'block';
     clientDiffDisplay.innerText = "Retrieving difficulty...";
 
-    // Retrieve username
+    // Retrieve validated username
     let nameInput = document.getElementById('username-input');
     myUsername = nameInput ? (nameInput.value || "Survivor") : "Survivor";
     myUsername = myUsername.substring(0, 12);
