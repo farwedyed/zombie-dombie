@@ -8,6 +8,7 @@ const Network = {
     conn: null,
     mode: 'OFFLINE', 
     lastUpdate: 0,
+    lastClientUpdate: 0, // Throttle client-to-host payloads
     
     init: function(onOpen) {
         // Provider 1: Metered.ca Credentials
@@ -74,7 +75,11 @@ const Network = {
 
     join: function(hostId, onConnected) {
         this.mode = 'CLIENT';
-        this.conn = this.peer.connect(hostId);
+        // Connect in unreliable mode (UDP semantics) for gaming-grade latency
+        this.conn = this.peer.connect(hostId, {
+            reliable: false,
+            serialization: 'json'
+        });
         this.conn.on('open', () => {
             if(onConnected) onConnected();
             this.setupClient();
@@ -147,11 +152,11 @@ const Network = {
                 type: 'GAME_STATE',
                 p1: players['p1'], 
                 p2: players['p2'], 
-                zombies: zombies, 
-                bullets: bullets,
+                // Only serialize the necessary keys to compress network packet size
+                zombies: zombies.map(z => ({ id: z.id, x: z.x, y: z.y, hp: z.hp, maxHp: z.maxHp })), 
+                bullets: bullets.map(b => ({ x: b.x, y: b.y, color: b.color })),
                 stats: stats,
-                texts: texts, 
-                particles: particles, 
+                // Removed redundant texts and particles serialization arrays (handled locally now)
                 windows: activeMap.windows.map(w => ({ boards: w.boards })),
                 doors: activeMap.rooms.map(r => ({ unlocked: r.unlocked }))
             });
@@ -202,27 +207,51 @@ const Network = {
             else if(data.type === 'GAME_STATE') {
                 const serverZombies = data.zombies || [];
                 const serverMap = new Map();
+                
                 serverZombies.forEach(sz => {
                     serverMap.set(sz.id, sz);
                     const local = zombies.find(z => z.id === sz.id);
                     if(local) {
+                        // Spawn blood particles locally if zombie takes damage (avoids network overhead)
+                        if (local.hp > sz.hp && typeof spawnParticles === 'function') {
+                            spawnParticles(local.x, local.y, '#800', 3);
+                        }
                         local.serverX = sz.x;
                         local.serverY = sz.y;
                         local.hp = sz.hp; 
+                        local.maxHp = sz.maxHp;
                     } else {
-                        sz.serverX = sz.x;
-                        sz.serverY = sz.y;
-                        zombies.push(sz);
+                        // Add new zombie
+                        zombies.push({
+                            id: sz.id,
+                            x: sz.x,
+                            y: sz.y,
+                            hp: sz.hp,
+                            maxHp: sz.maxHp,
+                            serverX: sz.x,
+                            serverY: sz.y,
+                            r: 16
+                        });
                     }
                 });
+                
                 for(let i = zombies.length - 1; i >= 0; i--) {
                     if(!serverMap.has(zombies[i].id)) zombies.splice(i, 1);
                 }
 
-                bullets = data.bullets;
+                bullets = data.bullets || [];
+                
+                // Spawn local point indicators (+10 / +60 text) locally when score increases
+                if (data.stats && stats) {
+                    if (data.stats.score > stats.score) {
+                        let diff = data.stats.score - stats.score;
+                        if (typeof addText === 'function') {
+                            addText(me.x, me.y, "+" + diff, "#ff0");
+                        }
+                    }
+                }
+                
                 stats = data.stats;
-                texts = data.texts || [];
-                particles = data.particles || [];
 
                 if(players['p1']) players['p1'] = data.p1;
                 
@@ -248,6 +277,11 @@ const Network = {
     },
 
     sendClientData: function(p) {
+        // Throttle client send ticks to prevent network buffer overflow
+        const now = Date.now();
+        if (now - this.lastClientUpdate < 30) return;
+        this.lastClientUpdate = now;
+
         if(this.conn && this.conn.open) {
             this.conn.send({
                 type: 'P2_DATA',
