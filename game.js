@@ -710,8 +710,8 @@ function updateGameLogic() {
         // Unified weapon firing routine for automatic and semi-automatic weapons
         Object.values(players).forEach(p => {
             if (p.isShooting) {
-                const gun = p.inventory[p.weapIdx];
-                if (gun.auto) {
+                const gun = p.inventory && p.inventory[p.weapIdx] ? p.inventory[p.weapIdx] : null;
+                if (gun && gun.auto) {
                     shootGun(p);
                 } else {
                     if (!p.pressHandled) {
@@ -788,10 +788,18 @@ function updatePlayerPhysics(p, isLocal) {
         
         p.isShooting = mouse.down; // Directly bind mouse hold state
     }
+    
+    // SAFE NAVIGATION: Ensure player inventory and gun properties exist before updating reloads
     const gun = p.inventory && p.inventory[p.weapIdx] ? p.inventory[p.weapIdx] : null;
     if(p.reloading && gun) {
         p.reloadTimer--;
-        if(p.reloadTimer <= 0) { let needed = gun.mag - gun.clip; let take = Math.min(needed, gun.ammo); gun.clip += take; gun.ammo -= take; p.reloading = false; }
+        if(p.reloadTimer <= 0) { 
+            let needed = gun.mag - gun.clip; 
+            let take = Math.min(needed, gun.ammo); 
+            gun.clip += take; 
+            gun.ammo -= take; 
+            p.reloading = false; 
+        }
     }
 }
 
@@ -910,13 +918,13 @@ function updateLocalCoopP2(p) {
         if (!RoomSystem.checkCollision(p.x, p.y + (dy * speed), true)) p.y += dy * speed;
     }
 
-    const gun = p.inventory[p.weapIdx];
+    const gun = p.inventory && p.inventory[p.weapIdx] ? p.inventory[p.weapIdx] : null;
 
     // Handle Shoot Triggering
     p.isShooting = isShooting; // Directly capture persistent hold state!
 
     // Handle Reload Triggering
-    if (isReloading && !p2PrevButtons.reload) {
+    if (isReloading && !p2PrevButtons.reload && gun) {
         if (!p.reloading && gun.clip < gun.mag && gun.ammo > 0) {
             p.reloading = true;
             p.reloadTimer = gun.reload;
@@ -930,7 +938,7 @@ function updateLocalCoopP2(p) {
     }
 
     // Progress Reload Timer
-    if (p.reloading) {
+    if (p.reloading && gun) {
         p.reloadTimer--;
         if (p.reloadTimer <= 0) {
             let needed = gun.mag - gun.clip;
