@@ -75,9 +75,10 @@ const Network = {
 
     join: function(hostId, onConnected) {
         this.mode = 'CLIENT';
-        // Connect in unreliable mode (UDP semantics) for gaming-grade latency
+        // Switch back to reliable mode. Packet chunks must arrive intact,
+        // we will mitigate congestion using our queue manager (bufferedAmount).
         this.conn = this.peer.connect(hostId, {
-            reliable: false,
+            reliable: true,
             serialization: 'json'
         });
         this.conn.on('open', () => {
@@ -104,15 +105,16 @@ const Network = {
                 });
             }
             else if(data.type === 'P2_DATA' && players['p2']) {
-                players['p2'].x = data.x;
-                players['p2'].y = data.y;
-                players['p2'].angle = data.angle;
+                const p2 = players['p2'];
+                p2.serverX = data.x;
+                p2.serverY = data.y;
+                p2.angle = data.angle;
                 
                 // --- SYNC NAME ---
-                if(data.name) players['p2'].name = data.name;
+                if(data.name) p2.name = data.name;
 
-                if(data.shoot) players['p2'].triggerShoot = true;
-                if(data.reload) players['p2'].triggerReload = true;
+                if(data.shoot) p2.triggerShoot = true;
+                if(data.reload) p2.triggerReload = true;
             }
             else if(data.type === 'INTERACT' && players['p2']) {
                 players['p2'].triggerInteract = true;
@@ -144,7 +146,13 @@ const Network = {
 
     broadcastState: function() {
         const now = Date.now();
-        if(now - this.lastUpdate < 30) return; 
+        if(now - this.lastUpdate < 45) return; // Throttled to 22 updates/sec
+
+        // Congestion control: If the WebRTC socket buffer has backlogged data, drop this frame
+        const dc = this.conn ? (this.conn._dc || this.conn.dataChannel) : null;
+        if (dc && dc.bufferedAmount > 65536) {
+            return; // Skip packet transmission until the backlog clears
+        }
         this.lastUpdate = now;
 
         if(this.conn && this.conn.open) {
@@ -152,11 +160,10 @@ const Network = {
                 type: 'GAME_STATE',
                 p1: players['p1'], 
                 p2: players['p2'], 
-                // Only serialize the necessary keys to compress network packet size
+                // Compress payload size
                 zombies: zombies.map(z => ({ id: z.id, x: z.x, y: z.y, hp: z.hp, maxHp: z.maxHp })), 
                 bullets: bullets.map(b => ({ x: b.x, y: b.y, color: b.color })),
                 stats: stats,
-                // Removed redundant texts and particles serialization arrays (handled locally now)
                 windows: activeMap.windows.map(w => ({ boards: w.boards })),
                 doors: activeMap.rooms.map(r => ({ unlocked: r.unlocked }))
             });
@@ -212,7 +219,7 @@ const Network = {
                     serverMap.set(sz.id, sz);
                     const local = zombies.find(z => z.id === sz.id);
                     if(local) {
-                        // Spawn blood particles locally if zombie takes damage (avoids network overhead)
+                        // Spawn blood particles locally on damage detection
                         if (local.hp > sz.hp && typeof spawnParticles === 'function') {
                             spawnParticles(local.x, local.y, '#800', 3);
                         }
@@ -253,7 +260,20 @@ const Network = {
                 
                 stats = data.stats;
 
-                if(players['p1']) players['p1'] = data.p1;
+                // Sync incoming Host data to interpolation target rather than overwriting instantly
+                if(players['p1'] && data.p1) {
+                    const p1 = players['p1'];
+                    p1.serverX = data.p1.x;
+                    p1.serverY = data.p1.y;
+                    p1.angle = data.p1.angle;
+                    p1.hp = data.p1.hp;
+                    p1.score = data.p1.score;
+                    p1.state = data.p1.state;
+                    p1.hasJug = data.p1.hasJug;
+                    p1.reloading = data.p1.reloading;
+                    p1.weapIdx = data.p1.weapIdx;
+                    p1.inventory = data.p1.inventory;
+                }
                 
                 if(me && players['p2'] && data.p2) {
                     let myAngle = me.angle;
@@ -279,7 +299,7 @@ const Network = {
     sendClientData: function(p) {
         // Throttle client send ticks to prevent network buffer overflow
         const now = Date.now();
-        if (now - this.lastClientUpdate < 30) return;
+        if (now - this.lastClientUpdate < 45) return;
         this.lastClientUpdate = now;
 
         if(this.conn && this.conn.open) {

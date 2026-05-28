@@ -533,6 +533,14 @@ function loop() {
     if(!gameActive) return;
     
     if(me) updatePlayerPhysics(me, true);
+
+    // Smoothly interpolate other players' positions to eliminate raw network jitter
+    Object.values(players).forEach(p => {
+        if (p !== me && p.serverX !== undefined) {
+            p.x += (p.serverX - p.x) * 0.15;
+            p.y += (p.serverY - p.y) * 0.15;
+        }
+    });
     
     // Update active Boot Camp objectives checks
     if (typeof Tutorial !== 'undefined' && Tutorial.isActive) {
@@ -545,8 +553,8 @@ function loop() {
         // Client Smoothing for Zombies
         zombies.forEach(z => {
             if(z.serverX !== undefined) {
-                z.x += (z.serverX - z.x) * 0.2;
-                z.y += (z.serverY - z.y) * 0.2;
+                z.x += (z.serverX - z.x) * 0.15;
+                z.y += (z.serverY - z.y) * 0.15;
             }
         });
     } else {
