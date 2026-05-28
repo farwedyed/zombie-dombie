@@ -1,4 +1,8 @@
 /* --- NETWORKING MODULE --- */
+if (!window.lobbyPlayers) {
+    window.lobbyPlayers = { host: "", guest: "" };
+}
+
 const Network = {
     peer: null,
     conn: null,
@@ -74,13 +78,27 @@ const Network = {
         this.conn.on('open', () => {
             if(onConnected) onConnected();
             this.setupClient();
+            // Send client's username to the host immediately
+            this.conn.send({ type: 'JOIN_LOBBY', name: myUsername });
         });
     },
 
     /* --- HOST LOGIC --- */
     setupHost: function() {
         this.conn.on('data', (data) => {
-            if(data.type === 'P2_DATA' && players['p2']) {
+            if (data.type === 'JOIN_LOBBY') {
+                window.lobbyPlayers.guest = data.name || "Player 2";
+                if (typeof updateLobbyPlayersList === 'function') updateLobbyPlayersList();
+                if (typeof updateLobbyUI === 'function') updateLobbyUI(true);
+                
+                // Welcome the client and synchronize lobby parameters
+                this.conn.send({
+                    type: 'LOBBY_WELCOME',
+                    name: myUsername,
+                    mapIndex: stats.selectedMapIdx
+                });
+            }
+            else if(data.type === 'P2_DATA' && players['p2']) {
                 players['p2'].x = data.x;
                 players['p2'].y = data.y;
                 players['p2'].angle = data.angle;
@@ -98,13 +116,25 @@ const Network = {
         
         this.conn.on('close', () => {
             console.log("Player 2 Disconnected");
+            window.lobbyPlayers.guest = "Disconnected";
+            if (typeof updateLobbyPlayersList === 'function') updateLobbyPlayersList();
+            
+            const startBtn = document.getElementById('start-btn');
+            if (startBtn) {
+                startBtn.disabled = true;
+                startBtn.style.background = '#1a1a1a';
+            }
+            const statusEl = document.getElementById('lobby-status');
+            if (statusEl) {
+                statusEl.innerText = "Waiting for players...";
+                statusEl.style.color = "#fff";
+            }
+
             if(players['p2']) {
                 delete players['p2']; 
                 texts.push({x: players['p1'].x, y: players['p1'].y, text: "P2 LEFT", color: "#f00", life: 120});
             }
         });
-
-        if(typeof updateLobbyUI === 'function') updateLobbyUI(true);
     },
 
     broadcastState: function() {
@@ -137,7 +167,28 @@ const Network = {
     /* --- CLIENT LOGIC --- */
     setupClient: function() {
         this.conn.on('data', (data) => {
-            if(data.type === 'START') {
+            if (data.type === 'LOBBY_WELCOME') {
+                window.lobbyPlayers.host = data.name || "Host";
+                stats.selectedMapIdx = data.mapIndex;
+                if (typeof updateLobbyPlayersList === 'function') updateLobbyPlayersList();
+                
+                const mapDisplay = document.getElementById('lobby-map-display-client');
+                if (mapDisplay) {
+                    const mapName = (typeof playableMaps !== 'undefined' && playableMaps[data.mapIndex]) ? playableMaps[data.mapIndex].name : "Unknown Map";
+                    mapDisplay.innerText = mapName;
+                }
+                document.getElementById('lobby-status').innerText = "Connected! Ready to play.";
+                document.getElementById('lobby-status').style.color = "#0f0";
+            }
+            else if (data.type === 'LOBBY_MAP_CHANGE') {
+                stats.selectedMapIdx = data.mapIndex;
+                const mapDisplay = document.getElementById('lobby-map-display-client');
+                if (mapDisplay) {
+                    const mapName = (typeof playableMaps !== 'undefined' && playableMaps[data.mapIndex]) ? playableMaps[data.mapIndex].name : "Unknown Map";
+                    mapDisplay.innerText = mapName;
+                }
+            }
+            else if(data.type === 'START') {
                 if (data.mapIndex !== undefined && typeof playableMaps !== 'undefined') {
                     activeMap = playableMaps[data.mapIndex];
                 }

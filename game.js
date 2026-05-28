@@ -1,4 +1,8 @@
 /* --- GAME LOGIC --- */
+if (!window.lobbyPlayers) {
+    window.lobbyPlayers = { host: "", guest: "" };
+}
+
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 canvas.width = window.innerWidth;
@@ -338,6 +342,25 @@ function enterLobbyHost() {
     const select = document.getElementById('map-select');
     stats.selectedMapIdx = select ? parseInt(select.value) : 0; // Cache selected layout index
 
+    // Sync menu map dropdown to the lobby map dropdown
+    const lobbySelect = document.getElementById('lobby-map-select');
+    if (lobbySelect) {
+        lobbySelect.value = stats.selectedMapIdx;
+    }
+
+    // Set lobby screen displays: Host can select, client cannot
+    document.getElementById('lobby-map-select').style.display = 'block';
+    document.getElementById('lobby-map-display-client').style.display = 'none';
+
+    // Identify username
+    let nameInput = document.getElementById('username-input');
+    myUsername = nameInput ? (nameInput.value || "Survivor") : "Survivor";
+    myUsername = myUsername.substring(0, 12);
+
+    window.lobbyPlayers.host = myUsername;
+    window.lobbyPlayers.guest = "Waiting...";
+    updateLobbyPlayersList();
+
     document.getElementById('main-menu').style.display = 'none'; 
     document.getElementById('lobby-screen').style.display = 'flex'; 
     Network.mode = 'HOST'; 
@@ -354,6 +377,21 @@ function enterLobbyJoin() {
     document.getElementById('lobby-screen').style.display = 'flex'; 
     document.getElementById('start-btn').style.display = 'none'; // Hide start button for guest
 
+    // Hide lobby map select dropdown and show client map display text
+    document.getElementById('lobby-map-select').style.display = 'none';
+    const clientMapDisplay = document.getElementById('lobby-map-display-client');
+    clientMapDisplay.style.display = 'block';
+    clientMapDisplay.innerText = "Retrieving map...";
+
+    // Retrieve username
+    let nameInput = document.getElementById('username-input');
+    myUsername = nameInput ? (nameInput.value || "Survivor") : "Survivor";
+    myUsername = myUsername.substring(0, 12);
+
+    window.lobbyPlayers.guest = myUsername;
+    window.lobbyPlayers.host = "Connecting...";
+    updateLobbyPlayersList();
+
     Network.init(() => { 
         document.getElementById('lobby-status').innerText = "Locating Host...";
         Network.join(id, () => { 
@@ -362,7 +400,48 @@ function enterLobbyJoin() {
         }); 
     }); 
 }
-function updateLobbyUI(connected) { if(connected) { document.getElementById('lobby-status').style.color = '#0f0'; document.getElementById('lobby-status').innerText = "PLAYER 2 JOINED!"; document.getElementById('start-btn').disabled = false; document.getElementById('start-btn').style.background = '#a83232'; } }
+
+// Lobby Map Selector callback
+function lobbyChangeMap() {
+    const select = document.getElementById('lobby-map-select');
+    if (!select) return;
+    stats.selectedMapIdx = parseInt(select.value);
+    
+    // Synchronize to guest if connected and channel is active
+    if (Network.mode === 'HOST' && Network.conn && Network.conn.open) {
+        Network.conn.send({
+            type: 'LOBBY_MAP_CHANGE',
+            mapIndex: stats.selectedMapIdx
+        });
+    }
+}
+
+// Draw the connected users to the lobby list element
+function updateLobbyPlayersList() {
+    const listEl = document.getElementById('player-list');
+    if (!listEl) return;
+    let html = `<div style="text-align: left; background: rgba(255,255,255,0.05); padding: 15px; border: 1px solid #333; border-radius: 4px; min-width: 280px; box-sizing: border-box;">`;
+    html += `<div style="border-bottom: 1px solid #444; padding-bottom: 5px; margin-bottom: 10px; font-weight: bold; color: #a83232;">CONNECTED PLAYERS:</div>`;
+    html += `<div style="color: #3498db; font-size: 16px;">👑 Host: <strong>${window.lobbyPlayers.host || "Survivor"}</strong></div>`;
+    if (window.lobbyPlayers.guest && window.lobbyPlayers.guest !== "Waiting..." && window.lobbyPlayers.guest !== "Disconnected") {
+        html += `<div style="color: #e67e22; font-size: 16px; margin-top: 8px;">👤 Guest: <strong>${window.lobbyPlayers.guest}</strong></div>`;
+    } else if (window.lobbyPlayers.guest === "Disconnected") {
+        html += `<div style="color: #c0392b; font-size: 16px; margin-top: 8px; font-style: italic;">👤 Guest: Player Disconnected</div>`;
+    } else {
+        html += `<div style="color: #666; font-size: 14px; margin-top: 8px; font-style: italic;">👤 Guest: Waiting for guest...</div>`;
+    }
+    html += `</div>`;
+    listEl.innerHTML = html;
+}
+
+function updateLobbyUI(connected) { 
+    if(connected) { 
+        document.getElementById('lobby-status').style.color = '#0f0'; 
+        document.getElementById('lobby-status').innerText = "PLAYER 2 JOINED!"; 
+        document.getElementById('start-btn').disabled = false; 
+        document.getElementById('start-btn').style.background = '#a83232'; 
+    } 
+}
 function hostStartGame() { 
     Network.conn.send({ type: 'START', mapIndex: stats.selectedMapIdx }); // Synchronize level selection with guest
     activeMap = playableMaps[stats.selectedMapIdx];
@@ -407,13 +486,13 @@ function launchGame() {
         spawnY = 250;
     }
     
-    // Setup Player 1
-    let p1Name = (Network.mode === 'CLIENT') ? "Host" : myUsername;
+    // Setup Player 1 using final synchronized codenames
+    let p1Name = (Network.mode === 'CLIENT') ? (window.lobbyPlayers.host || "Host") : myUsername;
     players['p1'] = createPlayer('p1', spawnX, spawnY, '#3498db', p1Name);
     
     if(Network.mode !== 'OFFLINE') {
-        // Setup Player 2
-        let p2Name = (Network.mode === 'CLIENT') ? myUsername : "Player 2";
+        // Setup Player 2 using final synchronized codenames
+        let p2Name = (Network.mode === 'CLIENT') ? myUsername : (window.lobbyPlayers.guest || "Player 2");
         players['p2'] = createPlayer('p2', spawnX + 50, spawnY, '#e67e22', p2Name);
     }
 
