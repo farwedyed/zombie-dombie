@@ -6,32 +6,39 @@ const Network = {
     lastUpdate: 0,
     
     init: function(onOpen) {
-        // We configure standard STUN and TURN servers inside 'config.iceServers'.
-        // This ensures the game traffic can successfully bypass NAT/firewalls
-        // and route across different Wi-Fi and mobile networks.
-        this.peer = new Peer(null, { 
+        // These are your generated, dedicated TURN credentials from Metered.ca
+        const USERNAME_VAL = "ec41d9c5a5a8f7a1a1b19e9e";
+        const CREDENTIAL_VAL = "rzCBD4AfbDn7JjG8";
+
+        this.peer = new Peer(undefined, { 
             debug: 1,
             config: {
                 iceServers: [
-                    // Standard public Google STUN server
+                    // Redundant STUN servers for address discovery
                     { urls: 'stun:stun.l.google.com:19302' },
                     { urls: 'stun:global.stun.twilio.com:3478' },
+                    { urls: 'stun:stun.relay.metered.ca:80' },
                     
-                    // Open Relay Project (by Metered.ca) - Free WebRTC TURN Relay Servers
+                    // Your Private Dedicated global TURN Relay servers (UDP & TCP fallback)
                     { 
-                        urls: 'turn:openrelay.metered.ca:80', 
-                        username: 'openrelayproject', 
-                        credential: 'openrelayproject' 
+                        urls: 'turn:global.relay.metered.ca:80', 
+                        username: USERNAME_VAL, 
+                        credential: CREDENTIAL_VAL 
                     },
                     { 
-                        urls: 'turn:openrelay.metered.ca:443', 
-                        username: 'openrelayproject', 
-                        credential: 'openrelayproject' 
+                        urls: 'turn:global.relay.metered.ca:80?transport=tcp', 
+                        username: USERNAME_VAL, 
+                        credential: CREDENTIAL_VAL 
                     },
                     { 
-                        urls: 'turn:openrelay.metered.ca:443?transport=tcp', 
-                        username: 'openrelayproject', 
-                        credential: 'openrelayproject' 
+                        urls: 'turn:global.relay.metered.ca:443', 
+                        username: USERNAME_VAL, 
+                        credential: CREDENTIAL_VAL 
+                    },
+                    { 
+                        urls: 'turns:global.relay.metered.ca:443?transport=tcp', 
+                        username: USERNAME_VAL, 
+                        credential: CREDENTIAL_VAL 
                     }
                 ]
             }
