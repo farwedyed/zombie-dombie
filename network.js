@@ -90,6 +90,7 @@ const Network = {
 
     join: function(hostId, onConnected) {
         this.mode = 'CLIENT';
+        // Connect in reliable mode with queue mitigations
         this.conn = this.peer.connect(hostId, {
             reliable: true,
             serialization: 'json'
@@ -306,6 +307,7 @@ const Network = {
                     serverMap.set(sz.id, sz);
                     const local = zombies.find(z => z.id === sz.id);
                     if(local) {
+                        // Spawn blood particles locally on damage detection
                         if (local.hp > sz.hp && typeof spawnParticles === 'function') {
                             spawnParticles(local.x, local.y, '#800', 3);
                         }
@@ -314,6 +316,7 @@ const Network = {
                         local.hp = sz.hp; 
                         local.maxHp = sz.maxHp;
                     } else {
+                        // Add new zombie
                         zombies.push({
                             id: sz.id,
                             x: sz.x,
@@ -333,6 +336,7 @@ const Network = {
 
                 bullets = data.bullets || [];
                 
+                // Spawn local point indicators (+10 / +50 text) locally when score increases
                 if (data.stats && stats) {
                     if (data.stats.score > stats.score) {
                         let diff = data.stats.score - stats.score;
@@ -353,6 +357,7 @@ const Network = {
                             let myX = me.x;
                             let myY = me.y;
                             
+                            // Teleport Client on respawn
                             if (me.state === 'DOWNED' && fallbackPId.state === 'ALIVE') {
                                 const spawnSource = data.p1;
                                 if (spawnSource) {
@@ -361,6 +366,11 @@ const Network = {
                                 }
                             }
                             
+                            // Safe dynamic local inventory synchronization
+                            if (fallbackPId.gunName) {
+                                syncPlayerInventory(me, fallbackPId.weapIdx, fallbackPId.gunName);
+                            }
+
                             Object.assign(me, fallbackPId);
                             me.angle = myAngle; 
                             me.x = myX;
@@ -377,6 +387,12 @@ const Network = {
                                 players[pId] = createPlayer(pId, data[pId].x, data[pId].y, getPlayerColor(pId), data[pId].name);
                             }
                             const p = players[pId];
+
+                            // Safe dynamic other players inventory synchronization
+                            if (data[pId].gunName) {
+                                syncPlayerInventory(p, data[pId].weapIdx, data[pId].gunName);
+                            }
+
                             p.serverX = data[pId].x !== undefined ? data[pId].x : p.x;
                             p.serverY = data[pId].y !== undefined ? data[pId].y : p.y;
                             p.angle = data[pId].angle !== undefined ? data[pId].angle : p.angle;
@@ -401,7 +417,7 @@ const Network = {
                 data.doors.forEach((dData, i) => { if(activeMap.rooms[i]) activeMap.rooms[i].unlocked = dData.unlocked; });
             }
             else if(data.type === 'GAME_OVER') {
-                stats = data.stats;
+                stats = { ...stats, ...data.stats };
                 gameOver();
             }
         });
@@ -413,6 +429,7 @@ const Network = {
     },
 
     sendClientData: function(p) {
+        // Throttle client send ticks to prevent network buffer overflow
         const now = Date.now();
         if (now - this.lastClientUpdate < 45) return;
         this.lastClientUpdate = now;
@@ -470,4 +487,26 @@ function getPrunedPlayer(p) {
         gunColor: activeGun ? activeGun.color : "#999",
         name: p.name
     };
+}
+
+// Dynamically auto-populates client player models with missing purchased weapons
+function syncPlayerInventory(p, serverWeapIdx, serverGunName) {
+    if (!p || !p.inventory || !serverGunName) return;
+    
+    // Check if player has this weapon in their local inventory array
+    const hasWeapon = p.inventory.some(w => w.name === serverGunName);
+    if (!hasWeapon) {
+        const b = weaponDB.find(w => w.name === serverGunName);
+        if (b) {
+            p.inventory.push({ ...b, clip: b.mag, ammo: b.reserve });
+        }
+    }
+    
+    // Set weapons index safely based on its local inventory position
+    const targetIdx = p.inventory.findIndex(w => w.name === serverGunName);
+    if (targetIdx !== -1) {
+        p.weapIdx = targetIdx;
+    } else {
+        p.weapIdx = 0; // Fallback to starting pistol
+    }
 }

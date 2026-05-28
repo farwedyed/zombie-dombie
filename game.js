@@ -788,8 +788,8 @@ function updatePlayerPhysics(p, isLocal) {
         
         p.isShooting = mouse.down; // Directly bind mouse hold state
     }
-    const gun = p.inventory[p.weapIdx];
-    if(p.reloading) {
+    const gun = p.inventory && p.inventory[p.weapIdx] ? p.inventory[p.weapIdx] : null;
+    if(p.reloading && gun) {
         p.reloadTimer--;
         if(p.reloadTimer <= 0) { let needed = gun.mag - gun.clip; let take = Math.min(needed, gun.ammo); gun.clip += take; gun.ammo -= take; p.reloading = false; }
     }
