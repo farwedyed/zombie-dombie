@@ -868,7 +868,9 @@ function updateLocalCoopP2(p) {
 function shootGun(p) {
     if(p.state !== 'ALIVE') return;
     const gun = p.inventory[p.weapIdx];
-    if(stats.frame - (gun.lastShot||0) >= (60/(gun.rpm/60 * 10))) {
+    
+    // Core ROF fix: Reading the database value directly as a frame delay
+    if(stats.frame - (gun.lastShot||0) >= gun.rpm) {
         gun.lastShot = stats.frame;
         
         // Infinite ammo during early stages of boot camp
