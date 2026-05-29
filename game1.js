@@ -364,7 +364,7 @@ function updateLocalCoopP2(p) {
 }
 
 function shootGun(p) {
-    if(p.state !== 'ALIVE' || p.reloading) return; // Block gun firing and casing ejection during active reloads
+    if(p.state !== 'ALIVE' || p.reloading) return; 
     const gun = p.inventory && p.inventory[p.weapIdx] ? p.inventory[p.weapIdx] : null;
     if (!gun) return;
     
@@ -372,7 +372,6 @@ function shootGun(p) {
         gun.lastShot = stats.frame;
         p.muzzleFlash = 4;
         
-        // Eject casing only if weapon is not a Bazooka
         if (gun.name !== "Bazooka") {
             spawnShellCasing(p.x, p.y, p.angle);
         }
@@ -731,7 +730,7 @@ function updateBullets() {
                         }
 
                         if (Network.mode !== 'CLIENT') {
-                            if (Math.random() < 0.05) {
+                            if (Math.random() < 0.015) { // 1.5% chance drop
                                 const powerups = ['MAX_AMMO', 'NUKE', 'DOUBLE_POINTS', 'INSTA_KILL'];
                                 const selected = powerups[Math.floor(Math.random() * powerups.length)];
                                 window.drops.push({
@@ -803,7 +802,7 @@ function triggerExplosion(b) {
                     }
 
                     if (Network.mode !== 'CLIENT') {
-                        if (Math.random() < 0.05) {
+                        if (Math.random() < 0.015) { // 1.5% chance drop
                             const powerups = ['MAX_AMMO', 'NUKE', 'DOUBLE_POINTS', 'INSTA_KILL'];
                             const selected = powerups[Math.floor(Math.random() * powerups.length)];
                             window.drops.push({
