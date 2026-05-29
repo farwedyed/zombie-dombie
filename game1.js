@@ -1,5 +1,7 @@
 /* --- TIMESTEP LOGIC, PLAYER ACTIONS, & GAMEPLAY LOOP --- */
 
+let bulletIdCounter = 0; // Incremental ID counter for synchronized bullet dead-reckoning
+
 function loop(currentTime) {
     if(!gameActive) return;
 
@@ -94,6 +96,12 @@ function updateGameLogic() {
                 z.x += (z.serverX - z.x) * 0.15;
                 z.y += (z.serverY - z.y) * 0.15;
             }
+        });
+
+        // Smoothly progress visual bullets locally on guest client POV
+        bullets.forEach(b => {
+            b.x += b.vx;
+            b.y += b.vy;
         });
     } else {
         stats.frame++;
@@ -429,7 +437,9 @@ function shootGun(p) {
             if(Network.mode !== 'CLIENT') {
                 for(let i=0; i<pellets; i++) {
                     let a = p.angle + (Math.random()-0.5) * (gun.type==='shotgun'?0.2:0.05);
+                    bulletIdCounter++; // Increment global bullet ID
                     bullets.push({ 
+                        id: bulletIdCounter,
                         x: p.x, y: p.y, 
                         vx: Math.cos(a)*20, vy: Math.sin(a)*20, 
                         dmg: gun.dmg, color: gun.color, life: 50, ownerId: p.id,
@@ -477,6 +487,7 @@ function spawnSparks(x, y, bulletVx, bulletVy) {
     }
 }
 
+// Keep helper functions synchronized
 function handleReload() { forceReload(me); }
 function forceReload(p) { let gun = p.inventory[p.weapIdx]; if(!p.reloading && gun.clip < gun.mag && gun.ammo > 0) { p.reloading = true; p.reloadTimer = gun.reload; addText(p.x, p.y-40, "RELOADING...", "#fff"); } }
 
@@ -713,6 +724,9 @@ function updateBullets() {
         }
         if(!hit) zombies.forEach((z, zi) => {
             if (!z) return;
+            // Prevent spent bullet tracers and explosive splash logic from applying to already dead zombies
+            if (z.dead || z.hp <= 0) return;
+            
             if(!hit && Math.hypot(b.x-z.x, b.y-z.y) < z.r+5) {
                 hit = true; 
                 
@@ -805,6 +819,9 @@ function updateBullets() {
 function triggerExplosion(b) {
     const explosionRadius = 150;
     zombies.forEach(z => {
+        // Prevent damage calculations on already dead zombies inside splash radius
+        if (z.dead || z.hp <= 0) return;
+        
         let dist = Math.hypot(b.x - z.x, b.y - z.y);
         if (dist < explosionRadius) {
             let falloff = 1 - (dist / explosionRadius);

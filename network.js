@@ -241,7 +241,7 @@ const Network = {
             p3: getPrunedPlayer(players['p3']), 
             p4: getPrunedPlayer(players['p4']), 
             zombies: zombies.map(z => ({ id: z.id, x: z.x, y: z.y, hp: z.hp, maxHp: z.maxHp, hitTimer: z.hitTimer })), 
-            bullets: bullets.map(b => ({ x: b.x, y: b.y, color: b.color, type: b.type })),
+            bullets: bullets.map(b => ({ id: b.id, x: b.x, y: b.y, vx: b.vx, vy: b.vy, color: b.color, type: b.type })),
             stats: stats,
             windows: activeMap.windows.map(w => ({ boards: w.boards })),
             doors: activeMap.rooms.map(r => ({ unlocked: r.unlocked })),
@@ -383,21 +383,41 @@ const Network = {
                 }
 
                 const incomingBullets = data.bullets || [];
-                const prevBullets = bullets || [];
-                const nextKeys = incomingBullets.map(b => b.x + "_" + b.y);
+                const serverBulletMap = new Map();
                 
-                prevBullets.forEach(eb => {
-                    const key = eb.x + "_" + eb.y;
-                    if (!nextKeys.includes(key)) {
+                incomingBullets.forEach(sb => {
+                    serverBulletMap.set(sb.id, sb);
+                    const localBullet = bullets.find(b => b.id === sb.id);
+                    if (localBullet) {
+                        localBullet.vx = sb.vx;
+                        localBullet.vy = sb.vy;
+                    } else {
+                        // Register new bullet locally on client POV
+                        bullets.push({
+                            id: sb.id,
+                            x: sb.x,
+                            y: sb.y,
+                            vx: sb.vx,
+                            vy: sb.vy,
+                            color: sb.color,
+                            type: sb.type,
+                            life: 50
+                        });
+                    }
+                });
+
+                // Smoothly clean up expired bullets and trigger explosions locally
+                for (let i = bullets.length - 1; i >= 0; i--) {
+                    const eb = bullets[i];
+                    if (!serverBulletMap.has(eb.id)) {
                         if (eb.type === 'explosive') {
                             if (typeof spawnExplosionVisuals === 'function') {
                                 spawnExplosionVisuals(eb.x, eb.y);
                             }
                         }
+                        bullets.splice(i, 1);
                     }
-                });
-
-                bullets = incomingBullets;
+                }
                 
                 window.drops = data.drops || [];
                 window.doublePointsTimer = data.doublePointsTimer || 0;
