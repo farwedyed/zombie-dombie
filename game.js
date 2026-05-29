@@ -713,6 +713,52 @@ window.addEventListener('beforeunload', () => {
     }
 });
 
+window.lobbyChangeVisibility = function() {
+    const select = document.getElementById('lobby-visibility-select');
+    if (!select) return;
+    const visibility = select.value;
+    
+    if (Network.mode === 'HOST') {
+        if (typeof LobbyManager !== 'undefined') {
+            LobbyManager.updateLobbyVisibility(visibility);
+        }
+        try {
+            Network.broadcastToAll({
+                type: 'LOBBY_VISIBILITY_CHANGE',
+                visibility: visibility
+            });
+        } catch (e) {
+            console.warn("Failed to broadcast visibility change:", e);
+        }
+    }
+};
+
+window.kickPlayer = function(pId) {
+    if (Network.mode !== 'HOST') return;
+    
+    // Find connection related to target player
+    const conn = Network.conns.find(c => c.playerId === pId);
+    if (conn) {
+        try {
+            conn.send({ type: 'KICK_BY_HOST' });
+        } catch(e) {
+            console.warn("Failed to transmit KICK command:", e);
+        }
+        setTimeout(() => {
+            try { conn.close(); } catch(e) {}
+        }, 100);
+    }
+    
+    // Instantly wipe from active slot array
+    window.lobbyPlayers[pId] = "";
+    updateLobbyPlayersList();
+    
+    Network.broadcastToAll({
+        type: 'LOBBY_UPDATE',
+        lobbyPlayers: window.lobbyPlayers
+    });
+};
+
 window.refreshServerBrowser = function() {
     const list = document.getElementById('lobby-browser-list');
     const noLobbies = document.getElementById('no-lobbies-msg');
@@ -1020,13 +1066,21 @@ function updateLobbyPlayersList() {
     let html = `<div style="text-align: left; background: rgba(255,255,255,0.05); padding: 15px; border: 1px solid #333; border-radius: 4px; min-width: 280px; box-sizing: border-box;">`;
     html += `<div style="border-bottom: 1px solid #444; padding-bottom: 5px; margin-bottom: 10px; font-weight: bold; color: #a83232;">LOBBY survivors:</div>`;
     
-    html += `<div style="color: #3498db; font-size: 15px; margin-bottom: 5px;">👑 P1 (Host): <strong>${window.lobbyPlayers.p1 || "Survivor"}</strong></div>`;
+    html += `<div style="color: #3498db; font-size: 15px; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center;">`;
+    html += `<span>👑 P1 (Host): <strong>${window.lobbyPlayers.p1 || "Survivor"}</strong></span></div>`;
     
     ['p2', 'p3', 'p4'].forEach((pId, idx) => {
         const pName = window.lobbyPlayers[pId];
         const pColor = getPlayerColor(pId);
         if (pName && pName !== "Reserved") {
-            html += `<div style="color: ${pColor}; font-size: 15px; margin-bottom: 5px;">👤 P${idx+2}: <strong>${pName}</strong></div>`;
+            html += `<div style="color: ${pColor}; font-size: 15px; margin-bottom: 5px; display: flex; justify-content: space-between; align-items: center;">`;
+            html += `<span>👤 P${idx+2}: <strong>${pName}</strong></span>`;
+            
+            // If the local player is the Host, show a Kick button next to other players
+            if (Network.mode === 'HOST') {
+                html += `<button onclick="kickPlayer('${pId}')" style="width: auto; margin: 0; padding: 2px 8px; font-size: 11px; background: #c0392b; color: white; border: 1px solid #a83232; border-radius: 3px; height: auto;">Kick</button>`;
+            }
+            html += `</div>`;
         } else if (pName === "Reserved") {
             html += `<div style="color: #888; font-size: 14px; margin-bottom: 5px; font-style: italic;">👤 P${idx+2}: Connecting...</div>`;
         } else {

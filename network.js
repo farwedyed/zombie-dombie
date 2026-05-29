@@ -322,6 +322,10 @@ const Network = {
                     clientVisDisplay.innerText = data.visibility === 'public' ? "Public" : "Private";
                 }
             }
+            else if (data.type === 'KICK_BY_HOST') {
+                alert("You have been kicked from the lobby by the Host.");
+                location.reload(); 
+            }
             else if (data.type === 'RETURN_TO_LOBBY') {
                 if (typeof goToLobbyScreen === 'function') {
                     goToLobbyScreen();
