@@ -25,6 +25,68 @@ function drawFloatingArrow(x, y, color = '#ffd700') {
     ctx.restore();
 }
 
+function drawBackCosmetic(id, r, targetCtx = ctx) {
+    const cos = cosmeticDB.find(c => c.id === id);
+    if (!cos) return;
+
+    targetCtx.save();
+    targetCtx.fillStyle = cos.color;
+    targetCtx.strokeStyle = '#000';
+    targetCtx.lineWidth = 1.5;
+
+    // Based on the game canvas coordinate transformations,
+    // the player faces positive X, meaning the "back" is at negative X (-r)
+    if (cos.type === 'cone') {
+        // Triangular backwards-pointing cone (matches your drawing)
+        targetCtx.beginPath();
+        targetCtx.moveTo(-r + 2, -10);
+        targetCtx.lineTo(-r - 20, 0); // Point extending backwards
+        targetCtx.lineTo(-r + 2, 10);
+        targetCtx.closePath();
+        targetCtx.fill();
+        targetCtx.stroke();
+    } 
+    else if (cos.type === 'backpack') {
+        // Robust adventure backpack
+        targetCtx.fillRect(-r - 12, -8, 12, 16);
+        targetCtx.strokeRect(-r - 12, -8, 12, 16);
+    } 
+    else if (cos.type === 'cape') {
+        // Flows backward
+        targetCtx.beginPath();
+        targetCtx.moveTo(-r + 3, -12);
+        targetCtx.lineTo(-r - 24, -18);
+        targetCtx.lineTo(-r - 24, 18);
+        targetCtx.lineTo(-r + 3, 12);
+        targetCtx.closePath();
+        targetCtx.fill();
+        targetCtx.stroke();
+    }
+    else if (cos.type === 'jetpack') {
+        // Steel thruster unit with glowing neon cyan nozzle caps
+        targetCtx.fillStyle = '#7f8c8d';
+        targetCtx.fillRect(-r - 10, -10, 10, 20);
+        targetCtx.strokeRect(-r - 10, -10, 10, 20);
+        
+        // Thrusters
+        targetCtx.fillStyle = cos.color;
+        targetCtx.fillRect(-r - 14, -8, 4, 5);
+        targetCtx.fillRect(-r - 14, 3, 4, 5);
+        
+        // Fire particles flicker
+        if (Math.random() < 0.6) {
+            targetCtx.fillStyle = '#ff3300';
+            targetCtx.fillRect(-r - 22, -7, 8, 3);
+            targetCtx.fillRect(-r - 22, 4, 8, 3);
+            targetCtx.fillStyle = '#ffaa00';
+            targetCtx.fillRect(-r - 18, -6, 4, 1);
+            targetCtx.fillRect(-r - 18, 5, 4, 1);
+        }
+    }
+
+    targetCtx.restore();
+}
+
 function drawGame() {
     if (!activeMap) return;
 
@@ -99,7 +161,7 @@ function drawGame() {
             // Pulsing geometry animation
             const pulse = 1 + Math.sin(Date.now() / 120) * 0.12;
             
-            // Draw golden glowing ring
+            // Draw glowing golden ring
             ctx.strokeStyle = '#ffd700';
             ctx.lineWidth = 2.5;
             ctx.beginPath();
@@ -254,6 +316,12 @@ function drawGame() {
         // Render blinking/flashing effect if player is currently invincible
         if (p.invincibleTimer > 0 && Math.floor(p.invincibleTimer / 4) % 2 === 0) {
             ctx.globalAlpha = 0.3; 
+        }
+
+        // --- DRAW BACK COSMETIC ---
+        const equippedCos = p.equippedCosmetic || (p.id === 'p1' ? saveData.equippedCosmetic : 'none');
+        if (equippedCos && equippedCos !== 'none') {
+            drawBackCosmetic(equippedCos, p.r, ctx);
         }
         
         // Body Color (Jug makes you redder)

@@ -106,7 +106,8 @@ const Network = {
             this.setupClient();
             
             try {
-                this.conn.send({ type: 'JOIN_LOBBY', name: myUsername });
+                const myLvl = Math.floor((saveData.xp || 0) / 1000) + 1;
+                this.conn.send({ type: 'JOIN_LOBBY', name: myUsername, level: myLvl });
             } catch (e) {
                 console.warn("Failed to send JOIN_LOBBY packet:", e);
             }
@@ -135,7 +136,8 @@ const Network = {
 
         c.on('data', (data) => {
             if (data.type === 'JOIN_LOBBY') {
-                window.lobbyPlayers[c.playerId] = data.name || ("Player " + c.playerId.substring(1));
+                const clientLvl = data.level || 1;
+                window.lobbyPlayers[c.playerId] = (data.name || ("Player " + c.playerId.substring(1))) + " [Lv. " + clientLvl + "]";
                 if (typeof updateLobbyPlayersList === 'function') updateLobbyPlayersList();
                 if (typeof updateLobbyUI === 'function') updateLobbyUI(true);
                 
@@ -167,6 +169,7 @@ const Network = {
                     if(data.name) p.name = data.name;
                     p.isShooting = data.shoot; 
                     if (data.reload) p.triggerReload = true;
+                    p.equippedCosmetic = data.cosmetic || 'none';
                 }
             }
             else if(data.type === 'INTERACT') {
@@ -373,7 +376,6 @@ const Network = {
                                 spawnExplosionVisuals(eb.x, eb.y);
                             }
                         }
-                        // Wall spark particles on non-explosive impacts removed to prevent multiplayer lag
                     }
                 });
 
@@ -402,7 +404,6 @@ const Network = {
                             let myX = me.x;
                             let myY = me.y;
                             
-                            // Client-side local player revival sync detection
                             if (me.state === 'DOWNED' && fallbackPId.state === 'ALIVE') {
                                 const spawnSource = data.p1;
                                 if (spawnSource) {
@@ -411,6 +412,22 @@ const Network = {
                                 }
                                 if (typeof addText === 'function') {
                                     addText(me.x, me.y, "REVIVED (+INVINCIBLE!)", "#0f0");
+                                }
+                            }
+
+                            // Dynamic Client-side Real-time XP & Coin accumulation mirroring
+                            if (fallbackPId.kills > me.kills) {
+                                let killDiff = fallbackPId.kills - me.kills;
+                                if (typeof addPlayerXP === 'function') {
+                                    addPlayerXP(me, killDiff * 25);
+                                }
+                                saveData.lobbyCoins = (saveData.lobbyCoins || 0) + killDiff;
+                            }
+                            if (fallbackPId.score > me.score) {
+                                let scoreDiff = fallbackPId.score - me.score;
+                                let xpToGive = Math.floor(scoreDiff / 10) * 5;
+                                if (xpToGive > 0 && typeof addPlayerXP === 'function') {
+                                    addPlayerXP(me, xpToGive);
                                 }
                             }
 
@@ -435,14 +452,12 @@ const Network = {
                             }
                             const p = players[pId];
 
-                            // Client-side other player revival sync detection
                             if (p && p.state === 'DOWNED' && data[pId].state === 'ALIVE') {
                                 if (typeof addText === 'function') {
                                     addText(p.x, p.y, "REVIVED (+INVINCIBLE!)", "#0f0");
                                 }
                             }
 
-                            // Eject shell locally only if not currently reloading and the weapon is not a Bazooka
                             if (p && !data[pId].reloading && !p.reloading && data[pId].gunName !== "Bazooka") {
                                 const lastClip = p.clip !== undefined ? p.clip : 8;
                                 if (data[pId].clip < lastClip && (lastClip - data[pId].clip) <= 2) {
@@ -470,6 +485,7 @@ const Network = {
                             p.gunColor = data[pId].gunColor !== undefined ? data[pId].gunColor : "#999";
                             p.clip = data[pId].clip !== undefined ? data[pId].clip : 8;
                             p.ammo = data[pId].ammo !== undefined ? data[pId].ammo : 32;
+                            p.equippedCosmetic = data[pId].cosmetic !== undefined ? data[pId].cosmetic : 'none';
                         } else {
                             if (players[pId]) delete players[pId];
                         }
@@ -503,7 +519,8 @@ const Network = {
                     x: p.x, y: p.y, angle: p.angle,
                     shoot: mouse.down,
                     reload: p.reloading,
-                    name: p.name
+                    name: p.name,
+                    cosmetic: p.equippedCosmetic || 'none'
                 });
             } catch (e) {
                 console.warn("Failed to send client data payload:", e);
@@ -546,7 +563,8 @@ function getPrunedPlayer(p) {
         ammo: activeGun ? activeGun.ammo : 0,
         gunName: activeGun ? activeGun.name : "M1911",
         gunColor: activeGun ? activeGun.color : "#999",
-        name: p.name
+        name: p.name,
+        cosmetic: p.equippedCosmetic || 'none'
     };
 }
 

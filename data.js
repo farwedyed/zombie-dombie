@@ -4,7 +4,11 @@ const startData = {
     highestRound: 1, 
     prevScore: 0, 
     unlockedAch: [], 
-    unlockedGuns: ['M1911'] 
+    unlockedGuns: ['M1911'],
+    xp: 0,
+    lobbyCoins: 0,
+    ownedCosmetics: ['none'],
+    equippedCosmetic: 'none'
 };
 
 // Load data initially from local storage (AccountSystem will overwrite this on dynamic cloud sync)
@@ -13,18 +17,21 @@ let saveData = JSON.parse(localStorage.getItem('zombieSaveModular')) || startDat
 // Safety Checks
 if(!saveData.unlockedAch) saveData.unlockedAch = [];
 if(!saveData.unlockedGuns) saveData.unlockedGuns = ['M1911'];
+if(saveData.xp === undefined) saveData.xp = 0;
+if(saveData.lobbyCoins === undefined) saveData.lobbyCoins = 0;
+if(!saveData.ownedCosmetics) saveData.ownedCosmetics = ['none'];
+if(!saveData.equippedCosmetic) saveData.equippedCosmetic = 'none';
 
 function saveGame(round, kills, score) {
-    saveData.kills += kills;
     if(round > saveData.highestRound) saveData.highestRound = round;
     
     let msg = "";
-    if(saveData.prevScore === 0) msg = "First run logged!";
+    if(saveData.prevScore === 0) msg = "First run logged! ";
     else {
         let diff = score - saveData.prevScore;
-        if(diff > 0) msg = `You did ${((diff/saveData.prevScore)*100).toFixed(0)}% better!`;
-        else if(diff < 0) msg = `You did ${((Math.abs(diff)/saveData.prevScore)*100).toFixed(0)}% worse.`;
-        else msg = "Same score as last time.";
+        if(diff > 0) msg = `You did ${((diff/saveData.prevScore)*100).toFixed(0)}% better than last match!`;
+        else if(diff < 0) msg = `You did ${((Math.abs(diff)/saveData.prevScore)*100).toFixed(0)}% worse than last match.`;
+        else msg = "Same score as last match.";
     }
     
     saveData.prevScore = score;
@@ -108,4 +115,12 @@ const achievements = [
     { id: 'r5', name: "Survivor", desc: "Reach Round 5", icon: "🏕️", check: (s) => s.round >= 5 },
     { id: 'jug', name: "Iron Belly", desc: "Drink Juggernog", icon: "🍷", check: (s, p) => p.hasJug },
     { id: 'rich', name: "Rich", desc: "Have 3000 Points", icon: "💰", check: (s) => s.score >= 3000 }
+];
+
+/* --- COSMETICS DATABASE --- */
+const cosmeticDB = [
+    { id: 'cone_yellow', name: "Retro Cone Hat (Yellow)", price: 50, color: "#ffd700", type: "cone" },
+    { id: 'backpack_survival', name: "Survival Backpack (Brown)", price: 150, color: "#8b5a2b", type: "backpack" },
+    { id: 'cape_neon', name: "Neon Cape (Magenta)", price: 300, color: "#ff00ff", type: "cape" },
+    { id: 'jetpack_steel', name: "Steel Thruster (Cyan)", price: 500, color: "#00ffff", type: "jetpack" }
 ];

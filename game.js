@@ -92,13 +92,15 @@ let isAimingTouch = false;
 const keys = {};
 const mouse = { x: 0, y: 0, down: false, pressHandled: false };
 
+// COSMETICS PREVIEW THREAD STATE
+let previewAngle = 0;
+let previewAnimFrame = null;
+window.previewCosmeticId = 'none';
+
 document.oncontextmenu = () => false;
 
 function init() {
-    document.getElementById('menu-kills').innerText = saveData.kills;
-    if(document.getElementById('menu-round')) {
-        document.getElementById('menu-round').innerText = saveData.highestRound;
-    }
+    refreshMainMenuStats();
     
     window.addEventListener('resize', () => {
         canvas.width = window.innerWidth;
@@ -151,6 +153,28 @@ function init() {
     }
 
     checkTouchDevice();
+}
+
+function refreshMainMenuStats() {
+    const xp = saveData.xp || 0;
+    const localLvl = Math.floor(xp / 1000) + 1;
+    const localCoins = saveData.lobbyCoins || 0;
+    const currentXPInLevel = xp % 1000;
+    const percent = (currentXPInLevel / 1000) * 100;
+    
+    const killsEl = document.getElementById('menu-kills');
+    const roundEl = document.getElementById('menu-round');
+    const levelEl = document.getElementById('menu-level');
+    const coinsEl = document.getElementById('menu-coins');
+    const xpBarEl = document.getElementById('menu-xp-bar');
+    const xpTextEl = document.getElementById('menu-xp-text');
+    
+    if (killsEl) killsEl.innerText = saveData.kills;
+    if (roundEl) roundEl.innerText = saveData.highestRound;
+    if (levelEl) levelEl.innerText = localLvl;
+    if (coinsEl) coinsEl.innerText = localCoins + " 🪙";
+    if (xpBarEl) xpBarEl.style.width = percent + "%";
+    if (xpTextEl) xpTextEl.innerText = `${currentXPInLevel} / 1000 XP`;
 }
 
 /* --- MOBILE DETECTION & JOYSTICKS --- */
@@ -341,8 +365,20 @@ window.openMenu = function(id) {
     document.getElementById(id).style.display = 'block';
     if(id === 'ach-modal') renderAchievements();
     if(id === 'gun-modal') renderGunLibrary();
+    if(id === 'cosmetics-modal') {
+        renderCosmeticShop();
+        startCosmeticPreviewLoop();
+    }
 };
-window.closeMenu = function(id) { document.getElementById(id).style.display = 'none'; };
+window.closeMenu = function(id) { 
+    document.getElementById(id).style.display = 'none'; 
+    if (id === 'cosmetics-modal') {
+        if (previewAnimFrame) {
+            cancelAnimationFrame(previewAnimFrame);
+            previewAnimFrame = null;
+        }
+    }
+};
 
 function renderAchievements() {
     const list = document.getElementById('ach-list'); list.innerHTML = "";
@@ -364,6 +400,195 @@ function showToast(ach) {
     c.appendChild(d); setTimeout(()=>d.remove(), 5000); 
 }
 function checkAchievements() { achievements.forEach(a => { if(me && a.check(stats, me)) { if(unlockAch(a.id)) showToast(a); } }); }
+
+function renderCosmeticShop() {
+    const list = document.getElementById('cosmetics-list');
+    list.innerHTML = "";
+    
+    if (!saveData.ownedCosmetics) saveData.ownedCosmetics = ['none'];
+    if (!saveData.equippedCosmetic) saveData.equippedCosmetic = 'none';
+    
+    // Set initial preview state
+    resetPreviewCosmetic();
+    
+    const isEquippedNone = saveData.equippedCosmetic === 'none';
+    list.innerHTML += `
+        <div class="list-item ${isEquippedNone ? 'unlocked' : ''}" style="border-left-color: #555;" onmouseover="setPreviewCosmetic('none')" onmouseout="resetPreviewCosmetic()">
+            <div>
+                <div class="item-title">Unequip All</div>
+                <div class="item-desc">Clear your back slot</div>
+            </div>
+            <div>
+                ${isEquippedNone ? 
+                    '<span style="color:#2ecc71; font-weight:bold; font-size:14px;">EQUIPPED</span>' : 
+                    '<button onclick="equipCosmetic(\'none\')" style="width:auto; padding:6px 12px; font-size:12px; margin:0; background:#222;">Equip</button>'}
+            </div>
+        </div>
+    `;
+    
+    cosmeticDB.forEach(c => {
+        const isOwned = saveData.ownedCosmetics.includes(c.id);
+        const isEquipped = saveData.equippedCosmetic === c.id;
+        
+        let actionHtml = "";
+        if (isEquipped) {
+            actionHtml = `<span style="color:#2ecc71; font-weight:bold; font-size:14px;">EQUIPPED</span>`;
+        } else if (isOwned) {
+            actionHtml = `<button onclick="equipCosmetic('${c.id}')" style="width:auto; padding:6px 12px; font-size:12px; margin:0; background:#222;">Equip</button>`;
+        } else {
+            const canAfford = saveData.lobbyCoins >= c.price;
+            actionHtml = `<button onclick="buyCosmetic('${c.id}')" ${canAfford ? '' : 'disabled'} style="width:auto; padding:6px 12px; font-size:12px; margin:0; background:${canAfford ? '#e67e22' : '#333'}; color:white; border:none;">Buy (🪙 ${c.price})</button>`;
+        }
+        
+        list.innerHTML += `
+            <div class="list-item ${isOwned ? 'unlocked' : ''}" style="border-left-color: ${c.color};" onmouseover="setPreviewCosmetic('${c.id}')" onmouseout="resetPreviewCosmetic()">
+                <div>
+                    <div class="item-title" style="color:${c.color}">${c.name}</div>
+                    <div class="item-desc">Style: ${c.type.toUpperCase()}</div>
+                </div>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    ${actionHtml}
+                </div>
+            </div>
+        `;
+    });
+}
+
+window.setPreviewCosmetic = function(id) {
+    window.previewCosmeticId = id;
+    const item = cosmeticDB.find(c => c.id === id);
+    const label = document.getElementById('cosmetic-preview-name');
+    if (label) {
+        if (item) {
+            label.innerText = item.name;
+            label.style.color = item.color;
+        } else {
+            label.innerText = "Unequipped";
+            label.style.color = "#666";
+        }
+    }
+};
+
+window.resetPreviewCosmetic = function() {
+    window.previewCosmeticId = saveData.equippedCosmetic;
+    const label = document.getElementById('cosmetic-preview-name');
+    if (label) {
+        if (saveData.equippedCosmetic === 'none') {
+            label.innerText = "Unequipped";
+            label.style.color = "#666";
+        } else {
+            const item = cosmeticDB.find(c => c.id === saveData.equippedCosmetic);
+            if (item) {
+                label.innerText = item.name;
+                label.style.color = item.color;
+            }
+        }
+    }
+};
+
+function startCosmeticPreviewLoop() {
+    const canvas = document.getElementById('cosmeticPreviewCanvas');
+    if (!canvas) return;
+    const previewCtx = canvas.getContext('2d');
+    
+    function drawPreviewFrame() {
+        if (document.getElementById('cosmetics-modal').style.display !== 'block') {
+            cancelAnimationFrame(previewAnimFrame);
+            previewAnimFrame = null;
+            return;
+        }
+
+        previewCtx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Fitting Room grid lines
+        previewCtx.strokeStyle = 'rgba(255, 255, 255, 0.025)';
+        previewCtx.lineWidth = 1;
+        previewCtx.beginPath();
+        previewCtx.arc(70, 70, 45, 0, Math.PI * 2);
+        previewCtx.arc(70, 70, 25, 0, Math.PI * 2);
+        previewCtx.stroke();
+        
+        previewCtx.save();
+        previewCtx.translate(70, 70);
+        
+        // Spin the preview model
+        previewAngle += 0.015;
+        previewCtx.rotate(previewAngle);
+        
+        const currentPreviewId = window.previewCosmeticId || saveData.equippedCosmetic || 'none';
+        const radius = 22;
+        
+        // Draw selected hover back cosmetic relative to spin axis
+        if (currentPreviewId && currentPreviewId !== 'none' && typeof drawBackCosmetic === 'function') {
+            drawBackCosmetic(currentPreviewId, radius, previewCtx);
+        }
+        
+        // Draw player circle body
+        previewCtx.fillStyle = '#3498db';
+        previewCtx.strokeStyle = '#000';
+        previewCtx.lineWidth = 2.2;
+        previewCtx.beginPath();
+        previewCtx.arc(0, 0, radius, 0, Math.PI * 2);
+        previewCtx.fill();
+        previewCtx.stroke();
+        
+        // Draw Gun Barrel
+        previewCtx.fillStyle = '#999';
+        previewCtx.fillRect(0, -5, 30, 10);
+        previewCtx.strokeRect(0, -5, 30, 10);
+        
+        previewCtx.restore();
+        
+        previewAnimFrame = requestAnimationFrame(drawPreviewFrame);
+    }
+    
+    if (previewAnimFrame) cancelAnimationFrame(previewAnimFrame);
+    previewAnimFrame = requestAnimationFrame(drawPreviewFrame);
+}
+
+window.buyCosmetic = function(id) {
+    const item = cosmeticDB.find(c => c.id === id);
+    if (!item) return;
+    
+    if (saveData.lobbyCoins >= item.price && !saveData.ownedCosmetics.includes(id)) {
+        saveData.lobbyCoins -= item.price;
+        saveData.ownedCosmetics.push(id);
+        saveData.equippedCosmetic = id; // Auto equip on purchase
+        
+        localStorage.setItem('zombieSaveModular', JSON.stringify(saveData));
+        
+        if (typeof AccountSystem !== 'undefined' && AccountSystem.currentUser) {
+            AccountSystem.pushProfileData();
+        }
+        
+        refreshMainMenuStats();
+        renderCosmeticShop();
+        
+        if (me) {
+            me.equippedCosmetic = id;
+        }
+    }
+};
+
+window.equipCosmetic = function(id) {
+    if (id === 'none' || saveData.ownedCosmetics.includes(id)) {
+        saveData.equippedCosmetic = id;
+        localStorage.setItem('zombieSaveModular', JSON.stringify(saveData));
+        
+        if (typeof AccountSystem !== 'undefined' && AccountSystem.currentUser) {
+            AccountSystem.pushProfileData();
+        }
+        
+        renderCosmeticShop();
+        
+        if (me) {
+            me.equippedCosmetic = id;
+            if (Network.mode === 'CLIENT') {
+                Network.sendClientData(me);
+            }
+        }
+    }
+};
 
 /* --- PROFILE & HANDSHAKE HELPERS --- */
 function saveLocalUsername() {
@@ -414,7 +639,7 @@ function startLocalCoop() {
     closeMenu('coop-modal');
     Network.mode = 'LOCAL_COOP';
     window.myPlayerId = 'p1';
-    window.lobbyPlayers = { p1: "Survivor", p2: "Player 2", p3: "", p4: "" };
+    window.lobbyPlayers = { p1: "Survivor", p2: "Player 2 [Lv. 1]", p3: "", p4: "" };
     
     const selectDiff = document.getElementById('menu-diff-select');
     stats.difficulty = selectDiff ? selectDiff.value : "medium";
@@ -470,8 +695,11 @@ function enterLobbyHost() {
     myUsername = nameInput ? (nameInput.value || "Survivor") : "Survivor";
     myUsername = myUsername.substring(0, 12);
 
+    const myLvl = Math.floor((saveData.xp || 0) / 1000) + 1;
+    const hostDisplayName = myUsername + " [Lv. " + myLvl + "]";
+
     window.myPlayerId = 'p1';
-    window.lobbyPlayers = { p1: myUsername, p2: "", p3: "", p4: "" };
+    window.lobbyPlayers = { p1: hostDisplayName, p2: "", p3: "", p4: "" };
     updateLobbyPlayersList();
 
     document.getElementById('main-menu').style.display = 'none'; 
@@ -507,7 +735,7 @@ function enterLobbyJoin() {
     myUsername = nameInput ? (nameInput.value || "Survivor") : "Survivor";
     myUsername = myUsername.substring(0, 12);
 
-    window.lobbyPlayers = { p1: "Host", p2: "", p3: "", p4: "" };
+    window.lobbyPlayers = { p1: "Host [Lv. ?]", p2: "", p3: "", p4: "" };
     updateLobbyPlayersList();
 
     Network.init(() => { 
@@ -618,6 +846,9 @@ function launchGame() {
     myUsername = nameInput ? (nameInput.value || "Survivor") : "Survivor";
     myUsername = myUsername.substring(0, 12);
 
+    const myLvl = Math.floor((saveData.xp || 0) / 1000) + 1;
+    const displayName = myUsername + " [Lv. " + myLvl + "]";
+
     players = {};
     
     let spawnX = 200, spawnY = 200;
@@ -626,10 +857,10 @@ function launchGame() {
     else if (activeMap === playableMaps[2]) { spawnX = 250; spawnY = 250; }
     
     if (Network.mode === 'CLIENT') {
-        me = createPlayer(window.myPlayerId, spawnX, spawnY, getPlayerColor(window.myPlayerId), myUsername);
+        me = createPlayer(window.myPlayerId, spawnX, spawnY, getPlayerColor(window.myPlayerId), displayName);
         players[window.myPlayerId] = me;
     } else {
-        players['p1'] = createPlayer('p1', spawnX, spawnY, getPlayerColor('p1'), myUsername);
+        players['p1'] = createPlayer('p1', spawnX, spawnY, getPlayerColor('p1'), displayName);
         me = players['p1'];
 
         if (Network.mode === 'HOST') {
@@ -639,7 +870,7 @@ function launchGame() {
                 }
             });
         } else if (Network.mode === 'LOCAL_COOP') {
-            players['p2'] = createPlayer('p2', spawnX + 40, spawnY, getPlayerColor('p2'), "Player 2");
+            players['p2'] = createPlayer('p2', spawnX + 40, spawnY, getPlayerColor('p2'), "Player 2 [Lv. 1]");
         }
     }
 
@@ -676,7 +907,8 @@ function createPlayer(id, x, y, color, name) {
         pressHandled: false,
         lastRepairTime: 0,
         invincibleTimer: 0,
-        muzzleFlash: 0
+        muzzleFlash: 0,
+        equippedCosmetic: (id === 'p1') ? (saveData.equippedCosmetic || 'none') : 'none'
     }; 
 }
 

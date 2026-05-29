@@ -44,6 +44,9 @@ const AccountSystem = {
                     saveData = JSON.parse(localStorage.getItem('zombieSaveModular')) || startData;
                 }
                 this.updateAuthUI();
+                if (typeof refreshMainMenuStats === 'function') {
+                    refreshMainMenuStats();
+                }
             }
         });
     },
@@ -59,7 +62,6 @@ const AccountSystem = {
             })
             .catch((error) => {
                 console.error("Sign-in failed:", error);
-                // Shows the precise Firebase code (e.g., auth/unauthorized-domain) to help debug
                 alert(`Sign-in failed: [${error.code}] ${error.message}`);
             });
     },
@@ -90,7 +92,9 @@ const AccountSystem = {
                         highestRound: cloudData.highestRound !== undefined ? cloudData.highestRound : startData.highestRound,
                         prevScore: cloudData.prevScore !== undefined ? cloudData.prevScore : startData.prevScore,
                         unlockedAch: cloudData.unlockedAch !== undefined ? cloudData.unlockedAch : [...startData.unlockedAch],
-                        unlockedGuns: cloudData.unlockedGuns !== undefined ? cloudData.unlockedGuns : [...startData.unlockedGuns]
+                        unlockedGuns: cloudData.unlockedGuns !== undefined ? cloudData.unlockedGuns : [...startData.unlockedGuns],
+                        xp: cloudData.xp !== undefined ? cloudData.xp : startData.xp,
+                        lobbyCoins: cloudData.lobbyCoins !== undefined ? cloudData.lobbyCoins : startData.lobbyCoins
                     };
                 }
 
@@ -101,12 +105,9 @@ const AccountSystem = {
                 await this.pushProfileData();
             }
             this.updateAuthUI();
-            
-            // Refresh main menu text numbers if menu is active
-            const menuKills = document.getElementById('menu-kills');
-            const menuRound = document.getElementById('menu-round');
-            if (menuKills && typeof saveData !== 'undefined') menuKills.innerText = saveData.kills;
-            if (menuRound && typeof saveData !== 'undefined') menuRound.innerText = saveData.highestRound;
+            if (typeof refreshMainMenuStats === 'function') {
+                refreshMainMenuStats();
+            }
 
         } catch (error) {
             console.warn("Failed to retrieve profile data from cloud:", error);
@@ -115,6 +116,9 @@ const AccountSystem = {
                 saveData = JSON.parse(localStorage.getItem('zombieSaveModular')) || startData;
             }
             this.updateAuthUI();
+            if (typeof refreshMainMenuStats === 'function') {
+                refreshMainMenuStats();
+            }
         }
     },
 
@@ -131,6 +135,8 @@ const AccountSystem = {
                     prevScore: saveData.prevScore,
                     unlockedAch: saveData.unlockedAch,
                     unlockedGuns: saveData.unlockedGuns,
+                    xp: saveData.xp || 0,
+                    lobbyCoins: saveData.lobbyCoins || 0,
                     lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
                 }, { merge: true });
                 console.log("Cloud profile updated successfully.");
@@ -146,13 +152,16 @@ const AccountSystem = {
         if (!authContainer) return;
 
         if (this.currentUser) {
+            const currentLevel = Math.floor((saveData.xp || 0) / 1000) + 1;
+            const coins = saveData.lobbyCoins || 0;
+
             authContainer.innerHTML = `
                 <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; background: rgba(255,255,255,0.05); padding: 8px 12px; border: 1px solid #333; border-radius: 4px; margin-bottom: 15px;">
                     <div style="display: flex; align-items: center; gap: 10px; text-align: left;">
                         <img src="${this.currentUser.photoURL || 'https://via.placeholder.com/32'}" alt="Avatar" style="width: 32px; height: 32px; border-radius: 50%; border: 1px solid #a83232;">
                         <div>
                             <div style="color: #ffd700; font-size: 13px; font-weight: bold; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${this.currentUser.displayName}</div>
-                            <div style="color: #666; font-size: 10px;">Cloud Profile Synced</div>
+                            <div style="color: #bbb; font-size: 10px; font-weight: bold;">Lv. ${currentLevel} | 🪙 ${coins} Coins</div>
                         </div>
                     </div>
                     <button onclick="AccountSystem.logout()" style="width: auto; padding: 6px 10px; font-size: 11px; margin: 0; background: #222; border-color: #444; height: auto;">Sign Out</button>

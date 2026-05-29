@@ -173,6 +173,47 @@ function updateGameLogic() {
     }
 }
 
+function addPlayerXP(p, amount) {
+    if (!p || p.state !== 'ALIVE' || Network.mode === 'CLIENT') return;
+    
+    // XP and persistent coins are rewarded in real-time to the local active player profile
+    if (p === me) {
+        if (saveData.xp === undefined) saveData.xp = 0;
+        if (saveData.lobbyCoins === undefined) saveData.lobbyCoins = 0;
+        
+        const oldLevel = Math.floor(saveData.xp / 1000) + 1;
+        saveData.xp += amount;
+        const newLevel = Math.floor(saveData.xp / 1000) + 1;
+        
+        if (newLevel > oldLevel) {
+            addText(p.x, p.y - 100, `LEVEL UP! LEVEL ${newLevel} 🎉`, "#ffd700");
+            
+            // Level Up persistent Coins bonus
+            saveData.lobbyCoins += 50;
+            addText(p.x, p.y - 130, `+50 COINS 🪙`, "#e67e22");
+            
+            // Instantly update their name tag
+            const baseName = p.name.split(" [Lv. ")[0];
+            p.name = `${baseName} [Lv. ${newLevel}]`;
+            
+            // Sync nickname configuration changes to remote clients
+            if (Network.mode === 'HOST') {
+                window.lobbyPlayers.p1 = p.name;
+                Network.broadcastToAll({
+                    type: 'LOBBY_UPDATE',
+                    lobbyPlayers: window.lobbyPlayers
+                });
+            }
+        }
+        
+        localStorage.setItem('zombieSaveModular', JSON.stringify(saveData));
+
+        if (typeof AccountSystem !== 'undefined' && AccountSystem.currentUser) {
+            AccountSystem.pushProfileData();
+        }
+    }
+}
+
 function updatePlayerPhysics(p, isLocal) {
     if(p.state === 'DOWNED') {
         if(p.reviveTimer > 0) { p.reviveTimer--; if(p.reviveTimer === 0) { p.state = 'ALIVE'; p.hp = p.maxHp; p.hasJug = false; p.invincibleTimer = 120; addText(p.x, p.y, "REVIVED (+INVINCIBLE!)", "#0f0"); } }
@@ -484,6 +525,9 @@ function processInteraction(p) {
             p.score += pointsToGive; 
             addText(t.obj.x+20, t.obj.y, "+" + pointsToGive, "#fff");
             
+            // Add real-time XP for board repair
+            addPlayerXP(p, 15);
+            
             if (typeof Tutorial !== 'undefined') {
                 Tutorial.onWindowRepaired();
             }
@@ -700,6 +744,7 @@ function updateBullets() {
                         if(players[b.ownerId]) { 
                             players[b.ownerId].score += pointsHit; 
                             stats.score += pointsHit;
+                            addPlayerXP(players[b.ownerId], 5); // Add real-time XP on hit
                         }
                         if(me && b.ownerId === me.id) { 
                             addText(z.x, z.y, "+" + pointsHit, "#fff"); 
@@ -718,6 +763,12 @@ function updateBullets() {
                         if(players[b.ownerId]) { 
                             players[b.ownerId].score += pointsKill; 
                             players[b.ownerId].kills++; 
+                            addPlayerXP(players[b.ownerId], 25); // Add real-time XP on kill
+
+                            // Award real-time Lobby Coin to local player on zombie kill
+                            if (b.ownerId === 'p1') {
+                                saveData.lobbyCoins = (saveData.lobbyCoins || 0) + 1;
+                            }
                         }
                         if(me && b.ownerId === me.id) { 
                             stats.sessionKills++; 
@@ -775,6 +826,7 @@ function triggerExplosion(b) {
                     if(players[b.ownerId]) { 
                         players[b.ownerId].score += pointsHit; 
                         stats.score += pointsHit;
+                        addPlayerXP(players[b.ownerId], 5); // Add real-time XP on explosive splash hit
                     }
                 }
 
@@ -790,6 +842,12 @@ function triggerExplosion(b) {
                     if(players[b.ownerId]) { 
                         players[b.ownerId].score += pointsKill; 
                         players[b.ownerId].kills++; 
+                        addPlayerXP(players[b.ownerId], 25); // Add real-time XP on explosive splash kill
+
+                        // Award real-time Lobby Coin to local player on explosive kill
+                        if (b.ownerId === 'p1') {
+                            saveData.lobbyCoins = (saveData.lobbyCoins || 0) + 1;
+                        }
                     }
                     if(me && b.ownerId === me.id) { 
                         stats.sessionKills++; 
