@@ -133,12 +133,6 @@ function init() {
     window.addEventListener('mousedown', (e) => { if(e.button===0) mouse.down = true; });
     window.addEventListener('mouseup', () => { mouse.down = false; mouse.pressHandled = false; });
 
-    // Handle Resize cleanly
-    window.addEventListener('resize', () => {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-    });
-
     // Restore saved username if present in localStorage
     let nameInput = document.getElementById('username-input');
     if (nameInput) {
@@ -829,11 +823,20 @@ function updateGameLogic() {
 
     checkInteractUI();
 
-    // Safely cleanup particles backwards to prevent shifting issues
+    // Eject and update spent golden bullet shells
     for (let i = particles.length - 1; i >= 0; i--) {
         let p = particles[i];
-        p.x += p.vx;
-        p.y += p.vy;
+        if (p.type === 'shell') {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.vx *= p.friction;
+            p.vy *= p.friction;
+            p.angle += p.rotSpeed;
+            p.rotSpeed *= 0.95; // Rotational decay
+        } else {
+            p.x += p.vx;
+            p.y += p.vy;
+        }
         p.life--;
         if (p.life <= 0) {
             particles.splice(i, 1);
@@ -1064,6 +1067,9 @@ function shootGun(p) {
         gun.lastShot = stats.frame;
         p.muzzleFlash = 4; // Spawn active muzzle flare frames locally on shoot
         
+        // Eject spinning spent gold shell casings locally (non-networked visual)
+        spawnShellCasing(p.x, p.y, p.angle);
+
         // Infinite ammo during early stages of boot camp
         const isInfinite = (typeof Tutorial !== 'undefined' && Tutorial.isActive && Tutorial.currentStep < 4);
 
@@ -1085,6 +1091,40 @@ function shootGun(p) {
                 }
             }
         } else if (gun.ammo > 0) forceReload(p);
+    }
+}
+
+function spawnShellCasing(x, y, playerAngle) {
+    let ejectAngle = playerAngle - Math.PI / 2 + (Math.random() - 0.5) * 0.3; // Eject slightly right
+    let speed = 2 + Math.random() * 2;
+    particles.push({
+        x: x,
+        y: y,
+        vx: Math.cos(ejectAngle) * speed,
+        vy: Math.sin(ejectAngle) * speed,
+        life: 60 + Math.random() * 30,
+        color: '#f1c40f', // Shiny brass yellow
+        type: 'shell',
+        angle: Math.random() * Math.PI * 2,
+        rotSpeed: (Math.random() - 0.5) * 0.2,
+        friction: 0.93 // Drag on floor
+    });
+}
+
+function spawnSparks(x, y, bulletVx, bulletVy) {
+    let baseAngle = Math.atan2(-bulletVy, -bulletVx); // Reflect angle backwards
+    for (let i = 0; i < 4; i++) {
+        let a = baseAngle + (Math.random() - 0.5) * 1.0; // Retro wall spray
+        let speed = 2 + Math.random() * 4;
+        particles.push({
+            x: x,
+            y: y,
+            vx: Math.cos(a) * speed,
+            vy: Math.sin(a) * speed,
+            life: 10 + Math.random() * 10,
+            color: '#e67e22', // Friction hot orange
+            type: 'spark'
+        });
     }
 }
 
@@ -1335,35 +1375,56 @@ function updateBullets() {
             hit = true;
             if (b.type === 'explosive') {
                 triggerExplosion(b); // Radial blast on wall/obstacle impact
+            } else {
+                spawnSparks(b.x, b.y, b.vx, b.vy); // Wall dust/friction sparks
             }
         }
         if(!hit) zombies.forEach((z, zi) => {
             if (!z) return;
             if(!hit && Math.hypot(b.x-z.x, b.y-z.y) < z.r+5) {
-                hit = true; z.hp -= b.dmg; spawnParticles(z.x, z.y, '#800', 3);
+                hit = true; 
                 
-                // Reward 10 coins for EVERY bullet hit on a zombie
-                if(players[b.ownerId]) { 
-                    players[b.ownerId].score += 10; 
-                    stats.score += 10;
-                }
-                if(me && b.ownerId === me.id) { 
-                    addText(z.x, z.y, "+10", "#fff"); 
-                }
-
-                if(z.hp <= 0) {
-                    z.dead = true; // Mark for batch cleanup (prevents indexing glitches)
-                    stats.score += 50; // Give 50 coins upon death
-                    stats.zombiesAlive--;
+                if (b.type === 'explosive') {
+                    triggerExplosion(b); // Radial blast on direct target collision
+                } else {
+                    z.hp -= b.dmg; 
+                    z.hitTimer = 4; // Trigger bright crimson damage flash locally
+                    spawnParticles(z.x, z.y, '#800', 3);
                     
+                    // Spill dynamic visceral blood splatters onto the concrete floor
+                    if (Math.random() < 0.45) {
+                        window.bloodStains.push({
+                            x: z.x + (Math.random() - 0.5) * 12,
+                            y: z.y + (Math.random() - 0.5) * 12,
+                            r: 4 + Math.random() * 12,
+                            color: 'rgba(139, 0, 0, ' + (0.3 + Math.random() * 0.35) + ')'
+                        });
+                        if (window.bloodStains.length > 150) window.bloodStains.shift(); // Hard capped splatters
+                    }
+
+                    // Reward 10 coins for EVERY bullet hit on a zombie
                     if(players[b.ownerId]) { 
-                        players[b.ownerId].score += 50; 
-                        players[b.ownerId].kills++; 
+                        players[b.ownerId].score += 10; 
+                        stats.score += 10;
                     }
                     if(me && b.ownerId === me.id) { 
-                        stats.sessionKills++; 
-                        checkAchievements(); 
-                        addText(z.x, z.y, "+50", "#ff0"); 
+                        addText(z.x, z.y, "+10", "#fff"); 
+                    }
+
+                    if(z.hp <= 0) {
+                        z.dead = true; // Mark for batch cleanup (prevents indexing glitches)
+                        stats.score += 50; // Give 50 coins upon death
+                        stats.zombiesAlive--;
+                        
+                        if(players[b.ownerId]) { 
+                            players[b.ownerId].score += 50; 
+                            players[b.ownerId].kills++; 
+                        }
+                        if(me && b.ownerId === me.id) { 
+                            stats.sessionKills++; 
+                            checkAchievements(); 
+                            addText(z.x, z.y, "+50", "#ff0"); 
+                        }
                     }
                 }
             }
@@ -1385,6 +1446,7 @@ function triggerExplosion(b) {
             let splashDmg = Math.floor(b.dmg * falloff);
             if (splashDmg > 0) {
                 z.hp -= splashDmg;
+                z.hitTimer = 6; // Heavy impact flash
                 spawnParticles(z.x, z.y, '#e67e22', 3);
                 
                 // Add points for hitting zombies with explosive splash
@@ -1423,14 +1485,14 @@ function spawnExplosionVisuals(x, y) {
     
     // Splash permanent floor blood on explosions
     for (let j = 0; j < 5; j++) {
-        bloodStains.push({
+        window.bloodStains.push({
             x: x + (Math.random() - 0.5) * 80,
             y: y + (Math.random() - 0.5) * 80,
             r: 8 + Math.random() * 20,
             color: 'rgba(139, 0, 0, ' + (0.4 + Math.random() * 0.4) + ')'
         });
     }
-    if (bloodStains.length > 150) bloodStains.splice(0, bloodStains.length - 150);
+    if (window.bloodStains.length > 150) window.bloodStains.splice(0, window.bloodStains.length - 150);
 
     addText(x, y, "BOOM!", "#e74c3c");
 }
@@ -1496,7 +1558,7 @@ function resetSession() {
         difficulty: currentDiff
     }; 
 
-    zombies = []; bullets = []; particles = []; texts = []; bloodStains = []; zombieIdCounter = 0; 
+    zombies = []; bullets = []; particles = []; texts = []; window.bloodStains = []; zombieIdCounter = 0; 
     activeMap.rooms.forEach(r => r.unlocked = (r.id === 0)); 
     
     // Evaluate map layout and assign suitable barriers count
@@ -1573,7 +1635,7 @@ function goToLobbyScreen() {
     bullets = [];
     particles = [];
     texts = [];
-    bloodStains = [];
+    window.bloodStains = [];
     
     if (Network.mode === 'HOST') {
         document.getElementById('lobby-status').innerText = "LOBBY ACTIVE!";

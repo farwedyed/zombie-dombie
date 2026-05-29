@@ -150,7 +150,7 @@ function drawGame() {
             ctx.font = "10px Arial"; 
             ctx.fillText("GUN", i.x+20, i.y+20); 
         }
-        else if (i.type === 'PERK') { // Typo fixed from "perk === i.type"
+        else if (i.type === 'PERK') { 
             ctx.font = "bold 10px Arial"; 
             ctx.fillText("JUG", i.x+25, i.y+25); 
         }
@@ -220,15 +220,20 @@ function drawGame() {
         ctx.restore();
     });
 
-    // 9. Draw Zombies (Hands & arms removed as requested. Classic static circles restored)
+    // 9. Draw Zombies (Hands & arms removed. Original static non-rotating flat circles restored) [1]
     zombies.forEach(z => {
-        // Body
-        ctx.fillStyle = '#3a4a38';
+        // Body (With local damage hit flashing)
+        if (z.hitTimer && z.hitTimer > 0) {
+            ctx.fillStyle = '#ff4757'; 
+            z.hitTimer--; // Decay flash frame locally
+        } else {
+            ctx.fillStyle = '#3a4a38'; // Standard rotten green
+        }
         ctx.beginPath(); 
         ctx.arc(z.x, z.y, z.r, 0, Math.PI*2); 
         ctx.fill();
         
-        // Red Eyes (Static alignment restored as requested)
+        // Red Eyes (Original static alignment restored)
         ctx.fillStyle = '#f00';
         ctx.beginPath(); 
         ctx.arc(z.x - 5, z.y - 5, 2, 0, Math.PI*2); 
@@ -296,8 +301,20 @@ function drawGame() {
 
     // 12. Draw Particles
     particles.forEach(p => { 
-        ctx.fillStyle = p.color; 
-        ctx.fillRect(p.x, p.y, 3, 3); 
+        if (p.type === 'shell') {
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.angle);
+            ctx.fillStyle = p.color;
+            ctx.fillRect(-2, -1, 4, 1.5); // Ejected rectangular shell casing
+            ctx.restore();
+        } else if (p.type === 'spark') {
+            ctx.fillStyle = p.color;
+            ctx.fillRect(p.x, p.y, 2, 2); // Friction sparks
+        } else {
+            ctx.fillStyle = p.color; 
+            ctx.fillRect(p.x, p.y, 3, 3); 
+        }
     });
 
     // 13. Draw Bouncing Guidance Indicators during Tutorial Mode
