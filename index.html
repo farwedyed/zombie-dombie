@@ -262,7 +262,7 @@
     </div>
 
     <!-- Difficulty Selection in Lobby -->
-    <div id="lobby-diff-container" style="margin-top: 5px; margin-bottom: 15px; width: 100%; max-width: 320px; text-align: center; background: rgba(0,0,0,0.4); padding: 15px; border: 1px solid #333; box-sizing: border-box;">
+    <div id="lobby-diff-container" style="margin-top: 5px; margin-bottom: 5px; width: 100%; max-width: 320px; text-align: center; background: rgba(0,0,0,0.4); padding: 15px; border: 1px solid #333; box-sizing: border-box;">
         <label for="lobby-diff-select" style="color: #666; display: block; font-size: 12px; margin-bottom: 8px; text-transform: uppercase; font-weight: bold; letter-spacing: 1px;">DIFFICULTY:</label>
         <select id="lobby-diff-select" onchange="lobbyChangeDifficulty()">
             <option value="easy">Easy (More Player Health, Slower Zombies)</option>
@@ -270,6 +270,16 @@
             <option value="hard">Hard (Faster and Stronger Zombies)</option>
         </select>
         <div id="lobby-diff-display-client" style="color: #ffd700; font-weight: bold; font-size: 16px; margin-top: 5px; display: none;">Retrieving difficulty...</div>
+    </div>
+
+    <!-- Lobby Visibility Selection in Lobby (Visible to Host only) -->
+    <div id="lobby-visibility-container" style="margin-top: 5px; margin-bottom: 15px; width: 100%; max-width: 320px; text-align: center; background: rgba(0,0,0,0.4); padding: 15px; border: 1px solid #333; box-sizing: border-box;">
+        <label for="lobby-visibility-select" style="color: #666; display: block; font-size: 12px; margin-bottom: 8px; text-transform: uppercase; font-weight: bold; letter-spacing: 1px;">LOBBY TYPE:</label>
+        <select id="lobby-visibility-select" onchange="lobbyChangeVisibility()">
+            <option value="public" selected>🌍 Public (Listed in Server Browser)</option>
+            <option value="private">🔒 Private (Joinable by Code Only)</option>
+        </select>
+        <div id="lobby-visibility-display-client" style="color: #ffd700; font-weight: bold; font-size: 16px; margin-top: 5px; display: none;">Public</div>
     </div>
 
     <div id="player-list" style="margin-top:20px; color:#aaa; font-family: inherit;"></div>

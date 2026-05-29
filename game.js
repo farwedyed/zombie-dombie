@@ -602,6 +602,8 @@ const LobbyManager = {
     registerLobby: async function(peerId) {
         if (typeof db === 'undefined' || !db) return;
         const myLvl = Math.floor((saveData.xp || 0) / 1000) + 1;
+        const selectVis = document.getElementById('lobby-visibility-select');
+        const visibility = selectVis ? selectVis.value : 'public';
         
         try {
             await db.collection("lobbies").doc(peerId).set({
@@ -610,6 +612,7 @@ const LobbyManager = {
                 hostLevel: myLvl,
                 mapIndex: stats.selectedMapIdx,
                 difficulty: stats.difficulty || 'medium',
+                visibility: visibility,
                 playerCount: Object.values(window.lobbyPlayers).filter(p => p !== "").length,
                 maxPlayers: 4,
                 status: 'LOBBY',
@@ -628,17 +631,33 @@ const LobbyManager = {
                 this.stopHeartbeat();
                 return;
             }
+            const selectVis = document.getElementById('lobby-visibility-select');
+            const visibility = selectVis ? selectVis.value : 'public';
             try {
                 await db.collection("lobbies").doc(peerId).update({
                     playerCount: Object.values(window.lobbyPlayers).filter(p => p !== "").length,
                     mapIndex: stats.selectedMapIdx,
                     difficulty: stats.difficulty || 'medium',
+                    visibility: visibility,
                     lastActive: firebase.firestore.FieldValue.serverTimestamp()
                 });
             } catch(e) {
                 console.warn("Lobby heartbeat update failed:", e);
             }
         }, 15000); // 15s interval
+    },
+
+    updateLobbyVisibility: async function(visibility) {
+        if (typeof db === 'undefined' || !db || Network.mode !== 'HOST') return;
+        try {
+            const peerId = Network.peer.id;
+            await db.collection("lobbies").doc(peerId).update({
+                visibility: visibility,
+                lastActive: firebase.firestore.FieldValue.serverTimestamp()
+            });
+        } catch(e) {
+            console.warn("Failed to update lobby visibility on Firestore:", e);
+        }
     },
 
     stopHeartbeat: function() {
@@ -661,15 +680,24 @@ const LobbyManager = {
     fetchLobbies: async function(onComplete) {
         if (typeof db === 'undefined' || !db) return onComplete([]);
         
-        const cutoff = new Date(Date.now() - 45000); // 45 seconds tolerance window
         try {
-            const snap = await db.collection("lobbies")
-                .where("lastActive", ">=", cutoff)
-                .get();
-            
+            const snap = await db.collection("lobbies").get();
             const list = [];
+            const now = Date.now();
             snap.forEach(doc => {
-                list.push(doc.data());
+                const data = doc.data();
+                let isActive = true;
+                if (data.lastActive) {
+                    const lastActiveMs = data.lastActive.toMillis ? data.lastActive.toMillis() : new Date(data.lastActive).getTime();
+                    if (now - lastActiveMs > 45000) { // 45 seconds tolerance
+                        isActive = false;
+                    }
+                }
+                
+                // Only return active and public lobbies to browser lists
+                if (isActive && data.visibility !== 'private') {
+                    list.push(data);
+                }
             });
             onComplete(list);
         } catch(e) {
@@ -756,6 +784,12 @@ function enterLobbyJoinManual(id) {
     const clientDiffDisplay = document.getElementById('lobby-diff-display-client');
     clientDiffDisplay.style.display = 'block';
     clientDiffDisplay.innerText = "Retrieving difficulty...";
+
+    // Visibility defaults
+    document.getElementById('lobby-visibility-select').style.display = 'none';
+    const clientVisDisplay = document.getElementById('lobby-visibility-display-client');
+    clientVisDisplay.style.display = 'block';
+    clientVisDisplay.innerText = "Public";
 
     let nameInput = document.getElementById('username-input');
     myUsername = nameInput ? (nameInput.value || "Survivor") : "Survivor";
@@ -874,6 +908,11 @@ function enterLobbyHost() {
     document.getElementById('lobby-diff-select').style.display = 'block';
     document.getElementById('lobby-diff-display-client').style.display = 'none';
 
+    // Visibility defaults
+    document.getElementById('lobby-visibility-select').style.display = 'block';
+    document.getElementById('lobby-visibility-display-client').style.display = 'none';
+    document.getElementById('lobby-visibility-select').value = 'public';
+
     let nameInput = document.getElementById('username-input');
     myUsername = nameInput ? (nameInput.value || "Survivor") : "Survivor";
     myUsername = myUsername.substring(0, 12);
@@ -918,6 +957,12 @@ function enterLobbyJoin() {
     const clientDiffDisplay = document.getElementById('lobby-diff-display-client');
     clientDiffDisplay.style.display = 'block';
     clientDiffDisplay.innerText = "Retrieving difficulty...";
+
+    // Visibility defaults
+    document.getElementById('lobby-visibility-select').style.display = 'none';
+    const clientVisDisplay = document.getElementById('lobby-visibility-display-client');
+    clientVisDisplay.style.display = 'block';
+    clientVisDisplay.innerText = "Public";
 
     let nameInput = document.getElementById('username-input');
     myUsername = nameInput ? (nameInput.value || "Survivor") : "Survivor";

@@ -142,13 +142,17 @@ const Network = {
                 if (typeof updateLobbyUI === 'function') updateLobbyUI(true);
                 
                 try {
+                    const selectVis = document.getElementById('lobby-visibility-select');
+                    const visibility = selectVis ? selectVis.value : 'public';
+                    
                     c.send({
                         type: 'LOBBY_WELCOME',
                         name: myUsername,
                         mapIndex: stats.selectedMapIdx,
                         assignedId: c.playerId,
                         lobbyPlayers: window.lobbyPlayers,
-                        difficulty: stats.difficulty || 'medium'
+                        difficulty: stats.difficulty || 'medium',
+                        visibility: visibility
                     });
                 } catch(e) {
                     console.warn("Failed to send LOBBY_WELCOME:", e);
@@ -285,6 +289,10 @@ const Network = {
                 if (diffDisplay) {
                     diffDisplay.innerText = "Difficulty: " + capitalizeFirstLetter(stats.difficulty);
                 }
+                const clientVisDisplay = document.getElementById('lobby-visibility-display-client');
+                if (clientVisDisplay && data.visibility) {
+                    clientVisDisplay.innerText = data.visibility === 'public' ? "Public" : "Private";
+                }
                 
                 document.getElementById('lobby-status').innerText = "Connected! Ready to play.";
                 document.getElementById('lobby-status').style.color = "#0f0";
@@ -306,6 +314,12 @@ const Network = {
                 const diffDisplay = document.getElementById('lobby-diff-display-client');
                 if (diffDisplay) {
                     diffDisplay.innerText = "Difficulty: " + capitalizeFirstLetter(stats.difficulty);
+                }
+            }
+            else if (data.type === 'LOBBY_VISIBILITY_CHANGE') {
+                const clientVisDisplay = document.getElementById('lobby-visibility-display-client');
+                if (clientVisDisplay) {
+                    clientVisDisplay.innerText = data.visibility === 'public' ? "Public" : "Private";
                 }
             }
             else if (data.type === 'RETURN_TO_LOBBY') {
@@ -415,7 +429,6 @@ const Network = {
                                 }
                             }
 
-                            // Dynamic Client-side Real-time XP & Coin accumulation mirroring
                             if (fallbackPId.kills > me.kills) {
                                 let killDiff = fallbackPId.kills - me.kills;
                                 if (typeof addPlayerXP === 'function') {
