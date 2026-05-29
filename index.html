@@ -7,6 +7,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-select=none">
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     
+    <!-- FIREBASE CDNs (Compat Web SDK for script tag inclusion) -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
     <style>
         body { 
             margin: 0; 
@@ -190,6 +195,10 @@
 <div id="main-menu" class="screen">
     <div class="menu-container">
         <h1>ZOMBIES 2D</h1>
+        
+        <!-- DYNAMIC ACCOUNT STATUS CONTAINER -->
+        <div id="auth-status-container"></div>
+
         <div class="stats-text">
             KILLS: <span id="menu-kills">0</span> | BEST ROUND: <span id="menu-round">1</span>
         </div>
@@ -414,6 +423,7 @@
 
 <!-- SCRIPTS -->
 <script src="data.js"></script>
+<script src="account.js"></script> <!-- INSERTED ACCOUNT SYSTEM IN LOGICAL ORDER -->
 <script src="maps.js"></script>
 <script src="rooms.js"></script>
 <script src="visuals.js"></script>
