@@ -2,7 +2,7 @@
 
 // Pre-filled with your actual Firebase config from the console
 const firebaseConfig = {
-    apiKey: "AIzaSyDZFSpHRI_koQyneANZ-t9T9S0Jsn34zR0",
+    apiKey: "AIzaSyDZFSpHRI_koQynEANZ-t9T9S0Jsn34zR0",
     authDomain: "zombie-2d.firebaseapp.com",
     projectId: "zombie-2d",
     storageBucket: "zombie-2d.firebasestorage.app",
