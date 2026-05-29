@@ -16,7 +16,15 @@
             user-select: none; 
             touch-action: manipulation; /* Prevent double-tap delay on mobile */
         }
-        canvas { display: block; }
+        
+        /* Fixed absolute layout without CSS stretch overrides to preserve perfect 1:1 aspect ratio */
+        canvas { 
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            display: block; 
+        }
         
         /* --- UI OVERLAY --- */
         #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
