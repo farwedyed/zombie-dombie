@@ -1239,7 +1239,8 @@ function createPlayer(id, x, y, color, name) {
         lastRepairTime: 0,
         invincibleTimer: 0,
         muzzleFlash: 0,
-        equippedCosmetic: (id === 'p1') ? (saveData.equippedCosmetic || 'none') : 'none'
+        equippedCosmetic: (id === 'p1') ? (saveData.equippedCosmetic || 'none') : 'none',
+        isTouch: (id === 'p1') ? isTouchDevice : false // Add this line to track local touch state
     }; 
 }
 

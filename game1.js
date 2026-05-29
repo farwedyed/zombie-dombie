@@ -150,7 +150,10 @@ function updateGameLogic() {
         Object.values(players).forEach(p => {
             if (p.isShooting) {
                 const gun = p.inventory && p.inventory[p.weapIdx] ? p.inventory[p.weapIdx] : null;
-                if (gun && gun.auto) {
+                // Treat the weapon as automatic if the player is on mobile, or if the gun itself is automatic
+                const treatAsAuto = p.isTouch || (gun && gun.auto);
+                
+                if (treatAsAuto) {
                     shootGun(p);
                 } else {
                     if (!p.pressHandled) {

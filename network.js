@@ -174,6 +174,7 @@ const Network = {
                     p.isShooting = data.shoot; 
                     if (data.reload) p.triggerReload = true;
                     p.equippedCosmetic = data.cosmetic || 'none';
+                    p.isTouch = data.isTouch || false; // Add this line to update client touch status on Host
                 }
             }
             else if(data.type === 'INTERACT') {
@@ -583,7 +584,8 @@ const Network = {
                     shoot: mouse.down,
                     reload: p.reloading,
                     name: p.name,
-                    cosmetic: p.equippedCosmetic || 'none'
+                    cosmetic: p.equippedCosmetic || 'none',
+                    isTouch: isTouchDevice // Add this line to transmit client touch status
                 });
             } catch (e) {
                 console.warn("Failed to send client data payload:", e);
