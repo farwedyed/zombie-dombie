@@ -523,18 +523,20 @@ function startCosmeticPreviewLoop() {
             drawBackCosmetic(currentPreviewId, radius, previewCtx);
         }
         
-        // Draw player circle body
+        // Draw player circle body with outlined theme
         previewCtx.fillStyle = '#3498db';
-        previewCtx.strokeStyle = '#000';
-        previewCtx.lineWidth = 2.2;
+        previewCtx.strokeStyle = '#000000';
+        previewCtx.lineWidth = 2.5;
         previewCtx.beginPath();
         previewCtx.arc(0, 0, radius, 0, Math.PI * 2);
         previewCtx.fill();
         previewCtx.stroke();
         
-        // Draw Gun Barrel
+        // Draw Gun Barrel with outlined theme
         previewCtx.fillStyle = '#999';
         previewCtx.fillRect(0, -5, 30, 10);
+        previewCtx.strokeStyle = '#000000';
+        previewCtx.lineWidth = 2.5;
         previewCtx.strokeRect(0, -5, 30, 10);
         
         previewCtx.restore();

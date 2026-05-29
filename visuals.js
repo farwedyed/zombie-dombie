@@ -32,7 +32,7 @@ function drawBackCosmetic(id, r, targetCtx = ctx) {
     targetCtx.save();
     targetCtx.fillStyle = cos.color;
     targetCtx.strokeStyle = '#000';
-    targetCtx.lineWidth = 1.5;
+    targetCtx.lineWidth = 2; // Bold outline to match theme
 
     // Based on the game canvas coordinate transformations,
     // the player faces positive X, meaning the "back" is at negative X (-r)
@@ -71,7 +71,9 @@ function drawBackCosmetic(id, r, targetCtx = ctx) {
         // Thrusters
         targetCtx.fillStyle = cos.color;
         targetCtx.fillRect(-r - 14, -8, 4, 5);
+        targetCtx.strokeRect(-r - 14, -8, 4, 5);
         targetCtx.fillRect(-r - 14, 3, 4, 5);
+        targetCtx.strokeRect(-r - 14, 3, 4, 5);
         
         // Fire particles flicker
         if (Math.random() < 0.6) {
@@ -196,22 +198,26 @@ function drawGame() {
     activeMap.furniture.forEach(f => {
         ctx.fillStyle = f.color;
         ctx.fillRect(f.x, f.y, f.w, f.h);
+        
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 2.5;
+        ctx.strokeRect(f.x, f.y, f.w, f.h);
     });
 
     // 4. Draw Walls
     ctx.fillStyle = '#2c3e50'; // Concrete metallic wall colour
     activeMap.walls.forEach(w => {
         ctx.fillRect(w.x, w.y, w.w, w.h);
-        ctx.strokeStyle = '#34495e';
-        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = '#000000'; // Crisp bold black border instead of grey
+        ctx.lineWidth = 2.5;
         ctx.strokeRect(w.x, w.y, w.w, w.h);
     });
 
     // 5. Draw Windows (With Dynamic Board/Log Scaling)
     activeMap.windows.forEach(w => {
         // Frame
-        ctx.strokeStyle = '#666'; 
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#000000'; 
+        ctx.lineWidth = 2.5;
         ctx.strokeRect(w.x, w.y, w.w, w.h);
         
         // Boards
@@ -226,8 +232,14 @@ function drawGame() {
             for(let i=0; i<w.boards; i++) {
                 if(isHorizontal) {
                     ctx.fillRect(w.x + (i * boardSpacing) + padding, w.y, boardWidth, w.h);
+                    ctx.strokeStyle = '#000000';
+                    ctx.lineWidth = 1.5;
+                    ctx.strokeRect(w.x + (i * boardSpacing) + padding, w.y, boardWidth, w.h);
                 } else {
                     ctx.fillRect(w.x, w.y + (i * boardSpacing) + padding, w.w, boardWidth);
+                    ctx.strokeStyle = '#000000';
+                    ctx.lineWidth = 1.5;
+                    ctx.strokeRect(w.x, w.y + (i * boardSpacing) + padding, w.w, boardWidth);
                 }
             }
         }
@@ -240,9 +252,14 @@ function drawGame() {
             ctx.fillStyle = '#8d6e63'; 
             ctx.fillRect(r.door.x, r.door.y, r.door.w, r.door.h);
             
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 2.5;
+            ctx.strokeRect(r.door.x, r.door.y, r.door.w, r.door.h);
+            
             // Door Detail (Knob/Bar)
             ctx.fillStyle = '#5d4037';
             ctx.fillRect(r.door.x + 5, r.door.y + r.door.h/2 - 2, r.door.w - 10, 4);
+            ctx.strokeRect(r.door.x + 5, r.door.y + r.door.h/2 - 2, r.door.w - 10, 4);
 
             // Price Tag
             ctx.fillStyle = '#fff'; 
@@ -256,6 +273,10 @@ function drawGame() {
     activeMap.interactables.forEach(i => {
         ctx.fillStyle = i.type === 'BOX' ? i.color : '#555';
         ctx.fillRect(i.x, i.y, i.w, i.h);
+        
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 2.5;
+        ctx.strokeRect(i.x, i.y, i.w, i.h);
         
         ctx.fillStyle = '#fff'; 
         ctx.textAlign = 'center';
@@ -327,15 +348,21 @@ function drawGame() {
         // Body Color (Jug makes you redder)
         ctx.fillStyle = p.hasJug ? '#c0392b' : p.color;
         
-        // Draw Circle Body
+        // Draw Circle Body with Black Outline
         ctx.beginPath(); 
         ctx.arc(0, 0, p.r, 0, Math.PI*2); 
         ctx.fill();
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
         
-        // Draw Gun Barrel (Includes safety checks to prevent thread crashes)
+        // Draw Gun Barrel with Black Outline (Includes safety checks to prevent thread crashes)
         const activeGunColor = p.gunColor || (p.inventory && p.inventory[p.weapIdx] ? p.inventory[p.weapIdx].color : '#999');
         ctx.fillStyle = activeGunColor;
         ctx.fillRect(0, -5, 25, 10);
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 2.5;
+        ctx.strokeRect(0, -5, 25, 10);
         
         ctx.restore();
     });
@@ -353,12 +380,25 @@ function drawGame() {
         ctx.arc(z.x, z.y, z.r, 0, Math.PI*2); 
         ctx.fill();
         
-        // Red Eyes (Original static alignment restored)
+        // Body Outline
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+        
+        // Red Eyes with crisp Black Outlines
         ctx.fillStyle = '#f00';
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 1;
+        
         ctx.beginPath(); 
-        ctx.arc(z.x - 5, z.y - 5, 2, 0, Math.PI*2); 
-        ctx.arc(z.x + 5, z.y - 5, 2, 0, Math.PI*2); 
+        ctx.arc(z.x - 5, z.y - 5, 2.5, 0, Math.PI*2); 
         ctx.fill();
+        ctx.stroke();
+        
+        ctx.beginPath();
+        ctx.arc(z.x + 5, z.y - 5, 2.5, 0, Math.PI*2); 
+        ctx.fill();
+        ctx.stroke();
         
         // Health Bar
         if(z.hp < z.maxHp) {

@@ -410,16 +410,17 @@ function shootGun(p) {
     if (!gun) return;
     
     if(stats.frame - (gun.lastShot||0) >= gun.rpm) {
-        gun.lastShot = stats.frame;
-        p.muzzleFlash = 4;
-        
-        if (gun.name !== "Bazooka") {
-            spawnShellCasing(p.x, p.y, p.angle);
-        }
-
         const isInfinite = (typeof Tutorial !== 'undefined' && Tutorial.isActive && Tutorial.currentStep < 4);
 
         if(gun.clip > 0 || isInfinite) {
+            gun.lastShot = stats.frame;
+            p.muzzleFlash = 4;
+            
+            // Only spawn spent cartridge casings on successful ammunition discharge
+            if (gun.name !== "Bazooka") {
+                spawnShellCasing(p.x, p.y, p.angle);
+            }
+
             if (!isInfinite) {
                 gun.clip--;
             }
@@ -436,7 +437,9 @@ function shootGun(p) {
                     });
                 }
             }
-        } else if (gun.ammo > 0) forceReload(p);
+        } else if (gun.ammo > 0) {
+            forceReload(p);
+        }
     }
 }
 
