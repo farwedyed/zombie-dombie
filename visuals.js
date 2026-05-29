@@ -33,6 +33,12 @@ function drawGame() {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
     ctx.save();
+
+    // Scale view relative to standard vertical resolution baseline (900px target height)
+    const baseHeight = 900;
+    const scale = canvas.height / baseHeight;
+    ctx.scale(scale, scale);
+
     // Apply Camera
     ctx.translate(-camera.x, -camera.y);
 
@@ -165,7 +171,7 @@ function drawGame() {
         ctx.save();
         ctx.translate(p.x, p.y);
         
-        // --- DRAW USERNAME (New) ---
+        // --- DRAW USERNAME ---
         if(p.state === 'ALIVE' && p.name) {
             ctx.fillStyle = "#fff";
             ctx.font = "bold 12px Arial";
@@ -176,7 +182,7 @@ function drawGame() {
             ctx.shadowBlur = 0;
         }
 
-        // --- DRAW DOWNED VISUALS (Restored) ---
+        // --- DRAW DOWNED VISUALS ---
         if(p.state === 'DOWNED') {
             ctx.globalAlpha = 0.5; // Transparent if down
             
@@ -220,7 +226,7 @@ function drawGame() {
         ctx.restore();
     });
 
-    // 9. Draw Zombies (Hands & arms removed. Original static non-rotating flat circles restored) [1]
+    // 9. Draw Zombies
     zombies.forEach(z => {
         // Body (With local damage hit flashing)
         if (z.hitTimer && z.hitTimer > 0) {

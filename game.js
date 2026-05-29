@@ -95,6 +95,12 @@ function init() {
         document.getElementById('menu-round').innerText = saveData.highestRound;
     }
     
+    // Auto-update canvas boundary buffers on window resizing
+    window.addEventListener('resize', () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    });
+
     // Desktop Keyboard Listeners
     window.addEventListener('keydown', e => { 
         if(e.code === 'Tab') { e.preventDefault(); showScoreboard = true; }
@@ -733,7 +739,11 @@ function loop(currentTime) {
     }
 
     if(camTarget) {
-        camera.x = camTarget.x - canvas.width/2; camera.y = camTarget.y - canvas.height/2;
+        // Track baseline height scale and center viewport correctly [1]
+        const baseHeight = 900;
+        const scale = canvas.height / baseHeight;
+        camera.x = camTarget.x - (canvas.width / scale) / 2; 
+        camera.y = camTarget.y - (canvas.height / scale) / 2;
         drawGame(); updateUI();
     } else {
         ctx.fillStyle = "black"; ctx.fillRect(0,0,canvas.width,canvas.height);
@@ -886,7 +896,12 @@ function updatePlayerPhysics(p, isLocal) {
         if (isTouchDevice && isAimingTouch) {
             p.angle = Math.atan2(touchAimVector.y, touchAimVector.x);
         } else {
-            p.angle = Math.atan2((mouse.y + camera.y) - p.y, (mouse.x + camera.x) - p.x);
+            // Map cursor positions to scaled resolution offsets [1]
+            const baseHeight = 900;
+            const scale = canvas.height / baseHeight;
+            const worldMouseX = (mouse.x / scale) + camera.x;
+            const worldMouseY = (mouse.y / scale) + camera.y;
+            p.angle = Math.atan2(worldMouseY - p.y, worldMouseX - p.x);
         }
         
         p.isShooting = mouse.down; // Directly bind mouse hold state
