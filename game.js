@@ -199,7 +199,9 @@ function setupTouchControls() {
     let leftStartPos = { x: 0, y: 0 };
     
     stickLeft.addEventListener('touchstart', e => {
+        e.preventDefault(); // Prevents emulated mouse events and window scaling
         if (leftTouchId !== null) return;
+        if (me) me.isTouch = true; // Instantly flag local player as touch user
         const touch = e.changedTouches[0];
         leftTouchId = touch.identifier;
         const rect = stickLeft.getBoundingClientRect();
@@ -209,6 +211,7 @@ function setupTouchControls() {
     });
     
     stickLeft.addEventListener('touchmove', e => {
+        e.preventDefault();
         if (leftTouchId === null) return;
         for (let touch of e.changedTouches) {
             if (touch.identifier === leftTouchId) {
@@ -234,6 +237,7 @@ function setupTouchControls() {
     }
     
     stickLeft.addEventListener('touchend', e => {
+        e.preventDefault();
         for (let touch of e.changedTouches) {
             if (touch.identifier === leftTouchId) {
                 leftTouchId = null;
@@ -245,6 +249,7 @@ function setupTouchControls() {
     });
     
     stickLeft.addEventListener('touchcancel', e => {
+        e.preventDefault();
         for (let touch of e.changedTouches) {
             if (touch.identifier === leftTouchId) {
                 leftTouchId = null;
@@ -259,7 +264,9 @@ function setupTouchControls() {
     let rightStartPos = { x: 0, y: 0 };
     
     stickRight.addEventListener('touchstart', e => {
+        e.preventDefault();
         if (rightTouchId !== null) return;
+        if (me) me.isTouch = true; // Instantly flag local player as touch user
         const touch = e.changedTouches[0];
         rightTouchId = touch.identifier;
         const rect = stickRight.getBoundingClientRect();
@@ -269,6 +276,7 @@ function setupTouchControls() {
     });
     
     stickRight.addEventListener('touchmove', e => {
+        e.preventDefault();
         if (rightTouchId === null) return;
         for (let touch of e.changedTouches) {
             if (touch.identifier === rightTouchId) {
@@ -311,6 +319,7 @@ function setupTouchControls() {
     }
     
     stickRight.addEventListener('touchend', e => {
+        e.preventDefault();
         for (let touch of e.changedTouches) {
             if (touch.identifier === rightTouchId) {
                 rightTouchId = null;
@@ -323,6 +332,7 @@ function setupTouchControls() {
     });
     
     stickRight.addEventListener('touchcancel', e => {
+        e.preventDefault();
         for (let touch of e.changedTouches) {
             if (touch.identifier === rightTouchId) {
                 rightTouchId = null;
@@ -340,16 +350,19 @@ function setupTouchControls() {
     
     btnInteract.addEventListener('touchstart', e => {
         e.preventDefault();
+        if (me) me.isTouch = true;
         if (gameActive) handleInteractAction();
     });
     
     btnReload.addEventListener('touchstart', e => {
         e.preventDefault();
+        if (me) me.isTouch = true;
         if (gameActive) handleReload();
     });
     
     btnSwitch.addEventListener('touchstart', e => {
         e.preventDefault();
+        if (me) me.isTouch = true;
         if (gameActive && me && me.inventory.length > 1) {
             me.weapIdx = (me.weapIdx + 1) % me.inventory.length;
             addText(me.x, me.y - 40, me.inventory[me.weapIdx].name, "#fff");
@@ -1240,7 +1253,7 @@ function createPlayer(id, x, y, color, name) {
         invincibleTimer: 0,
         muzzleFlash: 0,
         equippedCosmetic: (id === 'p1') ? (saveData.equippedCosmetic || 'none') : 'none',
-        isTouch: (id === 'p1') ? isTouchDevice : false // Add this line to track local touch state
+        isTouch: (id === window.myPlayerId) ? isTouchDevice : false // Match current assigned local ID
     }; 
 }
 

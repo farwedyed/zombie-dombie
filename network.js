@@ -174,7 +174,7 @@ const Network = {
                     p.isShooting = data.shoot; 
                     if (data.reload) p.triggerReload = true;
                     p.equippedCosmetic = data.cosmetic || 'none';
-                    p.isTouch = data.isTouch || false; // Add this line to update client touch status on Host
+                    p.isTouch = data.isTouch || false; // Update touch status dynamically from client package
                 }
             }
             else if(data.type === 'INTERACT') {
@@ -585,7 +585,7 @@ const Network = {
                     reload: p.reloading,
                     name: p.name,
                     cosmetic: p.equippedCosmetic || 'none',
-                    isTouch: isTouchDevice // Add this line to transmit client touch status
+                    isTouch: p.isTouch // Syncs the dynamically updated player state variable
                 });
             } catch (e) {
                 console.warn("Failed to send client data payload:", e);
