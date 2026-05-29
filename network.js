@@ -146,7 +146,7 @@ const Network = {
                         mapIndex: stats.selectedMapIdx,
                         assignedId: c.playerId,
                         lobbyPlayers: window.lobbyPlayers,
-                        difficulty: stats.difficulty || 'medium' // Propagate lobby difficulty settings on join handshake
+                        difficulty: stats.difficulty || 'medium'
                     });
                 } catch(e) {
                     console.warn("Failed to send LOBBY_WELCOME:", e);
@@ -227,7 +227,6 @@ const Network = {
         if(now - this.lastUpdate < 45) return; 
         this.lastUpdate = now;
 
-        // Build the pruned state payload ONCE to save CPU cycles
         const statePayload = {
             type: 'GAME_STATE',
             p1: getPrunedPlayer(players['p1']), 
@@ -235,7 +234,6 @@ const Network = {
             p3: getPrunedPlayer(players['p3']), 
             p4: getPrunedPlayer(players['p4']), 
             zombies: zombies.map(z => ({ id: z.id, x: z.x, y: z.y, hp: z.hp, maxHp: z.maxHp, hitTimer: z.hitTimer })), 
-            // Sync bullet type across network so guest clients can render explosives
             bullets: bullets.map(b => ({ x: b.x, y: b.y, color: b.color, type: b.type })),
             stats: stats,
             windows: activeMap.windows.map(w => ({ boards: w.boards })),
@@ -271,7 +269,7 @@ const Network = {
                 window.myPlayerId = data.assignedId;
                 window.lobbyPlayers = data.lobbyPlayers;
                 stats.selectedMapIdx = data.mapIndex;
-                stats.difficulty = data.difficulty || 'medium'; // Sync Host selected difficulty configuration
+                stats.difficulty = data.difficulty || 'medium';
                 
                 if (typeof updateLobbyPlayersList === 'function') updateLobbyPlayersList();
                 
@@ -326,7 +324,6 @@ const Network = {
                     serverMap.set(sz.id, sz);
                     const local = zombies.find(z => z.id === sz.id);
                     if(local) {
-                        // Spawn blood particles and stains locally on damage detection [1]
                         if (local.hp > sz.hp && typeof spawnParticles === 'function') {
                             spawnParticles(local.x, local.y, '#800', 3);
 
@@ -346,7 +343,6 @@ const Network = {
                         local.maxHp = sz.maxHp;
                         local.hitTimer = sz.hitTimer;
                     } else {
-                        // Add new zombie
                         zombies.push({
                             id: sz.id,
                             x: sz.x,
@@ -365,7 +361,6 @@ const Network = {
                     if(!serverMap.has(zombies[i].id)) zombies.splice(i, 1);
                 }
 
-                // COMPARE BULLETS & TRIGGERS LOCAL CLIENT EXPLOSIONS / SPARKS [1]
                 const incomingBullets = data.bullets || [];
                 const prevBullets = bullets || [];
                 const nextKeys = incomingBullets.map(b => b.x + "_" + b.y);
@@ -387,12 +382,10 @@ const Network = {
 
                 bullets = incomingBullets;
                 
-                // Sync power-up states
                 window.drops = data.drops || [];
                 window.doublePointsTimer = data.doublePointsTimer || 0;
                 window.instaKillTimer = data.instaKillTimer || 0;
 
-                // Spawn local point indicators (+10 / +50 text) locally when score increases
                 if (data.stats && stats) {
                     if (data.stats.score > stats.score) {
                         let diff = data.stats.score - stats.score;
@@ -404,7 +397,6 @@ const Network = {
                 
                 stats = data.stats;
 
-                // Sync positions and properties of all players from Host broadcast
                 ['p1', 'p2', 'p3', 'p4'].forEach(pId => {
                     if (pId === window.myPlayerId) {
                         const fallbackPId = data[pId];
@@ -413,7 +405,6 @@ const Network = {
                             let myX = me.x;
                             let myY = me.y;
                             
-                            // Teleport Client on respawn
                             if (me.state === 'DOWNED' && fallbackPId.state === 'ALIVE') {
                                 const spawnSource = data.p1;
                                 if (spawnSource) {
@@ -422,7 +413,6 @@ const Network = {
                                 }
                             }
 
-                            // Safe dynamic local inventory synchronization
                             if (fallbackPId.gunName) {
                                 syncPlayerInventory(me, fallbackPId.weapIdx, fallbackPId.gunName);
                             }
@@ -444,8 +434,8 @@ const Network = {
                             }
                             const p = players[pId];
 
-                            // Eject spinning shells locally for other players on shooting, avoiding reload loops
-                            if (p && !data[pId].reloading && !p.reloading) {
+                            // Eject shell locally only if not currently reloading and the weapon is not a Bazooka
+                            if (p && !data[pId].reloading && !p.reloading && data[pId].gunName !== "Bazooka") {
                                 const lastClip = p.clip !== undefined ? p.clip : 8;
                                 if (data[pId].clip < lastClip && (lastClip - data[pId].clip) <= 2) {
                                     if (typeof spawnShellCasing === 'function') {
@@ -454,7 +444,6 @@ const Network = {
                                 }
                             }
 
-                            // Safe dynamic other players inventory synchronization
                             if (data[pId].gunName) {
                                 syncPlayerInventory(p, data[pId].weapIdx, data[pId].gunName);
                             }
@@ -495,7 +484,6 @@ const Network = {
     },
 
     sendClientData: function(p) {
-        // Throttle client send ticks to prevent network buffer overflow
         const now = Date.now();
         if (now - this.lastClientUpdate < 45) return;
         this.lastClientUpdate = now;
@@ -533,7 +521,6 @@ function getPlayerColor(id) {
     return '#9b59b6'; // Purple (p4)
 }
 
-// Pruning routine to strip bulky database properties from networked updates
 function getPrunedPlayer(p) {
     if (!p) return null;
     const activeGun = p.inventory && p.inventory[p.weapIdx] ? p.inventory[p.weapIdx] : null;
@@ -555,11 +542,9 @@ function getPrunedPlayer(p) {
     };
 }
 
-// Dynamically auto-populates client player models with missing purchased weapons
 function syncPlayerInventory(p, serverWeapIdx, serverGunName) {
     if (!p || !p.inventory || !serverGunName) return;
     
-    // Check if player has this weapon in their local inventory array
     const hasWeapon = p.inventory.some(w => w.name === serverGunName);
     if (!hasWeapon) {
         const b = weaponDB.find(w => w.name === serverGunName);
@@ -568,12 +553,11 @@ function syncPlayerInventory(p, serverWeapIdx, serverGunName) {
         }
     }
     
-    // Set weapons index safely based on its local inventory position
     const targetIdx = p.inventory.findIndex(w => w.name === serverGunName);
     if (targetIdx !== -1) {
         p.weapIdx = targetIdx;
     } else {
-        p.weapIdx = 0; // Fallback to starting pistol
+        p.weapIdx = 0; 
     }
 }
 
