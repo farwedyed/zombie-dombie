@@ -88,32 +88,7 @@ function updateGameLogic() {
         addText(me ? me.x : 200, (me ? me.y : 200) - 40, "Full Heal Cheat", "#00ffff");
     }
 
-    if (Network.mode !== 'CLIENT') {
-        if (window.doublePointsTimer > 0) window.doublePointsTimer--;
-        if (window.instaKillTimer > 0) window.instaKillTimer--;
-
-        for (let i = window.drops.length - 1; i >= 0; i--) {
-            let d = window.drops[i];
-            d.life--;
-            
-            let pickedUp = false;
-            Object.values(players).forEach(p => {
-                if (p.state === 'ALIVE' && Math.hypot(p.x - d.x, p.y - d.y) < 32) {
-                    pickedUp = true;
-                    applyPowerup(d.type, p);
-                }
-            });
-
-            if (pickedUp || d.life <= 0) {
-                window.drops.splice(i, 1);
-            }
-        }
-    } else {
-        if (window.doublePointsTimer > 0) window.doublePointsTimer--;
-        if (window.instaKillTimer > 0) window.instaKillTimer--;
-    }
-
-    if(Network.mode === 'CLIENT') {
+    if (Network.mode === 'CLIENT') {
         Network.sendClientData(me);
         
         zombies.forEach(z => {
@@ -128,6 +103,17 @@ function updateGameLogic() {
             b.x += b.vx;
             b.y += b.vy;
         });
+
+        // Smoothly progress zombie arrows locally on guest client POV
+        if (window.zombieArrows) {
+            window.zombieArrows.forEach(a => {
+                a.x += a.vx;
+                a.y += a.vy;
+            });
+        }
+
+        if (window.doublePointsTimer > 0) window.doublePointsTimer--;
+        if (window.instaKillTimer > 0) window.instaKillTimer--;
     } else {
         stats.frame++;
         if(stats.frame % 60 === 0) Object.values(players).forEach(p => { if(p.state === 'ALIVE' && p.hp < p.maxHp) p.hp++; });
@@ -151,6 +137,11 @@ function updateGameLogic() {
         updateZombies();
         updateBullets();
         
+        // Resolve ranged archer arrows physics loop (Host/Solo Authority only)
+        if (typeof ZombieVariants !== 'undefined') {
+            ZombieVariants.updateProjectiles();
+        }
+
         stats.zombiesAlive = zombies.length;
 
         checkGameFlow();
@@ -172,15 +163,30 @@ function updateGameLogic() {
             }
         });
 
+        if (window.doublePointsTimer > 0) window.doublePointsTimer--;
+        if (window.instaKillTimer > 0) window.instaKillTimer--;
+
+        for (let i = window.drops.length - 1; i >= 0; i--) {
+            let d = window.drops[i];
+            d.life--;
+            
+            let pickedUp = false;
+            Object.values(players).forEach(p => {
+                if (p.state === 'ALIVE' && Math.hypot(p.x - d.x, p.y - d.y) < 32) {
+                    pickedUp = true;
+                    applyPowerup(d.type, p);
+                }
+            });
+
+            if (pickedUp || d.life <= 0) {
+                window.drops.splice(i, 1);
+            }
+        }
+
         if(Network.mode === 'HOST') Network.broadcastState();
     }
 
     checkInteractUI();
-
-    // Resolve ranged archer arrows physics loop
-    if (typeof ZombieVariants !== 'undefined') {
-        ZombieVariants.updateProjectiles();
-    }
 
     for (let i = particles.length - 1; i >= 0; i--) {
         let p = particles[i];
@@ -1141,7 +1147,7 @@ function resetSession() {
     window.doublePointsTimer = 0;
     window.instaKillTimer = 0;
     
-    // Reset development bosses and projectles reference on restart/exit triggers
+    // Reset development bosses and projectiles reference on restart/exit triggers
     window.activeBoss = null;
     window.zombieArrows = [];
 
@@ -1172,7 +1178,7 @@ function gameOver() {
     document.getElementById('death-msg').innerText="Survived to Round "+stats.round; 
     if(document.getElementById('perf-msg')) document.getElementById('perf-msg').innerText = msg; 
 
-    // Reset development bosses and projectles reference on game over triggers
+    // Reset development bosses and projectiles reference on game over triggers
     window.activeBoss = null;
     window.zombieArrows = [];
 

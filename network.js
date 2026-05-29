@@ -242,6 +242,7 @@ const Network = {
             p4: getPrunedPlayer(players['p4']), 
             zombies: zombies.map(z => ({ id: z.id, x: z.x, y: z.y, hp: z.hp, maxHp: z.maxHp, hitTimer: z.hitTimer, color: z.color, r: z.r, isBoss: z.isBoss, name: z.name })), 
             bullets: bullets.map(b => ({ id: b.id, x: b.x, y: b.y, vx: b.vx, vy: b.vy, color: b.color, type: b.type })),
+            zombieArrows: window.zombieArrows.map(a => ({ x: a.x, y: a.y, vx: a.vx, vy: a.vy, life: a.life })), // Synchronize Archer Arrow Projectiles
             stats: stats,
             windows: activeMap.windows.map(w => ({ boards: w.boards })),
             doors: activeMap.rooms.map(r => ({ unlocked: r.unlocked })),
@@ -437,6 +438,11 @@ const Network = {
                         }
                         bullets.splice(i, 1);
                     }
+                }
+                
+                // Decode Synced Archer Projectiles
+                if (data.zombieArrows) {
+                    window.zombieArrows = data.zombieArrows;
                 }
                 
                 window.drops = data.drops || [];
