@@ -323,9 +323,19 @@ const Network = {
                     serverMap.set(sz.id, sz);
                     const local = zombies.find(z => z.id === sz.id);
                     if(local) {
-                        // Spawn blood particles locally on damage detection
+                        // Spawn blood particles and stains locally on damage detection [1]
                         if (local.hp > sz.hp && typeof spawnParticles === 'function') {
                             spawnParticles(local.x, local.y, '#800', 3);
+
+                            if (window.bloodStains && Math.random() < 0.45) {
+                                window.bloodStains.push({
+                                    x: local.x + (Math.random() - 0.5) * 12,
+                                    y: local.y + (Math.random() - 0.5) * 12,
+                                    r: 4 + Math.random() * 12,
+                                    color: 'rgba(139, 0, 0, ' + (0.3 + Math.random() * 0.35) + ')'
+                                });
+                                if (window.bloodStains.length > 150) window.bloodStains.shift();
+                            }
                         }
                         local.serverX = sz.x;
                         local.serverY = sz.y;
@@ -350,15 +360,22 @@ const Network = {
                     if(!serverMap.has(zombies[i].id)) zombies.splice(i, 1);
                 }
 
-                // COMPARE BULLETS & TRIGGERS LOCAL CLIENT EXPLOSIONS (Decentralized Visual Sync)
+                // COMPARE BULLETS & TRIGGERS LOCAL CLIENT EXPLOSIONS / SPARKS [1]
                 const incomingBullets = data.bullets || [];
-                const prevExplosives = bullets.filter(b => b.type === 'explosive');
+                const prevBullets = bullets || [];
                 const nextKeys = incomingBullets.map(b => b.x + "_" + b.y);
-                prevExplosives.forEach(eb => {
+                
+                prevBullets.forEach(eb => {
                     const key = eb.x + "_" + eb.y;
                     if (!nextKeys.includes(key)) {
-                        if (typeof spawnExplosionVisuals === 'function') {
-                            spawnExplosionVisuals(eb.x, eb.y);
+                        if (eb.type === 'explosive') {
+                            if (typeof spawnExplosionVisuals === 'function') {
+                                spawnExplosionVisuals(eb.x, eb.y);
+                            }
+                        } else {
+                            if (typeof spawnSparks === 'function' && typeof RoomSystem !== 'undefined' && RoomSystem.checkCollision(eb.x, eb.y, false)) {
+                                spawnSparks(eb.x, eb.y);
+                            }
                         }
                     }
                 });
@@ -377,7 +394,7 @@ const Network = {
                 
                 stats = data.stats;
 
-                // Sync with deep fallback properties to guarantee no unhandled exception crash
+                // Sync positions and properties of all players from Host broadcast
                 ['p1', 'p2', 'p3', 'p4'].forEach(pId => {
                     if (pId === window.myPlayerId) {
                         const fallbackPId = data[pId];
@@ -395,6 +412,13 @@ const Network = {
                                 }
                             }
                             
+                            // Eject spinning shells locally on ammo depletion [1]
+                            if (fallbackPId.clip < (me.clip !== undefined ? me.clip : 8)) {
+                                if (typeof spawnShellCasing === 'function') {
+                                    spawnShellCasing(me.x, me.y, me.angle);
+                                }
+                            }
+
                             // Safe dynamic local inventory synchronization
                             if (fallbackPId.gunName) {
                                 syncPlayerInventory(me, fallbackPId.weapIdx, fallbackPId.gunName);
@@ -416,6 +440,13 @@ const Network = {
                                 players[pId] = createPlayer(pId, data[pId].x, data[pId].y, getPlayerColor(pId), data[pId].name);
                             }
                             const p = players[pId];
+
+                            // Eject spinning shells locally for other players on ammo depletion [1]
+                            if (p && data[pId].clip < (p.clip !== undefined ? p.clip : 8)) {
+                                if (typeof spawnShellCasing === 'function') {
+                                    spawnShellCasing(p.x, p.y, p.angle);
+                                }
+                            }
 
                             // Safe dynamic other players inventory synchronization
                             if (data[pId].gunName) {
