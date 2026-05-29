@@ -640,10 +640,6 @@ function updateZombies() {
                 if (p.invincibleTimer && p.invincibleTimer > 0) return;
 
                 p.hp -= 5;
-                if (p === me) {
-                    document.getElementById('damage-flash').style.background = "rgba(255,0,0,0.3)";
-                    setTimeout(() => document.getElementById('damage-flash').style.background = "transparent", 50);
-                }
                 if (p.hp <= 0) {
                     p.state = 'DOWNED';
                     p.reviveTimer = p.hasJug ? 300 : -1;
@@ -1020,6 +1016,8 @@ function updateUI() {
         if (me.hp < me.lastHp) {
             const flash = document.getElementById('damage-flash');
             if (flash) {
+                flash.style.zIndex = "9999";       // Force rendering on top of the canvas
+                flash.style.boxSizing = "border-box"; // Prevent screen scrollbar flickering
                 flash.style.boxShadow = "inset 0 0 80px rgba(180, 0, 0, 0.9)";
                 flash.style.border = "12px solid rgba(180, 0, 0, 0.7)";
                 flash.style.background = "rgba(180, 0, 0, 0.15)";
@@ -1027,7 +1025,7 @@ function updateUI() {
                     flash.style.boxShadow = "none";
                     flash.style.border = "none";
                     flash.style.background = "transparent";
-                }, 150);
+                }, 150); // Kept on screen for 150ms
             }
         }
         me.lastHp = me.hp;
