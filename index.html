@@ -16,7 +16,7 @@
         body { 
             margin: 0; 
             overflow: hidden; 
-            background: #080808; 
+            background: #050505; 
             font-family: 'Courier New', monospace; 
             user-select: none; 
             touch-action: manipulation; /* Prevent double-tap delay on mobile */
@@ -71,50 +71,135 @@
         /* --- MENUS --- */
         .screen { 
             position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            background: linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.8)), url('https://www.transparenttextures.com/patterns/dark-matter.png');
-            background-color: #111;
+            background: radial-gradient(circle, rgba(15,0,0,0.3) 0%, rgba(5,5,5,1) 100%), 
+                        url('https://www.transparenttextures.com/patterns/black-thread.png');
+            background-color: #050505;
             display: flex; flex-direction: column; align-items: center; justify-content: center; 
             pointer-events: auto; z-index: 2000; 
+            box-shadow: inset 0 0 100px rgba(0,0,0,0.8);
         }
 
-        /* CONTAINER FOR MAIN MENU */
+        /* CONTAINER FOR MAIN MENU (Glassmorphism Facelift) */
         .menu-container {
-            width: 400px;
-            max-width: 90%;
-            padding: 30px;
-            background: rgba(20, 20, 20, 0.9);
-            border: 1px solid #333;
-            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+            width: 440px;
+            max-width: 95%;
+            padding: 40px 30px;
+            background: rgba(10, 10, 10, 0.85);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(168, 50, 50, 0.3);
+            border-top: 4px solid #a83232;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.8), 0 0 15px rgba(168, 50, 50, 0.1);
             text-align: center;
             box-sizing: border-box;
+            border-radius: 6px;
         }
 
-        h1 { color: #a83232; font-size: 50px; margin: 0 0 10px 0; letter-spacing: 5px; text-shadow: 4px 4px 0 #000; }
-        .stats-text { color: #666; margin-bottom: 10px; font-size: 13px; line-height: 1.5; }
-        .stats-text span { color: #ccc; }
+        h1 { 
+            color: #a83232; 
+            font-size: 52px; 
+            margin: 0 0 5px 0; 
+            letter-spacing: 6px; 
+            text-shadow: 0 0 10px rgba(168, 50, 50, 0.6), 2px 2px 0 #000; 
+            animation: pulseGlow 3s infinite alternate;
+        }
+        @keyframes pulseGlow {
+            0% { text-shadow: 0 0 8px rgba(168, 50, 50, 0.4), 2px 2px 0 #000; }
+            100% { text-shadow: 0 0 16px rgba(168, 50, 50, 0.8), 2px 2px 0 #000; }
+        }
+
+        .stats-text { 
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid #222;
+            padding: 8px 12px;
+            border-radius: 4px;
+            color: #777; 
+            margin-bottom: 12px; 
+            font-size: 11px; 
+            line-height: 1.6;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-around;
+            gap: 5px;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+        .stats-text span { color: #fff; }
+
+        .menu-label {
+            font-size: 10px;
+            color: #555;
+            display: block;
+            text-align: left;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
 
         /* INPUTS & SELECT DROPDOWNS */
         input, select { 
-            background: #000; border: 1px solid #444; color: #fff; 
-            padding: 12px; font-family: inherit; font-size: 16px; text-align: center; outline: none;
-            width: 100%; box-sizing: border-box; transition: 0.2s;
-            touch-action: manipulation;
+            background: rgba(5, 5, 5, 0.9); 
+            border: 1px solid #333; 
+            color: #fff; 
+            padding: 12px; 
+            font-family: inherit; 
+            font-size: 14px; 
+            text-align: center; 
+            outline: none;
+            width: 100%; 
+            box-sizing: border-box; 
+            transition: all 0.2s ease-in-out;
+            border-radius: 4px;
+            text-transform: uppercase;
         }
-        input:focus, select:focus { border-color: #a83232; }
+        input:focus, select:focus { 
+            border-color: #a83232; 
+            box-shadow: 0 0 8px rgba(168, 50, 50, 0.25);
+            background: #000;
+        }
         
         #username-input { margin-bottom: 15px; border-color: #a83232; color: #ffd700; font-weight: bold; }
         #map-select { margin-bottom: 15px; text-align-last: center; }
 
         /* BUTTONS */
         button { 
-            background: #1a1a1a; color: #ccc; border: 1px solid #333; 
-            padding: 12px; width: 100%; margin: 5px 0; cursor: pointer; 
-            font-family: inherit; font-size: 18px; transition: 0.2s; 
+            background: linear-gradient(180deg, #1f1f1f, #151515); 
+            color: #bbb; 
+            border: 1px solid #333; 
+            border-radius: 4px;
+            padding: 12px; 
+            width: 100%; 
+            margin: 6px 0; 
+            cursor: pointer; 
+            font-family: inherit; 
+            font-size: 15px; 
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.2s ease; 
             touch-action: manipulation;
         }
-        button:hover { background: #a83232; color: #fff; border-color: #a83232; transform: translateX(5px); }
-        button:active { transform: translateX(2px); }
-        button:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        button:hover { 
+            background: linear-gradient(180deg, #b83737, #8a2a2a); 
+            color: #fff; 
+            border-color: #a83232; 
+            box-shadow: 0 0 12px rgba(168, 50, 50, 0.4);
+            transform: translateY(-2px); 
+        }
+        button:active { 
+            transform: translateY(0); 
+            box-shadow: 0 0 6px rgba(168, 50, 50, 0.2);
+        }
+        button:disabled { 
+            opacity: 0.35; 
+            cursor: not-allowed; 
+            transform: none !important;
+            box-shadow: none !important;
+            background: #111 !important;
+            border-color: #222 !important;
+            color: #555 !important;
+        }
 
         /* JOIN ROW */
         .join-row { display: flex; gap: 5px; margin: 5px 0; }
@@ -123,7 +208,7 @@
 
         /* FOOTER BUTTONS */
         .footer-btns { display: flex; gap: 4px; margin-top: 15px; border-top: 1px solid #333; padding-top: 15px; }
-        .footer-btns button { font-size: 10px; padding: 6px; background: #0e0e0e; }
+        .footer-btns button { font-size: 10px; padding: 8px; background: #0e0e0e; }
 
         /* MODALS */
         .modal { 
@@ -132,20 +217,50 @@
             top: 50%; 
             left: 50%; 
             transform: translate(-50%, -50%); 
-            width: 600px; 
-            max-width: 90%;
-            height: 500px; 
-            max-height: 80vh;
-            background: #111; 
-            border: 2px solid #444; 
+            width: 650px; 
+            max-width: 95%;
+            height: 520px; 
+            max-height: 85vh;
+            background: rgba(12, 12, 12, 0.95); 
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 2px solid #a83232; 
+            border-radius: 6px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.9), 0 0 20px rgba(168, 50, 50, 0.15);
             z-index: 2100; 
-            padding: 20px; 
+            padding: 25px; 
             overflow-y: auto; 
             box-sizing: border-box;
         }
-        .list-item { background: #222; margin-bottom: 10px; padding: 10px; display: flex; justify-content: space-between; border-left: 5px solid #555; color: white; transition: background 0.1s; }
-        .list-item:hover { background: #2c2c2c; }
-        .unlocked { border-left-color: #ffd700; background: #2a2a2a; }
+        .modal h2 {
+            color: #a83232;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 22px;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+
+        .list-item { 
+            background: rgba(20, 20, 20, 0.7); 
+            border: 1px solid #222;
+            margin-bottom: 12px; 
+            padding: 12px 16px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            border-left: 5px solid #444; 
+            color: white; 
+            border-radius: 4px;
+            transition: background 0.15s ease;
+        }
+        .list-item:hover { 
+            background: rgba(30, 30, 30, 0.9); 
+        }
+        .unlocked { 
+            border-left-color: #ffd700; 
+            background: rgba(255, 215, 0, 0.04); 
+        }
 
         /* TAB SCOREBOARD */
         #scoreboard { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 700px; max-width: 95%; background: rgba(0,0,0,0.95); border: 2px solid #a83232; z-index: 1500; padding: 20px; color: white; box-sizing: border-box; }
@@ -193,20 +308,24 @@
         <div id="auth-status-container"></div>
 
         <div class="stats-text">
-            LEVEL: <span id="menu-level" style="color: #ffd700;">1</span> | COINS: <span id="menu-coins" style="color: #e67e22;">0 🪙</span> | KILLS: <span id="menu-kills">0</span> | BEST ROUND: <span id="menu-round">1</span>
+            <div>LVL: <span id="menu-level">1</span></div>
+            <div>COINS: <span id="menu-coins">0 🪙</span></div>
+            <div>KILLS: <span id="menu-kills">0</span></div>
+            <div>BEST: <span id="menu-round">1</span></div>
         </div>
         
         <!-- XP PROGRESS BAR -->
-        <div id="menu-xp-bar-container" style="width: 100%; height: 10px; background: #222; border: 1px solid #444; border-radius: 5px; margin: 10px 0; overflow: hidden; position: relative; box-sizing: border-box;">
-            <div id="menu-xp-bar" style="width: 0%; height: 100%; background: #ffd700; transition: width 0.3s ease;"></div>
+        <div id="menu-xp-bar-container">
+            <div id="menu-xp-bar" style="width: 0%;"></div>
         </div>
-        <div id="menu-xp-text" style="font-size: 11px; color: #888; margin-bottom: 15px; text-align: center;">0 / 1000 XP</div>
+        <div id="menu-xp-text">0 / 1000 XP</div>
 
         <!-- IDENTITY -->
+        <span class="menu-label">Codename / Identity:</span>
         <input type="text" id="username-input" placeholder="ENTER CODENAME" maxlength="12">
         
         <!-- MAP SELECTOR -->
-        <label for="map-select" style="color: #666; display: block; font-size: 12px; margin-bottom: 5px; text-transform: uppercase; font-weight: bold; letter-spacing: 1px; text-align: left;">DEPLOYMENT ZONE:</label>
+        <span class="menu-label">Deployment Zone:</span>
         <select id="map-select">
             <option value="0">The Facility (Classic)</option>
             <option value="1">Bunker Outpost (Tactical)</option>
@@ -214,7 +333,7 @@
         </select>
 
         <!-- DIFFICULTY SELECTOR FOR OFFLINE PLAY -->
-        <label for="menu-diff-select" style="color: #666; display: block; font-size: 12px; margin-bottom: 5px; text-transform: uppercase; font-weight: bold; letter-spacing: 1px; text-align: left; margin-top: 10px;">TACTICAL DIFFICULTY:</label>
+        <span class="menu-label">Tactical Difficulty:</span>
         <select id="menu-diff-select">
             <option value="easy">Easy (More Player Health, Slower Zombies)</option>
             <option value="medium" selected>Medium (Standard Mode)</option>
