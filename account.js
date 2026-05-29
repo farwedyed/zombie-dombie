@@ -58,8 +58,9 @@ const AccountSystem = {
                 }
             })
             .catch((error) => {
-                console.error("Sign-in failed:", error.message);
-                alert("Sign-in failed. Please try again.");
+                console.error("Sign-in failed:", error);
+                // Shows the precise Firebase code (e.g., auth/unauthorized-domain) to help debug
+                alert(`Sign-in failed: [${error.code}] ${error.message}`);
             });
     },
 
