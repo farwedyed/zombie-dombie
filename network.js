@@ -166,8 +166,11 @@ const Network = {
             else if(data.type === 'P_DATA') {
                 const p = players[c.playerId];
                 if (p) {
-                    p.serverX = data.x;
-                    p.serverY = data.y;
+                    // Host Authority Lock: Ignore client coordinates if the host knows they are downed
+                    if (p.state === 'ALIVE') {
+                        p.serverX = data.x;
+                        p.serverY = data.y;
+                    }
                     p.angle = data.angle;
                     
                     if(data.name) p.name = data.name;
@@ -501,8 +504,15 @@ const Network = {
 
                             Object.assign(me, fallbackPId);
                             me.angle = myAngle; 
-                            me.x = myX;
-                            me.y = myY;
+                            
+                            // Client-Side Lock: If downed, ignore local position changes and match host coordinates
+                            if (fallbackPId.state === 'DOWNED') {
+                                me.x = fallbackPId.x;
+                                me.y = fallbackPId.y;
+                            } else {
+                                me.x = myX;
+                                me.y = myY;
+                            }
 
                             me.gunName = fallbackPId.gunName !== undefined ? fallbackPId.gunName : "M1911";
                             me.gunColor = fallbackPId.gunColor !== undefined ? fallbackPId.gunColor : "#999";
