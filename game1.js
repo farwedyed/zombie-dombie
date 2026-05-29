@@ -1012,6 +1012,27 @@ function updateUI() {
         badgeInsta.style.display = (window.instaKillTimer > 0) ? 'block' : 'none';
     }
 
+    // Dynamic Local Damage-Flash Vignette Overlay Tracker
+    if (me) {
+        if (me.lastHp === undefined) {
+            me.lastHp = me.hp;
+        }
+        if (me.hp < me.lastHp) {
+            const flash = document.getElementById('damage-flash');
+            if (flash) {
+                flash.style.boxShadow = "inset 0 0 80px rgba(180, 0, 0, 0.9)";
+                flash.style.border = "12px solid rgba(180, 0, 0, 0.7)";
+                flash.style.background = "rgba(180, 0, 0, 0.15)";
+                setTimeout(() => {
+                    flash.style.boxShadow = "none";
+                    flash.style.border = "none";
+                    flash.style.background = "transparent";
+                }, 150);
+            }
+        }
+        me.lastHp = me.hp;
+    }
+
     ['p1', 'p2', 'p3', 'p4'].forEach(pId => {
         const p = players[pId];
         const hud = document.getElementById('hud-' + pId);

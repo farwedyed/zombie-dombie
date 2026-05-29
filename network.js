@@ -372,11 +372,8 @@ const Network = {
                             if (typeof spawnExplosionVisuals === 'function') {
                                 spawnExplosionVisuals(eb.x, eb.y);
                             }
-                        } else {
-                            if (typeof spawnSparks === 'function' && typeof RoomSystem !== 'undefined' && RoomSystem.checkCollision(eb.x, eb.y, false)) {
-                                spawnSparks(eb.x, eb.y);
-                            }
                         }
+                        // Wall spark particles on non-explosive impacts removed to prevent multiplayer lag
                     }
                 });
 
@@ -405,11 +402,15 @@ const Network = {
                             let myX = me.x;
                             let myY = me.y;
                             
+                            // Client-side local player revival sync detection
                             if (me.state === 'DOWNED' && fallbackPId.state === 'ALIVE') {
                                 const spawnSource = data.p1;
                                 if (spawnSource) {
                                     myX = spawnSource.x;
                                     myY = spawnSource.y;
+                                }
+                                if (typeof addText === 'function') {
+                                    addText(me.x, me.y, "REVIVED (+INVINCIBLE!)", "#0f0");
                                 }
                             }
 
@@ -433,6 +434,13 @@ const Network = {
                                 players[pId] = createPlayer(pId, data[pId].x, data[pId].y, getPlayerColor(pId), data[pId].name);
                             }
                             const p = players[pId];
+
+                            // Client-side other player revival sync detection
+                            if (p && p.state === 'DOWNED' && data[pId].state === 'ALIVE') {
+                                if (typeof addText === 'function') {
+                                    addText(p.x, p.y, "REVIVED (+INVINCIBLE!)", "#0f0");
+                                }
+                            }
 
                             // Eject shell locally only if not currently reloading and the weapon is not a Bazooka
                             if (p && !data[pId].reloading && !p.reloading && data[pId].gunName !== "Bazooka") {
