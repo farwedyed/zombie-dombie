@@ -226,11 +226,7 @@
         <button onclick="startTutorial()" style="border-color: #a83232; color: #fff; background: rgba(168, 50, 50, 0.2);">BOOT CAMP (TUTORIAL)</button>
         <button onclick="openMenu('coop-modal')">PLAY LOCAL CO-OP</button>
         <button onclick="enterLobbyHost()">HOST ONLINE</button>
-        
-        <div class="join-row">
-            <input type="text" id="join-input" placeholder="Enter Host ID">
-            <button onclick="enterLobbyJoin()">JOIN</button>
-        </div>
+        <button onclick="openMenu('lobby-browser-modal')" style="border-color: #3498db; background: rgba(52, 152, 219, 0.08);">ONLINE SERVER LIST</button>
 
         <!-- FOOTER -->
         <div class="footer-btns">
@@ -315,6 +311,39 @@
     </div>
     
     <button class="close-btn" onclick="closeMenu('cosmetics-modal')" style="margin-top: 15px;">CLOSE</button>
+</div>
+
+<!-- LOBBY BROWSER SERVER MODAL -->
+<div id="lobby-browser-modal" class="modal" style="width: 700px; max-width: 95%; height: 500px; max-height: 85vh; padding: 20px;">
+    <h2 style="color:white;text-align:center;margin-top:0;margin-bottom:15px;">ONLINE SERVER BROWSER</h2>
+    
+    <div style="display: flex; justify-content: space-between; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+        <button onclick="refreshServerBrowser()" style="width:auto; margin:0; padding: 10px 15px; font-size:14px; background:#0e0e0e; border-color:#333;">🔄 Refresh List</button>
+        <div style="display:flex; gap: 5px;">
+            <input type="text" id="manual-join-input" placeholder="Manual Host ID" style="width:160px; font-size:13px; padding:8px; margin:0;">
+            <button onclick="manualJoinLobby()" style="width:auto; margin:0; padding:8px 12px; font-size:13px; background:#222;">Join Code</button>
+        </div>
+    </div>
+
+    <div style="overflow-y: auto; height: calc(100% - 130px); border: 1px solid #222; background: rgba(0,0,0,0.2); border-radius: 4px; padding: 10px; box-sizing: border-box;">
+        <table style="width:100%; border-collapse:collapse; color:#fff; font-size:13px; text-align:left;">
+            <thead>
+                <tr style="border-bottom: 1px solid #444; color:#a83232;">
+                    <th style="padding:8px;">HOST</th>
+                    <th style="padding:8px;">MAP</th>
+                    <th style="padding:8px;">DIFFICULTY</th>
+                    <th style="padding:8px;">PLAYERS</th>
+                    <th style="padding:8px; text-align:right;">ACTION</th>
+                </tr>
+            </thead>
+            <tbody id="lobby-browser-list">
+                <!-- Dynamically populated -->
+            </tbody>
+        </table>
+        <div id="no-lobbies-msg" style="color:#666; text-align:center; margin-top:40px; display:none;">No active public lobbies found. Start one!</div>
+    </div>
+    
+    <button class="close-btn" onclick="closeMenu('lobby-browser-modal')" style="margin-top: 15px;">CLOSE</button>
 </div>
 
 <!-- LOCAL CO-OP MODAL -->

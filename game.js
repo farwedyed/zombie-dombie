@@ -369,6 +369,9 @@ window.openMenu = function(id) {
         renderCosmeticShop();
         startCosmeticPreviewLoop();
     }
+    if(id === 'lobby-browser-modal') {
+        refreshServerBrowser();
+    }
 };
 window.closeMenu = function(id) { 
     document.getElementById(id).style.display = 'none'; 
@@ -592,6 +595,184 @@ window.equipCosmetic = function(id) {
     }
 };
 
+/* --- SERVER LIST MANAGEMENT --- */
+const LobbyManager = {
+    heartbeatInterval: null,
+
+    registerLobby: async function(peerId) {
+        if (typeof db === 'undefined' || !db) return;
+        const myLvl = Math.floor((saveData.xp || 0) / 1000) + 1;
+        
+        try {
+            await db.collection("lobbies").doc(peerId).set({
+                peerId: peerId,
+                hostName: myUsername,
+                hostLevel: myLvl,
+                mapIndex: stats.selectedMapIdx,
+                difficulty: stats.difficulty || 'medium',
+                playerCount: Object.values(window.lobbyPlayers).filter(p => p !== "").length,
+                maxPlayers: 4,
+                status: 'LOBBY',
+                lastActive: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            this.startHeartbeat(peerId);
+        } catch(e) {
+            console.warn("Failed to register lobby on Firestore:", e);
+        }
+    },
+
+    startHeartbeat: function(peerId) {
+        this.stopHeartbeat();
+        this.heartbeatInterval = setInterval(async () => {
+            if (typeof db === 'undefined' || !db || Network.mode !== 'HOST') {
+                this.stopHeartbeat();
+                return;
+            }
+            try {
+                await db.collection("lobbies").doc(peerId).update({
+                    playerCount: Object.values(window.lobbyPlayers).filter(p => p !== "").length,
+                    mapIndex: stats.selectedMapIdx,
+                    difficulty: stats.difficulty || 'medium',
+                    lastActive: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            } catch(e) {
+                console.warn("Lobby heartbeat update failed:", e);
+            }
+        }, 15000); // 15s interval
+    },
+
+    stopHeartbeat: function() {
+        if (this.heartbeatInterval) {
+            clearInterval(this.heartbeatInterval);
+            this.heartbeatInterval = null;
+        }
+    },
+
+    unregisterLobby: async function(peerId) {
+        this.stopHeartbeat();
+        if (typeof db === 'undefined' || !db || !peerId) return;
+        try {
+            await db.collection("lobbies").doc(peerId).delete();
+        } catch(e) {
+            console.warn("Failed to unregister lobby:", e);
+        }
+    },
+
+    fetchLobbies: async function(onComplete) {
+        if (typeof db === 'undefined' || !db) return onComplete([]);
+        
+        const cutoff = new Date(Date.now() - 45000); // 45 seconds tolerance window
+        try {
+            const snap = await db.collection("lobbies")
+                .where("lastActive", ">=", cutoff)
+                .get();
+            
+            const list = [];
+            snap.forEach(doc => {
+                list.push(doc.data());
+            });
+            onComplete(list);
+        } catch(e) {
+            console.error("Failed to scan lobbies:", e);
+            onComplete([]);
+        }
+    }
+};
+
+window.addEventListener('beforeunload', () => {
+    if (Network.mode === 'HOST' && Network.peer && typeof LobbyManager !== 'undefined') {
+        LobbyManager.unregisterLobby(Network.peer.id);
+    }
+});
+
+window.refreshServerBrowser = function() {
+    const list = document.getElementById('lobby-browser-list');
+    const noLobbies = document.getElementById('no-lobbies-msg');
+    if (!list) return;
+    
+    list.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:30px; color:#888;">Scanning active public lobbies...</td></tr>`;
+    if (noLobbies) noLobbies.style.display = 'none';
+
+    if (typeof LobbyManager !== 'undefined') {
+        LobbyManager.fetchLobbies((lobbies) => {
+            list.innerHTML = "";
+            if (lobbies.length === 0) {
+                if (noLobbies) noLobbies.style.display = 'block';
+                return;
+            }
+            if (noLobbies) noLobbies.style.display = 'none';
+
+            lobbies.forEach(lobby => {
+                let mapName = "Facility";
+                if (lobby.mapIndex === 1) mapName = "Bunker";
+                else if (lobby.mapIndex === 2) mapName = "Sector-9";
+                
+                let diffLabel = lobby.difficulty ? lobby.difficulty.toUpperCase() : "MEDIUM";
+                
+                list.innerHTML += `
+                    <tr style="border-bottom:1px solid #222;">
+                        <td style="padding:10px; color:#3498db; font-weight:bold;">${lobby.hostName || "Host"} <span style="color:#ffd700; font-size:10px;">[Lv.${lobby.hostLevel || 1}]</span></td>
+                        <td style="padding:10px; color:#ccc;">${mapName}</td>
+                        <td style="padding:10px; color:#e67e22; font-weight:bold;">${diffLabel}</td>
+                        <td style="padding:10px; color:#666;">${lobby.playerCount || 1} / ${lobby.maxPlayers || 4}</td>
+                        <td style="padding:10px; text-align:right;">
+                            <button onclick="joinServerBrowserLobby('${lobby.peerId}')" style="width:auto; margin:0; padding:5px 12px; font-size:12px; background:#a83232; color:white; border:none; border-radius:3px;">Connect</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        });
+    }
+};
+
+window.joinServerBrowserLobby = function(peerId) {
+    closeMenu('lobby-browser-modal');
+    enterLobbyJoinManual(peerId);
+};
+
+window.manualJoinLobby = function() {
+    let id = document.getElementById('manual-join-input').value.trim();
+    if (!id) return alert("Please enter a manual Host ID");
+    closeMenu('lobby-browser-modal');
+    enterLobbyJoinManual(id);
+};
+
+function enterLobbyJoinManual(id) {
+    if (!validateOnlineName()) return;
+    
+    document.getElementById('lobby-status').innerText = "Connecting to Peer Server...";
+    document.getElementById('main-menu').style.display = 'none'; 
+    document.getElementById('lobby-screen').style.display = 'flex'; 
+    document.getElementById('start-btn').style.display = 'none';
+
+    document.getElementById('host-id-display').innerText = "ID: " + id;
+
+    document.getElementById('lobby-map-select').style.display = 'none';
+    const clientMapDisplay = document.getElementById('lobby-map-display-client');
+    clientMapDisplay.style.display = 'block';
+    clientMapDisplay.innerText = "Retrieving map...";
+
+    document.getElementById('lobby-diff-select').style.display = 'none';
+    const clientDiffDisplay = document.getElementById('lobby-diff-display-client');
+    clientDiffDisplay.style.display = 'block';
+    clientDiffDisplay.innerText = "Retrieving difficulty...";
+
+    let nameInput = document.getElementById('username-input');
+    myUsername = nameInput ? (nameInput.value || "Survivor") : "Survivor";
+    myUsername = myUsername.substring(0, 12);
+
+    window.lobbyPlayers = { p1: "Host [Lv. ?]", p2: "", p3: "", p4: "" };
+    updateLobbyPlayersList();
+
+    Network.init(() => { 
+        document.getElementById('lobby-status').innerText = "Locating Host...";
+        Network.join(id, () => { 
+            document.getElementById('lobby-status').innerText = "Connected! Waiting for Host to start..."; 
+            document.getElementById('lobby-status').style.color = "#0f0";
+        }); 
+    });
+}
+
 /* --- PROFILE & HANDSHAKE HELPERS --- */
 function saveLocalUsername() {
     let nameInput = document.getElementById('username-input');
@@ -707,7 +888,12 @@ function enterLobbyHost() {
     document.getElementById('main-menu').style.display = 'none'; 
     document.getElementById('lobby-screen').style.display = 'flex'; 
     Network.mode = 'HOST'; 
-    Network.init((id) => { document.getElementById('host-id-display').innerText = id; }); 
+    Network.init((id) => { 
+        document.getElementById('host-id-display').innerText = id; 
+        if (typeof LobbyManager !== 'undefined') {
+            LobbyManager.registerLobby(id);
+        }
+    }); 
 }
 function enterLobbyJoin() { 
     if (!validateOnlineName()) return;
@@ -842,6 +1028,10 @@ function launchGame() {
         if (typeof Tutorial !== 'undefined') Tutorial.end();
     }
 
+    if (Network.mode === 'HOST' && Network.peer && typeof LobbyManager !== 'undefined') {
+        LobbyManager.unregisterLobby(Network.peer.id); // Unregister so clients cannot connect mid-match
+    }
+
     resetSession();
     
     let nameInput = document.getElementById('username-input');
@@ -920,6 +1110,10 @@ function goToLobbyScreen() {
         cancelAnimationFrame(animationFrameId);
         animationFrameId = null;
     }
+
+    if (Network.mode === 'HOST' && Network.peer && typeof LobbyManager !== 'undefined') {
+        LobbyManager.unregisterLobby(Network.peer.id); // Clear active list mappings if exiting
+    }
     
     document.getElementById('game-ui').style.display = 'none';
     document.getElementById('game-over').style.display = 'none';
@@ -944,6 +1138,11 @@ function goToLobbyScreen() {
         
         document.getElementById('lobby-map-select').style.display = 'block';
         document.getElementById('lobby-map-display-client').style.display = 'none';
+        
+        // Re-register to browser once returning back to lobby
+        if (Network.peer && typeof LobbyManager !== 'undefined') {
+            LobbyManager.registerLobby(Network.peer.id);
+        }
     } else if (Network.mode === 'CLIENT') {
         document.getElementById('lobby-status').innerText = "Connected! Waiting for Host to start...";
         document.getElementById('lobby-status').style.color = "#0f0";
