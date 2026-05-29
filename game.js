@@ -68,6 +68,7 @@ let stats = { score: 500, round: 1, zombiesToSpawn: 6, zombiesAlive: 0, frame: 0
 let players = {};
 let me = null;
 let bullets = [], zombies = [], particles = [], texts = [];
+window.bloodStains = []; // Explicitly attach to window for robust cross-script scoping
 let zombieIdCounter = 0; 
 let myUsername = "Survivor"; // Store local username
 
@@ -700,7 +701,8 @@ function createPlayer(id, x, y, color, name) {
         isShooting: false,       // Current weapon fire trigger hold state
         pressHandled: false,     // Semi-auto click handler state
         lastRepairTime: 0,       // Track rebuild speed cooldown (500ms limit)
-        invincibleTimer: 0       // Track temporary damage immunity frames
+        invincibleTimer: 0,      // Track temporary damage immunity frames
+        muzzleFlash: 0           // Track frame counts left for rendering barrel flare
     }; 
 }
 
@@ -1060,6 +1062,7 @@ function shootGun(p) {
     // Core ROF fix: Reading the database value directly as a frame delay
     if(stats.frame - (gun.lastShot||0) >= gun.rpm) {
         gun.lastShot = stats.frame;
+        p.muzzleFlash = 4; // Spawn active muzzle flare frames locally on shoot
         
         // Infinite ammo during early stages of boot camp
         const isInfinite = (typeof Tutorial !== 'undefined' && Tutorial.isActive && Tutorial.currentStep < 4);
@@ -1073,7 +1076,12 @@ function shootGun(p) {
             if(Network.mode !== 'CLIENT') {
                 for(let i=0; i<pellets; i++) {
                     let a = p.angle + (Math.random()-0.5) * (gun.type==='shotgun'?0.2:0.05);
-                    bullets.push({ x:p.x, y:p.y, vx:Math.cos(a)*20, vy:Math.sin(a)*20, dmg:gun.dmg, color:gun.color, life:50, ownerId: p.id });
+                    bullets.push({ 
+                        x: p.x, y: p.y, 
+                        vx: Math.cos(a)*20, vy: Math.sin(a)*20, 
+                        dmg: gun.dmg, color: gun.color, life: 50, ownerId: p.id,
+                        type: gun.type === 'explosive' ? 'explosive' : 'normal' // Mark bullet as rocket explosive
+                    });
                 }
             }
         } else if (gun.ammo > 0) forceReload(p);
@@ -1323,7 +1331,12 @@ function updateBullets() {
         let b = bullets[i]; 
         if (!b) continue;
         b.x+=b.vx; b.y+=b.vy; b.life--; let hit = false;
-        if(RoomSystem.checkCollision(b.x, b.y, false)) hit = true;
+        if(RoomSystem.checkCollision(b.x, b.y, false)) {
+            hit = true;
+            if (b.type === 'explosive') {
+                triggerExplosion(b); // Radial blast on wall/obstacle impact
+            }
+        }
         if(!hit) zombies.forEach((z, zi) => {
             if (!z) return;
             if(!hit && Math.hypot(b.x-z.x, b.y-z.y) < z.r+5) {
@@ -1360,6 +1373,66 @@ function updateBullets() {
 
     // Safely remove dead zombies once outside the hit loops
     zombies = zombies.filter(z => z && !z.dead);
+}
+
+// Deal splash radial rocket explosive damage
+function triggerExplosion(b) {
+    const explosionRadius = 150;
+    zombies.forEach(z => {
+        let dist = Math.hypot(b.x - z.x, b.y - z.y);
+        if (dist < explosionRadius) {
+            let falloff = 1 - (dist / explosionRadius);
+            let splashDmg = Math.floor(b.dmg * falloff);
+            if (splashDmg > 0) {
+                z.hp -= splashDmg;
+                spawnParticles(z.x, z.y, '#e67e22', 3);
+                
+                // Add points for hitting zombies with explosive splash
+                if(players[b.ownerId]) { 
+                    players[b.ownerId].score += 10; 
+                    stats.score += 10;
+                }
+
+                if (z.hp <= 0) {
+                    z.dead = true;
+                    stats.score += 50;
+                    stats.zombiesAlive--;
+                    
+                    if(players[b.ownerId]) { 
+                        players[b.ownerId].score += 50; 
+                        players[b.ownerId].kills++; 
+                    }
+                    if(me && b.ownerId === me.id) { 
+                        stats.sessionKills++; 
+                        checkAchievements(); 
+                        addText(z.x, z.y, "+50", "#ff0"); 
+                    }
+                }
+            }
+        }
+    });
+
+    // Spawn decentralized visual explosions on host locally (clients handle it in network receiver comparisons)
+    spawnExplosionVisuals(b.x, b.y);
+}
+
+function spawnExplosionVisuals(x, y) {
+    spawnParticles(x, y, '#e67e22', 12); // Orange sparks
+    spawnParticles(x, y, '#ffd700', 12); // Yellow fire
+    spawnParticles(x, y, '#7f8c8d', 10); // Gray smoke
+    
+    // Splash permanent floor blood on explosions
+    for (let j = 0; j < 5; j++) {
+        bloodStains.push({
+            x: x + (Math.random() - 0.5) * 80,
+            y: y + (Math.random() - 0.5) * 80,
+            r: 8 + Math.random() * 20,
+            color: 'rgba(139, 0, 0, ' + (0.4 + Math.random() * 0.4) + ')'
+        });
+    }
+    if (bloodStains.length > 150) bloodStains.splice(0, bloodStains.length - 150);
+
+    addText(x, y, "BOOM!", "#e74c3c");
 }
 
 function checkGameFlow() {
@@ -1423,7 +1496,7 @@ function resetSession() {
         difficulty: currentDiff
     }; 
 
-    zombies = []; bullets = []; particles = []; texts = []; zombieIdCounter = 0; 
+    zombies = []; bullets = []; particles = []; texts = []; bloodStains = []; zombieIdCounter = 0; 
     activeMap.rooms.forEach(r => r.unlocked = (r.id === 0)); 
     
     // Evaluate map layout and assign suitable barriers count
@@ -1500,6 +1573,7 @@ function goToLobbyScreen() {
     bullets = [];
     particles = [];
     texts = [];
+    bloodStains = [];
     
     if (Network.mode === 'HOST') {
         document.getElementById('lobby-status').innerText = "LOBBY ACTIVE!";

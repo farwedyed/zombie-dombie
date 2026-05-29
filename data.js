@@ -72,6 +72,8 @@ const weaponDB = [
     { name: "Commando", dmg: 30, rpm: 6, auto: true, type: 'ar', mag: 30, reserve: 180, reload: 100, color: '#2e4053' },
     { name: "Galil", dmg: 32, rpm: 6, auto: true, type: 'ar', mag: 35, reserve: 210, reload: 130, color: '#5d6d7e' },
     { name: "HK21", dmg: 40, rpm: 7, auto: true, type: 'lmg', mag: 100, reserve: 300, reload: 300, color: '#212f3c' },
+    { name: "L96A1", dmg: 1000, rpm: 45, auto: false, type: 'sniper', mag: 5, reserve: 25, reload: 160, color: '#16a085' }, // Heavy bolt action sniper
+    { name: "Bazooka", dmg: 350, rpm: 60, auto: false, type: 'explosive', mag: 1, reserve: 5, reload: 180, color: '#27ae60' }, // Rocket Launcher
     { name: "Ray Gun", dmg: 400, rpm: 15, auto: true, type: 'special', mag: 20, reserve: 160, reload: 150, color: '#2ecc71' }
 ];
 

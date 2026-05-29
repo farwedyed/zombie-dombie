@@ -235,7 +235,8 @@ const Network = {
             p3: getPrunedPlayer(players['p3']), 
             p4: getPrunedPlayer(players['p4']), 
             zombies: zombies.map(z => ({ id: z.id, x: z.x, y: z.y, hp: z.hp, maxHp: z.maxHp })), 
-            bullets: bullets.map(b => ({ x: b.x, y: b.y, color: b.color })),
+            // Sync bullet type across network so guest clients can render explosives
+            bullets: bullets.map(b => ({ x: b.x, y: b.y, color: b.color, type: b.type })),
             stats: stats,
             windows: activeMap.windows.map(w => ({ boards: w.boards })),
             doors: activeMap.rooms.map(r => ({ unlocked: r.unlocked }))
@@ -349,7 +350,20 @@ const Network = {
                     if(!serverMap.has(zombies[i].id)) zombies.splice(i, 1);
                 }
 
-                bullets = data.bullets || [];
+                // COMPARE BULLETS & TRIGGERS LOCAL CLIENT EXPLOSIONS (Decentralized Visual Sync)
+                const incomingBullets = data.bullets || [];
+                const prevExplosives = bullets.filter(b => b.type === 'explosive');
+                const nextKeys = incomingBullets.map(b => b.x + "_" + b.y);
+                prevExplosives.forEach(eb => {
+                    const key = eb.x + "_" + eb.y;
+                    if (!nextKeys.includes(key)) {
+                        if (typeof spawnExplosionVisuals === 'function') {
+                            spawnExplosionVisuals(eb.x, eb.y);
+                        }
+                    }
+                });
+
+                bullets = incomingBullets;
                 
                 // Spawn local point indicators (+10 / +50 text) locally when score increases
                 if (data.stats && stats) {

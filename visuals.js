@@ -26,15 +26,17 @@ function drawFloatingArrow(x, y, color = '#ffd700') {
 }
 
 function drawGame() {
+    if (!activeMap) return;
+
     // 1. Clear Screen
-    ctx.fillStyle = '#000'; 
+    ctx.fillStyle = '#050505'; 
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
     ctx.save();
     // Apply Camera
     ctx.translate(-camera.x, -camera.y);
 
-    // 2. Draw Rooms (Floor)
+    // 2. Draw Rooms (Floor Tiles & Concrete Texturing)
     activeMap.rooms.forEach(r => {
         ctx.fillStyle = r.color;
         
@@ -42,12 +44,39 @@ function drawGame() {
         if(r.unlocked) {
             ctx.globalAlpha = 1.0;
         } else {
-            ctx.globalAlpha = 0.2; 
+            ctx.globalAlpha = 0.15; 
         }
         
         ctx.fillRect(r.x, r.y, r.w, r.h);
+        
+        // Draw elegant subtle tiled floor lines for tactile texture feedback
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.035)';
+        ctx.lineWidth = 1;
+        for (let gx = r.x; gx < r.x + r.w; gx += 80) {
+            ctx.beginPath();
+            ctx.moveTo(gx, r.y);
+            ctx.lineTo(gx, r.y + r.h);
+            ctx.stroke();
+        }
+        for (let gy = r.y; gy < r.y + r.h; gy += 80) {
+            ctx.beginPath();
+            ctx.moveTo(r.x, gy);
+            ctx.lineTo(r.x + r.w, gy);
+            ctx.stroke();
+        }
+        
         ctx.globalAlpha = 1.0; // Reset alpha
     });
+
+    // 2.5. Draw Permanent viscerally satisfying Blood Pools on the Floor Layer
+    if (window.bloodStains) {
+        window.bloodStains.forEach(s => {
+            ctx.fillStyle = s.color;
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+            ctx.fill();
+        });
+    }
 
     // 3. Draw Furniture
     activeMap.furniture.forEach(f => {
@@ -56,8 +85,13 @@ function drawGame() {
     });
 
     // 4. Draw Walls
-    ctx.fillStyle = '#444';
-    activeMap.walls.forEach(w => ctx.fillRect(w.x, w.y, w.w, w.h));
+    ctx.fillStyle = '#2c3e50'; // Concrete metallic wall colour
+    activeMap.walls.forEach(w => {
+        ctx.fillRect(w.x, w.y, w.w, w.h);
+        ctx.strokeStyle = '#34495e';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(w.x, w.y, w.w, w.h);
+    });
 
     // 5. Draw Windows (With Dynamic Board/Log Scaling)
     activeMap.windows.forEach(w => {
@@ -116,7 +150,7 @@ function drawGame() {
             ctx.font = "10px Arial"; 
             ctx.fillText("GUN", i.x+20, i.y+20); 
         }
-        else if (i.type === 'PERK') { 
+        else if (i.type === 'PERK') { // Typo fixed from "perk === i.type"
             ctx.font = "bold 10px Arial"; 
             ctx.fillText("JUG", i.x+25, i.y+25); 
         }
@@ -186,7 +220,7 @@ function drawGame() {
         ctx.restore();
     });
 
-    // 9. Draw Zombies
+    // 9. Draw Zombies (Hands & arms removed as requested. Classic static circles restored)
     zombies.forEach(z => {
         // Body
         ctx.fillStyle = '#3a4a38';
@@ -194,7 +228,7 @@ function drawGame() {
         ctx.arc(z.x, z.y, z.r, 0, Math.PI*2); 
         ctx.fill();
         
-        // Red Eyes
+        // Red Eyes (Static alignment restored as requested)
         ctx.fillStyle = '#f00';
         ctx.beginPath(); 
         ctx.arc(z.x - 5, z.y - 5, 2, 0, Math.PI*2); 
@@ -224,16 +258,27 @@ function drawGame() {
         
         ctx.save();
         
-        // Draw a bright white core
-        ctx.fillStyle = '#ffffff';
-        ctx.beginPath(); 
-        ctx.arc(b.x, b.y, 2.5, 0, Math.PI * 2); 
-        ctx.fill();
-        
-        // Draw glowing outer trace using bullet/weapon color
-        ctx.strokeStyle = bulletColor;
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
+        // Draw explosive rockets with a larger glowing green core
+        if (b.type === 'explosive') {
+            ctx.fillStyle = '#ff4757';
+            ctx.beginPath();
+            ctx.arc(b.x, b.y, 5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#e67e22';
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+        } else {
+            // Draw a bright white core
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath(); 
+            ctx.arc(b.x, b.y, 2.5, 0, Math.PI * 2); 
+            ctx.fill();
+            
+            // Draw glowing outer trace using bullet/weapon color
+            ctx.strokeStyle = bulletColor;
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+        }
         
         ctx.restore();
     });
