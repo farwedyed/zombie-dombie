@@ -63,26 +63,26 @@ function updateGameLogic() {
         Tutorial.update();
     }
 
-    // --- DEVELOPMENT CHEATS (Hold CTRL + press key) ---
-    const ctrlHeld = keys['ControlLeft'] || keys['ControlRight'] || keys['MetaLeft'] || keys['MetaRight'];
-    if (ctrlHeld && keys['Digit1']) {
+    // --- DEVELOPMENT CHEATS (Hold ALT + press key) ---
+    const altHeld = keys['AltLeft'] || keys['AltRight'];
+    if (altHeld && keys['Digit1']) {
         keys['Digit1'] = false; // Reset key trigger
         skipToBossRound(10);
     }
-    if (ctrlHeld && keys['Digit2']) {
+    if (altHeld && keys['Digit2']) {
         keys['Digit2'] = false;
         skipToBossRound(15);
     }
-    if (ctrlHeld && keys['Digit3']) {
+    if (altHeld && keys['Digit3']) {
         keys['Digit3'] = false;
         skipToBossRound(20);
     }
-    if (ctrlHeld && keys['Digit0']) {
+    if (altHeld && keys['Digit0']) {
         keys['Digit0'] = false;
         if (me) me.score += 5000;
         addText(me ? me.x : 200, (me ? me.y : 200) - 40, "+5,000 Points Cheat", "#2ecc71");
     }
-    if (ctrlHeld && keys['Digit9']) {
+    if (altHeld && keys['Digit9']) {
         keys['Digit9'] = false;
         if (me) me.hp = me.maxHp;
         addText(me ? me.x : 200, (me ? me.y : 200) - 40, "Full Heal Cheat", "#00ffff");
@@ -955,7 +955,7 @@ function triggerExplosion(b) {
                     if(me && b.ownerId === me.id) { 
                         stats.sessionKills++; 
                         checkAchievements(); 
-                        addText(z.x, z.y, "+" + pointsKill, "#ff0"); 
+                        addText(me.x, me.y - 40, "+" + pointsKill, "#ff0"); 
                     }
 
                     // Execute custom splitting functions for Purple and Hydra on death

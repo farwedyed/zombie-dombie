@@ -94,7 +94,11 @@ const AccountSystem = {
                         unlockedAch: cloudData.unlockedAch !== undefined ? cloudData.unlockedAch : [...startData.unlockedAch],
                         unlockedGuns: cloudData.unlockedGuns !== undefined ? cloudData.unlockedGuns : [...startData.unlockedGuns],
                         xp: cloudData.xp !== undefined ? cloudData.xp : startData.xp,
-                        lobbyCoins: cloudData.lobbyCoins !== undefined ? cloudData.lobbyCoins : startData.lobbyCoins
+                        lobbyCoins: cloudData.lobbyCoins !== undefined ? cloudData.lobbyCoins : startData.lobbyCoins,
+                        ownedCosmetics: cloudData.ownedCosmetics !== undefined ? cloudData.ownedCosmetics : [...startData.ownedCosmetics],
+                        equippedCosmetic: cloudData.equippedCosmetic !== undefined ? cloudData.equippedCosmetic : startData.equippedCosmetic,
+                        unlockedBosses: cloudData.unlockedBosses !== undefined ? cloudData.unlockedBosses : [...startData.unlockedBosses],
+                        defeatedBosses: cloudData.defeatedBosses !== undefined ? cloudData.defeatedBosses : [...startData.defeatedBosses]
                     };
                 }
 
@@ -137,6 +141,10 @@ const AccountSystem = {
                     unlockedGuns: saveData.unlockedGuns,
                     xp: saveData.xp || 0,
                     lobbyCoins: saveData.lobbyCoins || 0,
+                    ownedCosmetics: saveData.ownedCosmetics || ['none'],
+                    equippedCosmetic: saveData.equippedCosmetic || 'none',
+                    unlockedBosses: saveData.unlockedBosses || [],
+                    defeatedBosses: saveData.defeatedBosses || [],
                     lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
                 }, { merge: true });
                 console.log("Cloud profile updated successfully.");

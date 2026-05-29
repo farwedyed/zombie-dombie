@@ -122,8 +122,8 @@
         .join-row button { flex: 1; margin: 0; font-size: 14px; background: #222; }
 
         /* FOOTER BUTTONS */
-        .footer-btns { display: flex; gap: 5px; margin-top: 15px; border-top: 1px solid #333; padding-top: 15px; }
-        .footer-btns button { font-size: 11px; padding: 8px; background: #0e0e0e; }
+        .footer-btns { display: flex; gap: 4px; margin-top: 15px; border-top: 1px solid #333; padding-top: 15px; }
+        .footer-btns button { font-size: 10px; padding: 6px; background: #0e0e0e; }
 
         /* MODALS */
         .modal { 
@@ -232,6 +232,7 @@
         <div class="footer-btns">
             <button onclick="openMenu('gun-modal')">GUNS</button>
             <button onclick="openMenu('cosmetics-modal')">COSMETICS</button>
+            <button onclick="openMenu('bosses-modal')">BOSSES</button>
             <button onclick="openMenu('ach-modal')">AWARDS</button>
             <button onclick="resetData()" style="color: #c0392b;">RESET</button>
         </div>
@@ -356,7 +357,14 @@
     <button class="close-btn" onclick="closeMenu('lobby-browser-modal')" style="margin-top: 15px;">CLOSE</button>
 </div>
 
-<!-- LOCAL CO-OP MODAL -->
+<!-- BOSSES PORTFOLIO MODAL -->
+<div id="bosses-modal" class="modal">
+    <h2 style="color:white;text-align:center">BOSS PORTFOLIO</h2>
+    <div id="bosses-list"></div>
+    <button class="close-btn" onclick="closeMenu('bosses-modal')">CLOSE</button>
+</div>
+
+<!-- LOCAL CO-OP CONFIG MODAL -->
 <div id="coop-modal" class="modal">
     <h2 style="color:white;text-align:center">LOCAL CO-OP CONFIG</h2>
     

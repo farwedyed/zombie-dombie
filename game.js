@@ -372,6 +372,9 @@ window.openMenu = function(id) {
     if(id === 'lobby-browser-modal') {
         refreshServerBrowser();
     }
+    if(id === 'bosses-modal') {
+        renderBossesMenu();
+    }
 };
 window.closeMenu = function(id) { 
     document.getElementById(id).style.display = 'none'; 
@@ -850,6 +853,43 @@ function enterLobbyJoinManual(id) {
             document.getElementById('lobby-status').innerText = "Connected! Waiting for Host to start..."; 
             document.getElementById('lobby-status').style.color = "#0f0";
         }); 
+    });
+}
+
+function renderBossesMenu() {
+    const list = document.getElementById('bosses-list');
+    if (!list) return;
+    list.innerHTML = "";
+    
+    bossesDB.forEach(b => {
+        const unlocked = saveData.unlockedBosses && saveData.unlockedBosses.includes(b.id);
+        const defeated = saveData.defeatedBosses && saveData.defeatedBosses.includes(b.id);
+        
+        let title = unlocked ? b.name : "???";
+        let desc = unlocked ? b.desc : `Reach Round ${b.round} to unlock this boss encounter.`;
+        let icon = unlocked ? b.icon : "🔒";
+        let statusHtml = "";
+        
+        if (defeated) {
+            statusHtml = `<span style="color:#2ecc71; font-weight:bold; font-size:13px;">🏆 SLAYED</span>`;
+        } else if (unlocked) {
+            statusHtml = `<span style="color:#f1c40f; font-weight:bold; font-size:13px;">💀 DISCOVERED</span>`;
+        } else {
+            statusHtml = `<span style="color:#666; font-weight:bold; font-size:13px;">🔒 LOCKED</span>`;
+        }
+        
+        list.innerHTML += `
+            <div class="list-item ${unlocked ? 'unlocked' : ''}" style="border-left-color: ${unlocked ? b.color : '#333'}">
+                <div style="flex: 1; padding-right: 15px;">
+                    <div class="item-title" style="color: ${unlocked ? b.color : '#666'}">${title} <span style="font-size: 11px; color: #888;">(Round ${b.round})</span></div>
+                    <div class="item-desc" style="font-size:12px; color:#aaa; margin-top:5px; line-height:1.4;">${desc}</div>
+                </div>
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 90px; gap: 8px;">
+                    <div style="font-size: 24px;">${icon}</div>
+                    <div>${statusHtml}</div>
+                </div>
+            </div>
+        `;
     });
 }
 

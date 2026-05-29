@@ -8,7 +8,9 @@ const startData = {
     xp: 0,
     lobbyCoins: 0,
     ownedCosmetics: ['none'],
-    equippedCosmetic: 'none'
+    equippedCosmetic: 'none',
+    unlockedBosses: [],
+    defeatedBosses: []
 };
 
 // Load data initially from local storage (AccountSystem will overwrite this on dynamic cloud sync)
@@ -21,6 +23,8 @@ if(saveData.xp === undefined) saveData.xp = 0;
 if(saveData.lobbyCoins === undefined) saveData.lobbyCoins = 0;
 if(!saveData.ownedCosmetics) saveData.ownedCosmetics = ['none'];
 if(!saveData.equippedCosmetic) saveData.equippedCosmetic = 'none';
+if(!saveData.unlockedBosses) saveData.unlockedBosses = [];
+if(!saveData.defeatedBosses) saveData.defeatedBosses = [];
 
 function saveGame(round, kills, score) {
     if(round > saveData.highestRound) saveData.highestRound = round;
@@ -63,6 +67,34 @@ function unlockAch(id) {
         localStorage.setItem('zombieSaveModular', JSON.stringify(saveData));
         
         // Async cloud push if signed in
+        if (typeof AccountSystem !== 'undefined' && AccountSystem.currentUser) {
+            AccountSystem.pushProfileData();
+        }
+        return true;
+    }
+    return false;
+}
+
+function discoverBoss(bossId) {
+    if(!saveData.unlockedBosses) saveData.unlockedBosses = [];
+    if(!saveData.unlockedBosses.includes(bossId)) {
+        saveData.unlockedBosses.push(bossId);
+        localStorage.setItem('zombieSaveModular', JSON.stringify(saveData));
+        
+        if (typeof AccountSystem !== 'undefined' && AccountSystem.currentUser) {
+            AccountSystem.pushProfileData();
+        }
+        return true;
+    }
+    return false;
+}
+
+function defeatBoss(bossId) {
+    if(!saveData.defeatedBosses) saveData.defeatedBosses = [];
+    if(!saveData.defeatedBosses.includes(bossId)) {
+        saveData.defeatedBosses.push(bossId);
+        localStorage.setItem('zombieSaveModular', JSON.stringify(saveData));
+        
         if (typeof AccountSystem !== 'undefined' && AccountSystem.currentUser) {
             AccountSystem.pushProfileData();
         }
@@ -123,4 +155,11 @@ const cosmeticDB = [
     { id: 'backpack_survival', name: "Survival Backpack (Brown)", price: 150, color: "#8b5a2b", type: "backpack" },
     { id: 'cape_neon', name: "Neon Cape (Magenta)", price: 300, color: "#ff00ff", type: "cape" },
     { id: 'jetpack_steel', name: "Steel Thruster (Cyan)", price: 500, color: "#00ffff", type: "jetpack" }
+];
+
+/* --- BOSSES DATABASE --- */
+const bossesDB = [
+    { id: 'boss_logbreaker', name: "The Logbreaker", round: 10, desc: "A colossal, armored brute capable of smashing all defensive window barriers instantly on contact.", color: '#d35400', icon: "🪵" },
+    { id: 'boss_broodmother', name: "The Broodmother", round: 15, desc: "An infectious queen that periodically births standard zombie minions directly near her position.", color: '#10ac84', icon: "🕷️" },
+    { id: 'boss_hydra', name: "The Hydra Omega", round: 20, desc: "An apex purple abomination that recursively splits into multiple generations of split-clones upon death.", color: '#8e44ad', icon: "🐙" }
 ];
