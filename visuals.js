@@ -374,7 +374,7 @@ function drawGame() {
             ctx.fillStyle = '#ff4757'; 
             z.hitTimer--; // Decay flash frame locally
         } else {
-            ctx.fillStyle = '#3a4a38'; // Standard rotten green
+            ctx.fillStyle = z.color || '#3a4a38'; // Dynamic body color support
         }
         ctx.beginPath(); 
         ctx.arc(z.x, z.y, z.r, 0, Math.PI*2); 
@@ -448,6 +448,21 @@ function drawGame() {
         ctx.restore();
     });
 
+    // Draw Ranged Archer projectiles with clean outline borders
+    if (window.zombieArrows) {
+        window.zombieArrows.forEach(a => {
+            ctx.save();
+            ctx.translate(a.x, a.y);
+            ctx.rotate(Math.atan2(a.vy, a.vx));
+            ctx.fillStyle = '#ff3b30'; // Red burning arrow head
+            ctx.fillRect(-6, -1.5, 12, 3);
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 1.2;
+            ctx.strokeRect(-6, -1.5, 12, 3);
+            ctx.restore();
+        });
+    }
+
     // 11. Draw Floating Texts
     texts.forEach(t => { 
         ctx.fillStyle = t.color; 
@@ -482,7 +497,39 @@ function drawGame() {
         Tutorial.drawIndicators();
     }
 
-    ctx.restore();
+    ctx.restore(); // Camera restored
+    
+    // --- DRAW BOSS HEALTH BAR IN SCREEN SPACE ---
+    if (window.activeBoss) {
+        const barW = 400;
+        const barH = 16;
+        const x = (canvas.width - barW) / 2;
+        const y = 170; // Shifted down further to 170px to guarantee no overlap with #round-box or powerups
+        
+        // Outer Border
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+        ctx.fillRect(x - 4, y - 4, barW + 8, barH + 8);
+        ctx.strokeStyle = '#e74c3c';
+        ctx.lineWidth = 2.5;
+        ctx.strokeRect(x - 4, y - 4, barW + 8, barH + 8);
+        
+        // Health Fill
+        let pct = window.activeBoss.hp / window.activeBoss.maxHp;
+        if (pct < 0) pct = 0;
+        ctx.fillStyle = '#c0392b';
+        ctx.fillRect(x, y, barW * pct, barH);
+        
+        // Highlight shine
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+        ctx.fillRect(x, y, barW * pct, barH / 2);
+        
+        // Boss name text overlay
+        ctx.fillStyle = '#ffffff';
+        ctx.font = "bold 13px monospace";
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`${window.activeBoss.name.toUpperCase()} (${Math.floor(pct * 100)}%)`, x + barW / 2, y + barH / 2);
+    }
 }
 
 function updateUI() {

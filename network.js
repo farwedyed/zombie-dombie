@@ -240,7 +240,7 @@ const Network = {
             p2: getPrunedPlayer(players['p2']), 
             p3: getPrunedPlayer(players['p3']), 
             p4: getPrunedPlayer(players['p4']), 
-            zombies: zombies.map(z => ({ id: z.id, x: z.x, y: z.y, hp: z.hp, maxHp: z.maxHp, hitTimer: z.hitTimer })), 
+            zombies: zombies.map(z => ({ id: z.id, x: z.x, y: z.y, hp: z.hp, maxHp: z.maxHp, hitTimer: z.hitTimer, color: z.color, r: z.r, isBoss: z.isBoss, name: z.name })), 
             bullets: bullets.map(b => ({ id: b.id, x: b.x, y: b.y, vx: b.vx, vy: b.vy, color: b.color, type: b.type })),
             stats: stats,
             windows: activeMap.windows.map(w => ({ boards: w.boards })),
@@ -363,8 +363,17 @@ const Network = {
                         local.hp = sz.hp; 
                         local.maxHp = sz.maxHp;
                         local.hitTimer = sz.hitTimer;
+                        local.color = sz.color;
+                        local.r = sz.r;
+                        local.isBoss = sz.isBoss;
+                        local.name = sz.name;
+
+                        if (local.isBoss) {
+                            window.activeBoss = local;
+                        }
                     } else {
-                        zombies.push({
+                        // Register new dynamic zombie structures
+                        const newZ = {
                             id: sz.id,
                             x: sz.x,
                             y: sz.y,
@@ -372,14 +381,27 @@ const Network = {
                             maxHp: sz.maxHp,
                             serverX: sz.x,
                             serverY: sz.y,
-                            r: 16,
-                            hitTimer: sz.hitTimer || 0
-                        });
+                            r: sz.r || 16,
+                            hitTimer: sz.hitTimer || 0,
+                            color: sz.color || '#3a4a38',
+                            isBoss: sz.isBoss || false,
+                            name: sz.name || "Zombie"
+                        };
+                        zombies.push(newZ);
+                        if (newZ.isBoss) {
+                            window.activeBoss = newZ;
+                        }
                     }
                 });
                 
                 for(let i = zombies.length - 1; i >= 0; i--) {
-                    if(!serverMap.has(zombies[i].id)) zombies.splice(i, 1);
+                    const localZ = zombies[i];
+                    if(!serverMap.has(localZ.id)) {
+                        if (localZ.isBoss && window.activeBoss && window.activeBoss.id === localZ.id) {
+                            window.activeBoss = null;
+                        }
+                        zombies.splice(i, 1);
+                    }
                 }
 
                 const incomingBullets = data.bullets || [];
@@ -392,7 +414,6 @@ const Network = {
                         localBullet.vx = sb.vx;
                         localBullet.vy = sb.vy;
                     } else {
-                        // Register new bullet locally on client POV
                         bullets.push({
                             id: sb.id,
                             x: sb.x,
@@ -406,7 +427,6 @@ const Network = {
                     }
                 });
 
-                // Smoothly clean up expired bullets and trigger explosions locally
                 for (let i = bullets.length - 1; i >= 0; i--) {
                     const eb = bullets[i];
                     if (!serverBulletMap.has(eb.id)) {

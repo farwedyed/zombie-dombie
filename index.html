@@ -408,26 +408,13 @@
     <div id="damage-flash"></div>
     <div id="round-box" class="hud-text">1</div>
 
-    <!-- ACTIVE POWERUP HUD -->
-    <div id="powerup-hud" style="position: absolute; top: 100px; left: 50%; transform: translateX(-50%); display: flex; gap: 15px; pointer-events: none; z-index: 1000;">
-        <div id="badge-double" style="display: none; background: rgba(230, 126, 34, 0.95); color: #fff; border: 2px solid #fff; padding: 6px 14px; font-weight: bold; border-radius: 4px; font-size: 14px; text-shadow: 1px 1px 0 #000; box-shadow: 0 0 10px rgba(230, 126, 34, 0.5);">2X POINTS</div>
-        <div id="badge-instakill" style="display: none; background: rgba(231, 76, 60, 0.95); color: #fff; border: 2px solid #fff; padding: 6px 14px; font-weight: bold; border-radius: 4px; font-size: 14px; text-shadow: 1px 1px 0 #000; box-shadow: 0 0 10px rgba(231, 76, 60, 0.5);">INSTA-KILL</div>
-    </div>
-    
-    <!-- Tutorial Objective Box (Centered Bottom Screen Overlay) -->
-    <div id="tutorial-hud" style="position: absolute; bottom: 130px; left: 50%; transform: translateX(-50%); background: rgba(10, 10, 10, 0.95); border: 2px solid #a83232; border-top: 5px solid #a83232; padding: 20px; color: white; display: none; width: 550px; text-shadow: 2px 2px 0 #000; z-index: 1000; pointer-events: none; border-radius: 8px; box-shadow: 0 0 20px rgba(0,0,0,0.8); text-align: center;">
-        <div id="tutorial-title" style="color: #a83232; font-weight: bold; font-size: 20px; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 2px;">Boot Camp Objective</div>
-        <div id="tutorial-text" style="font-size: 15px; line-height: 1.5; color: #fff; font-family: inherit;">Initializing objectives...</div>
-        <div id="tutorial-progress" style="font-size: 13px; color: #ffd700; margin-top: 8px; font-weight: bold;">Step 1 / 8</div>
-    </div>
-
-    <!-- Bouncing Help Arrow (Targeting Score balance panel) -->
-    <div id="tutorial-coin-arrow" style="position: absolute; bottom: 120px; left: 40px; color: #ffd700; font-size: 20px; font-weight: bold; display: none; animation: arrowBounce 0.5s infinite alternate; z-index: 1001; text-shadow: 2px 2px 0 #000; pointer-events: none;">▲ CHECK COINS HERE</div>
-
     <!-- Player 1 HUD (Bottom Left) -->
     <div id="hud-p1" class="hud-cluster">
         <div id="p1-name" style="color: #3498db; font-size: 18px; font-weight: bold;">Survivor</div>
-        <div id="p1-score" style="color: #ffd700; font-size: 28px; font-weight: bold;">500 ⛃</div>
+        <div id="p1-hp-bar-container" style="width: 140px; height: 8px; background: #222; border: 1px solid #444; border-radius: 4px; margin-top: 5px; overflow: hidden; box-sizing: border-box;">
+            <div id="p1-hp-bar" style="width: 100%; height: 100%; background: #2ecc71; transition: width 0.2s ease;"></div>
+        </div>
+        <div id="p1-score" style="color: #ffd700; font-size: 28px; font-weight: bold; margin-top: 5px;">500 ⛃</div>
         <div id="p1-gun-name" style="color: #fff; font-size: 24px; font-weight: bold;">M1911</div>
         <div id="p1-ammo-text" style="color: #ccc; font-size: 20px;">8 / 32</div>
         <div id="p1-perks" class="perk-area"><div id="p1-icon-jug" class="perk" style="background: #c0392b;"></div></div>
@@ -436,7 +423,10 @@
     <!-- Player 2 HUD (Bottom Right) -->
     <div id="hud-p2" class="hud-cluster">
         <div id="p2-name" style="color: #e67e22; font-size: 18px; font-weight: bold;">Player 2</div>
-        <div id="p2-score" style="color: #ffd700; font-size: 28px; font-weight: bold;">500 ⛃</div>
+        <div id="p2-hp-bar-container" style="width: 140px; height: 8px; background: #222; border: 1px solid #444; border-radius: 4px; margin-top: 5px; margin-left: auto; overflow: hidden; box-sizing: border-box;">
+            <div id="p2-hp-bar" style="width: 100%; height: 100%; background: #2ecc71; transition: width 0.2s ease;"></div>
+        </div>
+        <div id="p2-score" style="color: #ffd700; font-size: 28px; font-weight: bold; margin-top: 5px;">500 ⛃</div>
         <div id="p2-gun-name" style="color: #fff; font-size: 24px; font-weight: bold;">M1911</div>
         <div id="p2-ammo-text" style="color: #ccc; font-size: 20px;">8 / 32</div>
         <div id="p2-perks" class="perk-area"><div id="p2-icon-jug" class="perk" style="background: #c0392b;"></div></div>
@@ -445,7 +435,10 @@
     <!-- Player 3 HUD (Top Left) -->
     <div id="hud-p3" class="hud-cluster">
         <div id="p3-name" style="color: #2ecc71; font-size: 18px; font-weight: bold;">Player 3</div>
-        <div id="p3-score" style="color: #ffd700; font-size: 28px; font-weight: bold;">500 ⛃</div>
+        <div id="p3-hp-bar-container" style="width: 140px; height: 8px; background: #222; border: 1px solid #444; border-radius: 4px; margin-top: 5px; overflow: hidden; box-sizing: border-box;">
+            <div id="p3-hp-bar" style="width: 100%; height: 100%; background: #2ecc71; transition: width 0.2s ease;"></div>
+        </div>
+        <div id="p3-score" style="color: #ffd700; font-size: 28px; font-weight: bold; margin-top: 5px;">500 ⛃</div>
         <div id="p3-gun-name" style="color: #fff; font-size: 24px; font-weight: bold;">M1911</div>
         <div id="p3-ammo-text" style="color: #ccc; font-size: 20px;">8 / 32</div>
         <div id="p3-perks" class="perk-area"><div id="p3-icon-jug" class="perk" style="background: #c0392b;"></div></div>
@@ -454,7 +447,10 @@
     <!-- Player 4 HUD (Top Right) -->
     <div id="hud-p4" class="hud-cluster">
         <div id="p4-name" style="color: #9b59b6; font-size: 18px; font-weight: bold;">Player 4</div>
-        <div id="p4-score" style="color: #ffd700; font-size: 28px; font-weight: bold;">500 ⛃</div>
+        <div id="p4-hp-bar-container" style="width: 140px; height: 8px; background: #222; border: 1px solid #444; border-radius: 4px; margin-top: 5px; margin-left: auto; overflow: hidden; box-sizing: border-box;">
+            <div id="p4-hp-bar" style="width: 100%; height: 100%; background: #2ecc71; transition: width 0.2s ease;"></div>
+        </div>
+        <div id="p4-score" style="color: #ffd700; font-size: 28px; font-weight: bold; margin-top: 5px;">500 ⛃</div>
         <div id="p4-gun-name" style="color: #fff; font-size: 24px; font-weight: bold;">M1911</div>
         <div id="p4-ammo-text" style="color: #ccc; font-size: 20px;">8 / 32</div>
         <div id="p4-perks" class="perk-area"><div id="p4-icon-jug" class="perk" style="background: #c0392b;"></div></div>
@@ -495,6 +491,7 @@
 <script src="visuals.js"></script>
 <script src="network.js"></script>
 <script src="tutorial.js"></script>
+<script src="zombies.js"></script>
 <script src="game.js"></script>
 <script src="game1.js"></script>
 

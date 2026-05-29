@@ -63,6 +63,31 @@ function updateGameLogic() {
         Tutorial.update();
     }
 
+    // --- DEVELOPMENT CHEATS (Hold CTRL + press key) ---
+    const ctrlHeld = keys['ControlLeft'] || keys['ControlRight'] || keys['MetaLeft'] || keys['MetaRight'];
+    if (ctrlHeld && keys['Digit1']) {
+        keys['Digit1'] = false; // Reset key trigger
+        skipToBossRound(10);
+    }
+    if (ctrlHeld && keys['Digit2']) {
+        keys['Digit2'] = false;
+        skipToBossRound(15);
+    }
+    if (ctrlHeld && keys['Digit3']) {
+        keys['Digit3'] = false;
+        skipToBossRound(20);
+    }
+    if (ctrlHeld && keys['Digit0']) {
+        keys['Digit0'] = false;
+        if (me) me.score += 5000;
+        addText(me ? me.x : 200, (me ? me.y : 200) - 40, "+5,000 Points Cheat", "#2ecc71");
+    }
+    if (ctrlHeld && keys['Digit9']) {
+        keys['Digit9'] = false;
+        if (me) me.hp = me.maxHp;
+        addText(me ? me.x : 200, (me ? me.y : 200) - 40, "Full Heal Cheat", "#00ffff");
+    }
+
     if (Network.mode !== 'CLIENT') {
         if (window.doublePointsTimer > 0) window.doublePointsTimer--;
         if (window.instaKillTimer > 0) window.instaKillTimer--;
@@ -152,15 +177,23 @@ function updateGameLogic() {
 
     checkInteractUI();
 
+    // Resolve ranged archer arrows physics loop
+    if (typeof ZombieVariants !== 'undefined') {
+        ZombieVariants.updateProjectiles();
+    }
+
     for (let i = particles.length - 1; i >= 0; i--) {
         let p = particles[i];
         if (p.type === 'shell') {
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.angle);
+            ctx.fillStyle = p.color;
+            ctx.fillRect(-2, -1, 4, 1.5);
+            ctx.restore();
+        } else if (p.type === 'spark') {
             p.x += p.vx;
             p.y += p.vy;
-            p.vx *= p.friction;
-            p.vy *= p.friction;
-            p.angle += p.rotSpeed;
-            p.rotSpeed *= 0.95;
         } else {
             p.x += p.vx;
             p.y += p.vy;
@@ -179,6 +212,29 @@ function updateGameLogic() {
             texts.splice(i, 1);
         }
     }
+}
+
+// Custom function helper to handle real-time cheat level transitions
+function skipToBossRound(targetRound) {
+    if (Network.mode === 'CLIENT') return;
+    
+    // Clean existing map state
+    zombies = [];
+    bullets = [];
+    window.zombieArrows = [];
+    window.activeBoss = null;
+    stats.zombiesAlive = 0;
+    stats.zombiesToSpawn = 0;
+    
+    // Set target round value
+    stats.round = targetRound;
+    
+    // Instantly spawn boss
+    if (typeof ZombieVariants !== 'undefined') {
+        ZombieVariants.spawnBoss(targetRound);
+    }
+    
+    addText(me ? me.x : 200, (me ? me.y : 200) - 80, `SKIP TO ROUND ${targetRound}`, "#f1c40f");
 }
 
 function addPlayerXP(p, amount) {
@@ -613,10 +669,16 @@ function updateZombies() {
             let zombieSpeed = speedMin + (Math.random() * (speedMax - speedMin));
 
             zombieIdCounter++;
-            zombies.push({ 
+            let z = { 
                 id: zombieIdCounter, x: sp.x, y: sp.y, hp: hp, maxHp: hp, 
                 speed: zombieSpeed, r: 16, hasEntered: false 
-            });
+            };
+
+            // Set up dynamic progressive variants properties on spawn
+            if (typeof ZombieVariants !== 'undefined') {
+                ZombieVariants.initializeVariant(z, hp, zombieSpeed);
+            }
+            zombies.push(z);
             stats.zombiesToSpawn--; stats.zombiesAlive++;
         }
     }
@@ -668,9 +730,16 @@ function updateZombies() {
         }
 
         if (attackingWindow) {
-            if (stats.frame % 60 === 0) { 
-                attackingWindow.boards--; 
-                spawnParticles(attackingWindow.x + attackingWindow.w / 2, attackingWindow.y + attackingWindow.h / 2, '#8B4513', 2);
+            // Boss 1 Logbreaker instantly breaks all window logs on contact
+            if (z.type === 'boss_logbreaker') {
+                attackingWindow.boards = 0;
+                spawnParticles(attackingWindow.x + attackingWindow.w / 2, attackingWindow.y + attackingWindow.h / 2, '#8B4513', 12);
+                addText(attackingWindow.x + attackingWindow.w / 2, attackingWindow.y, "SMASH!", "#f39c12");
+            } else {
+                if (stats.frame % 60 === 0) { 
+                    attackingWindow.boards--; 
+                    spawnParticles(attackingWindow.x + attackingWindow.w / 2, attackingWindow.y + attackingWindow.h / 2, '#8B4513', 2);
+                }
             }
         } else {
             let a = Math.atan2(targetY - z.y, targetX - z.x);
@@ -691,6 +760,11 @@ function updateZombies() {
                 if (!RoomSystem.checkCollision(z.x + ax, z.y + ay, false)) { z.x += ax; z.y += ay; }
                 if (!RoomSystem.checkCollision(z2.x - ax, z2.y - ay, false)) { z2.x -= ax; z2.y -= ay; }
             }
+        }
+
+        // Run custom shooting/spawning loops for Red archers and Broodmother bosses
+        if (typeof ZombieVariants !== 'undefined') {
+            ZombieVariants.updateSpecialBehaviors(z);
         }
 
         Object.values(players).forEach(p => {
@@ -793,6 +867,15 @@ function updateBullets() {
                             addText(z.x, z.y, "+" + pointsKill, "#ff0"); 
                         }
 
+                        // Execute custom splitting functions for Purple and Hydra on death
+                        if (typeof ZombieVariants !== 'undefined') {
+                            ZombieVariants.handleSplittingOnDeath(z);
+                            if (z.isBoss && window.activeBoss && window.activeBoss.id === z.id) {
+                                window.activeBoss = null;
+                                addText(z.x, z.y - 40, "BOSS SLAIN!", "#f1c40f");
+                            }
+                        }
+
                         if (Network.mode !== 'CLIENT') {
                             if (Math.random() < 0.015) { // 1.5% chance drop
                                 const powerups = ['MAX_AMMO', 'NUKE', 'DOUBLE_POINTS', 'INSTA_KILL'];
@@ -873,6 +956,15 @@ function triggerExplosion(b) {
                         stats.sessionKills++; 
                         checkAchievements(); 
                         addText(z.x, z.y, "+" + pointsKill, "#ff0"); 
+                    }
+
+                    // Execute custom splitting functions for Purple and Hydra on death
+                    if (typeof ZombieVariants !== 'undefined') {
+                        ZombieVariants.handleSplittingOnDeath(z);
+                        if (z.isBoss && window.activeBoss && window.activeBoss.id === z.id) {
+                            window.activeBoss = null;
+                            addText(z.x, z.y - 40, "BOSS SLAIN!", "#f1c40f");
+                        }
                     }
 
                     if (Network.mode !== 'CLIENT') {
@@ -962,13 +1054,19 @@ function checkGameFlow() {
         setTimeout(() => {
             stats.round++; 
             
-            const currentDiff = stats.difficulty || 'medium';
-            let spawnScalar = 1.15;
-            let spawnMultiplier = 6;
-            if (currentDiff === 'easy') { spawnMultiplier = 4; spawnScalar = 1.10; }
-            else if (currentDiff === 'hard') { spawnMultiplier = 10; spawnScalar = 1.25; }
+            // Check if it is a designated Boss milestone round
+            if (typeof ZombieVariants !== 'undefined' && (stats.round === 10 || stats.round === 15 || stats.round === 20)) {
+                ZombieVariants.spawnBoss(stats.round);
+            } else {
+                const currentDiff = stats.difficulty || 'medium';
+                let spawnScalar = 1.15;
+                let spawnMultiplier = 6;
+                if (currentDiff === 'easy') { spawnMultiplier = 4; spawnScalar = 1.10; }
+                else if (currentDiff === 'hard') { spawnMultiplier = 10; spawnScalar = 1.25; }
 
-            stats.zombiesToSpawn = Math.floor(spawnMultiplier * Math.pow(spawnScalar, stats.round)); 
+                stats.zombiesToSpawn = Math.floor(spawnMultiplier * Math.pow(spawnScalar, stats.round)); 
+            }
+
             stats.changingRound = false; 
             
             addText(me ? me.x : 200, (me ? me.y : 200) - 100, "ROUND "+stats.round, "#a83232"); 
@@ -995,6 +1093,29 @@ function drawScoreboard() {
     });
 }
 
+// Custom function helper to handle real-time cheat level transitions
+function skipToBossRound(targetRound) {
+    if (Network.mode === 'CLIENT') return;
+    
+    // Clean existing map state
+    zombies = [];
+    bullets = [];
+    window.zombieArrows = [];
+    window.activeBoss = null;
+    stats.zombiesAlive = 0;
+    stats.zombiesToSpawn = 0;
+    
+    // Set target round value
+    stats.round = targetRound;
+    
+    // Instantly spawn boss
+    if (typeof ZombieVariants !== 'undefined') {
+        ZombieVariants.spawnBoss(targetRound);
+    }
+    
+    addText(me ? me.x : 200, (me ? me.y : 200) - 80, `SKIP TO ROUND ${targetRound}`, "#f1c40f");
+}
+
 function resetSession() { 
     const currentMapIdx = stats.selectedMapIdx !== undefined ? stats.selectedMapIdx : 0;
     const currentDiff = stats.difficulty || 'medium';
@@ -1019,6 +1140,10 @@ function resetSession() {
     window.drops = [];
     window.doublePointsTimer = 0;
     window.instaKillTimer = 0;
+    
+    // Reset development bosses and projectles reference on restart/exit triggers
+    window.activeBoss = null;
+    window.zombieArrows = [];
 
     activeMap.rooms.forEach(r => r.unlocked = (r.id === 0)); 
     
@@ -1046,6 +1171,10 @@ function gameOver() {
     document.getElementById('game-over').style.display='flex'; 
     document.getElementById('death-msg').innerText="Survived to Round "+stats.round; 
     if(document.getElementById('perf-msg')) document.getElementById('perf-msg').innerText = msg; 
+
+    // Reset development bosses and projectles reference on game over triggers
+    window.activeBoss = null;
+    window.zombieArrows = [];
 
     const returnLobbyBtn = document.getElementById('return-lobby-btn');
     if (returnLobbyBtn) {
@@ -1125,6 +1254,24 @@ function updateUI() {
                 document.getElementById(pId + '-gun-name').innerText = gunName;
                 document.getElementById(pId + '-ammo-text').innerText = ammoText;
                 document.getElementById(pId + '-icon-jug').style.display = p.hasJug ? 'block' : 'none';
+
+                // Real-time HUD Health Bar update calculation
+                const hpBar = document.getElementById(pId + '-hp-bar');
+                if (hpBar) {
+                    let pct = p.hp / p.maxHp;
+                    if (pct < 0) pct = 0;
+                    if (pct > 1) pct = 1;
+                    hpBar.style.width = (pct * 100) + "%";
+                    
+                    // Dynamic color progression: Green -> Yellow -> Red
+                    if (pct > 0.5) {
+                        hpBar.style.backgroundColor = "#2ecc71";
+                    } else if (pct > 0.25) {
+                        hpBar.style.backgroundColor = "#f1c40f";
+                    } else {
+                        hpBar.style.backgroundColor = "#e74c3c";
+                    }
+                }
             } else {
                 hud.style.display = 'none';
             }
