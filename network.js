@@ -234,12 +234,15 @@ const Network = {
             p2: getPrunedPlayer(players['p2']), 
             p3: getPrunedPlayer(players['p3']), 
             p4: getPrunedPlayer(players['p4']), 
-            zombies: zombies.map(z => ({ id: z.id, x: z.x, y: z.y, hp: z.hp, maxHp: z.maxHp })), 
+            zombies: zombies.map(z => ({ id: z.id, x: z.x, y: z.y, hp: z.hp, maxHp: z.maxHp, hitTimer: z.hitTimer })), 
             // Sync bullet type across network so guest clients can render explosives
             bullets: bullets.map(b => ({ x: b.x, y: b.y, color: b.color, type: b.type })),
             stats: stats,
             windows: activeMap.windows.map(w => ({ boards: w.boards })),
-            doors: activeMap.rooms.map(r => ({ unlocked: r.unlocked }))
+            doors: activeMap.rooms.map(r => ({ unlocked: r.unlocked })),
+            drops: window.drops || [],
+            doublePointsTimer: window.doublePointsTimer || 0,
+            instaKillTimer: window.instaKillTimer || 0
         };
 
         this.conns.forEach(c => {
@@ -341,6 +344,7 @@ const Network = {
                         local.serverY = sz.y;
                         local.hp = sz.hp; 
                         local.maxHp = sz.maxHp;
+                        local.hitTimer = sz.hitTimer;
                     } else {
                         // Add new zombie
                         zombies.push({
@@ -351,7 +355,8 @@ const Network = {
                             maxHp: sz.maxHp,
                             serverX: sz.x,
                             serverY: sz.y,
-                            r: 16
+                            r: 16,
+                            hitTimer: sz.hitTimer || 0
                         });
                     }
                 });
@@ -382,6 +387,11 @@ const Network = {
 
                 bullets = incomingBullets;
                 
+                // Sync power-up states
+                window.drops = data.drops || [];
+                window.doublePointsTimer = data.doublePointsTimer || 0;
+                window.instaKillTimer = data.instaKillTimer || 0;
+
                 // Spawn local point indicators (+10 / +50 text) locally when score increases
                 if (data.stats && stats) {
                     if (data.stats.score > stats.score) {
@@ -411,13 +421,6 @@ const Network = {
                                     myY = spawnSource.y;
                                 }
                             }
-                            
-                            // Eject spinning shells locally on ammo depletion [1]
-                            if (fallbackPId.clip < (me.clip !== undefined ? me.clip : 8)) {
-                                if (typeof spawnShellCasing === 'function') {
-                                    spawnShellCasing(me.x, me.y, me.angle);
-                                }
-                            }
 
                             // Safe dynamic local inventory synchronization
                             if (fallbackPId.gunName) {
@@ -441,10 +444,13 @@ const Network = {
                             }
                             const p = players[pId];
 
-                            // Eject spinning shells locally for other players on ammo depletion [1]
-                            if (p && data[pId].clip < (p.clip !== undefined ? p.clip : 8)) {
-                                if (typeof spawnShellCasing === 'function') {
-                                    spawnShellCasing(p.x, p.y, p.angle);
+                            // Eject spinning shells locally for other players on shooting, avoiding reload loops
+                            if (p && !data[pId].reloading && !p.reloading) {
+                                const lastClip = p.clip !== undefined ? p.clip : 8;
+                                if (data[pId].clip < lastClip && (lastClip - data[pId].clip) <= 2) {
+                                    if (typeof spawnShellCasing === 'function') {
+                                        spawnShellCasing(p.x, p.y, p.angle);
+                                    }
                                 }
                             }
 

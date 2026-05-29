@@ -72,6 +72,11 @@ window.bloodStains = []; // Explicitly attach to window for robust cross-script 
 let zombieIdCounter = 0; 
 let myUsername = "Survivor"; // Store local username
 
+// POWERUP DROP CONFIGURATIONS
+window.drops = [];
+window.doublePointsTimer = 0;
+window.instaKillTimer = 0;
+
 // LOCAL CO-OP CONFIGURATION
 let p2InputConfig = 'keyboard'; // 'keyboard', 'gamepad0', or 'gamepad1'
 let p2PrevButtons = { shoot: false, reload: false, interact: false };
@@ -739,7 +744,7 @@ function loop(currentTime) {
     }
 
     if(camTarget) {
-        // Track baseline height scale and center viewport correctly [1]
+        // Track baseline height scale and center viewport correctly
         const baseHeight = 900;
         const scale = canvas.height / baseHeight;
         camera.x = camTarget.x - (canvas.width / scale) / 2; 
@@ -777,6 +782,34 @@ function updateGameLogic() {
         Tutorial.update();
     }
 
+    // Tick rare power-up modifiers
+    if (Network.mode !== 'CLIENT') {
+        if (window.doublePointsTimer > 0) window.doublePointsTimer--;
+        if (window.instaKillTimer > 0) window.instaKillTimer--;
+
+        // Floor drop collection loop
+        for (let i = window.drops.length - 1; i >= 0; i--) {
+            let d = window.drops[i];
+            d.life--;
+            
+            let pickedUp = false;
+            Object.values(players).forEach(p => {
+                if (p.state === 'ALIVE' && Math.hypot(p.x - d.x, p.y - d.y) < 32) {
+                    pickedUp = true;
+                    applyPowerup(d.type, p);
+                }
+            });
+
+            if (pickedUp || d.life <= 0) {
+                window.drops.splice(i, 1);
+            }
+        }
+    } else {
+        // Clients locally predict active buff timers to prevent visual flicker
+        if (window.doublePointsTimer > 0) window.doublePointsTimer--;
+        if (window.instaKillTimer > 0) window.instaKillTimer--;
+    }
+
     if(Network.mode === 'CLIENT') {
         Network.sendClientData(me);
         
@@ -797,7 +830,13 @@ function updateGameLogic() {
             if (p) {
                 if (p.triggerReload) forceReload(p);
                 p.triggerReload = false;
-                updatePlayerPhysics(p, false);
+                
+                if (Network.mode === 'LOCAL_COOP' && pId === 'p2') {
+                    updateLocalCoopP2(p);
+                } else {
+                    updatePlayerPhysics(p, false);
+                }
+                
                 if (p.triggerInteract) { processInteraction(p); p.triggerInteract = false; }
             }
         });
@@ -896,7 +935,7 @@ function updatePlayerPhysics(p, isLocal) {
         if (isTouchDevice && isAimingTouch) {
             p.angle = Math.atan2(touchAimVector.y, touchAimVector.x);
         } else {
-            // Map cursor positions to scaled resolution offsets [1]
+            // Map cursor positions to scaled resolution offsets
             const baseHeight = 900;
             const scale = canvas.height / baseHeight;
             const worldMouseX = (mouse.x / scale) + camera.x;
@@ -1189,8 +1228,12 @@ function processInteraction(p) {
             p.lastRepairTime = now;
 
             t.obj.boards++; 
-            p.score+=10; 
-            addText(t.obj.x+20, t.obj.y, "+10", "#fff");
+            
+            let pointsToGive = 10;
+            if (window.doublePointsTimer > 0) pointsToGive *= 2;
+            
+            p.score += pointsToGive; 
+            addText(t.obj.x+20, t.obj.y, "+" + pointsToGive, "#fff");
             
             // Send window repair completion hook to modular tutorial logic
             if (typeof Tutorial !== 'undefined') {
@@ -1262,7 +1305,7 @@ function updateZombies() {
             else if (currentDiff === 'hard') hpMultiplier = 1.3;
             let hp = Math.floor((100 + (stats.round * 30)) * hpMultiplier);
             
-            // Scale Zombie Speed by Difficulty (Higher base speeds for 144Hz feel)
+            // Scale Zombie Speed by Difficulty
             let speedMin = 1.8, speedMax = 4.5;
             if (currentDiff === 'easy') { speedMin = 1.2; speedMax = 2.5; }
             else if (currentDiff === 'hard') { speedMin = 2.5; speedMax = 5.5; }
@@ -1337,7 +1380,7 @@ function updateZombies() {
                 spawnParticles(attackingWindow.x + attackingWindow.w / 2, attackingWindow.y + attackingWindow.h / 2, '#8B4513', 2);
             }
         } else {
-            // Standard Movement toward current target (Window Waypoint or Player)
+            // Standard Movement toward current target
             let a = Math.atan2(targetY - z.y, targetX - z.x);
             let mx = Math.cos(a) * z.speed;
             let my = Math.sin(a) * z.speed;
@@ -1362,7 +1405,6 @@ function updateZombies() {
         // Damage Players
         Object.values(players).forEach(p => {
             if (Math.hypot(p.x - z.x, p.y - z.y) < 30 && p.state === 'ALIVE') {
-                // Skip damage calculations if the target has active invincibility frames
                 if (p.invincibleTimer && p.invincibleTimer > 0) return;
 
                 p.hp -= 5;
@@ -1402,11 +1444,15 @@ function updateBullets() {
                 if (b.type === 'explosive') {
                     triggerExplosion(b); // Radial blast on direct target collision
                 } else {
-                    z.hp -= b.dmg; 
-                    z.hitTimer = 4; // Trigger bright crimson damage flash locally
+                    let dmgValue = b.dmg;
+                    if (window.instaKillTimer > 0) {
+                        dmgValue = z.hp; // Instant-kill active
+                    }
+
+                    z.hp -= dmgValue; 
+                    z.hitTimer = 4; // Trigger damage flash
                     spawnParticles(z.x, z.y, '#800', 3);
                     
-                    // Spill dynamic visceral blood splatters onto the concrete floor
                     if (Math.random() < 0.45) {
                         window.bloodStains.push({
                             x: z.x + (Math.random() - 0.5) * 12,
@@ -1414,31 +1460,57 @@ function updateBullets() {
                             r: 4 + Math.random() * 12,
                             color: 'rgba(139, 0, 0, ' + (0.3 + Math.random() * 0.35) + ')'
                         });
-                        if (window.bloodStains.length > 150) window.bloodStains.shift(); // Hard capped splatters
+                        if (window.bloodStains.length > 150) window.bloodStains.shift();
                     }
 
-                    // Reward 10 coins for EVERY bullet hit on a zombie
-                    if(players[b.ownerId]) { 
-                        players[b.ownerId].score += 10; 
-                        stats.score += 10;
-                    }
-                    if(me && b.ownerId === me.id) { 
-                        addText(z.x, z.y, "+10", "#fff"); 
+                    // Reward coins for bullet hits (throttled to 1 points payout per zombie per frame to balance shotguns)
+                    if (!z.lastHitPointFrame || z.lastHitPointFrame !== stats.frame) {
+                        z.lastHitPointFrame = stats.frame;
+
+                        let pointsHit = 10;
+                        if (window.doublePointsTimer > 0) pointsHit *= 2;
+
+                        if(players[b.ownerId]) { 
+                            players[b.ownerId].score += pointsHit; 
+                            stats.score += pointsHit;
+                        }
+                        if(me && b.ownerId === me.id) { 
+                            addText(z.x, z.y, "+" + pointsHit, "#fff"); 
+                        }
                     }
 
                     if(z.hp <= 0) {
-                        z.dead = true; // Mark for batch cleanup (prevents indexing glitches)
-                        stats.score += 50; // Give 50 coins upon death
+                        z.dead = true; // Mark for batch cleanup
+                        
+                        let pointsKill = 50;
+                        if (window.doublePointsTimer > 0) pointsKill *= 2;
+
+                        stats.score += pointsKill; 
                         stats.zombiesAlive--;
                         
                         if(players[b.ownerId]) { 
-                            players[b.ownerId].score += 50; 
+                            players[b.ownerId].score += pointsKill; 
                             players[b.ownerId].kills++; 
                         }
                         if(me && b.ownerId === me.id) { 
                             stats.sessionKills++; 
                             checkAchievements(); 
-                            addText(z.x, z.y, "+50", "#ff0"); 
+                            addText(z.x, z.y, "+" + pointsKill, "#ff0"); 
+                        }
+
+                        // Spawn logic on host calculations
+                        if (Network.mode !== 'CLIENT') {
+                            if (Math.random() < 0.05) { // 5% chance drop
+                                const powerups = ['MAX_AMMO', 'NUKE', 'DOUBLE_POINTS', 'INSTA_KILL'];
+                                const selected = powerups[Math.floor(Math.random() * powerups.length)];
+                                window.drops.push({
+                                    x: z.x,
+                                    y: z.y,
+                                    type: selected,
+                                    life: 1800 // 30 seconds
+                                });
+                                addText(z.x, z.y, "POWER-UP!", "#ffd700");
+                            }
                         }
                     }
                 }
@@ -1458,38 +1530,70 @@ function triggerExplosion(b) {
         let dist = Math.hypot(b.x - z.x, b.y - z.y);
         if (dist < explosionRadius) {
             let falloff = 1 - (dist / explosionRadius);
-            let splashDmg = Math.floor(b.dmg * falloff);
+            
+            let bulletDmg = b.dmg;
+            if (window.instaKillTimer > 0) {
+                bulletDmg = z.hp;
+            }
+
+            let splashDmg = Math.floor(bulletDmg * falloff);
             if (splashDmg > 0) {
                 z.hp -= splashDmg;
                 z.hitTimer = 6; // Heavy impact flash
                 spawnParticles(z.x, z.y, '#e67e22', 3);
                 
-                // Add points for hitting zombies with explosive splash
-                if(players[b.ownerId]) { 
-                    players[b.ownerId].score += 10; 
-                    stats.score += 10;
+                // Add points for explosive splash hits (throttled to 1 payout per zombie per frame)
+                if (!z.lastHitPointFrame || z.lastHitPointFrame !== stats.frame) {
+                    z.lastHitPointFrame = stats.frame;
+
+                    let pointsHit = 10;
+                    if (window.doublePointsTimer > 0) pointsHit *= 2;
+
+                    if(players[b.ownerId]) { 
+                        players[b.ownerId].score += pointsHit; 
+                        stats.score += pointsHit;
+                    }
                 }
 
                 if (z.hp <= 0) {
                     z.dead = true;
-                    stats.score += 50;
+                    
+                    let pointsKill = 50;
+                    if (window.doublePointsTimer > 0) pointsKill *= 2;
+
+                    stats.score += pointsKill;
                     stats.zombiesAlive--;
                     
                     if(players[b.ownerId]) { 
-                        players[b.ownerId].score += 50; 
+                        players[b.ownerId].score += pointsKill; 
                         players[b.ownerId].kills++; 
                     }
                     if(me && b.ownerId === me.id) { 
                         stats.sessionKills++; 
                         checkAchievements(); 
-                        addText(z.x, z.y, "+50", "#ff0"); 
+                        addText(z.x, z.y, "+" + pointsKill, "#ff0"); 
+                    }
+
+                    // Powerup drop roll calculation on explosion elimination
+                    if (Network.mode !== 'CLIENT') {
+                        if (Math.random() < 0.05) {
+                            const powerups = ['MAX_AMMO', 'NUKE', 'DOUBLE_POINTS', 'INSTA_KILL'];
+                            const selected = powerups[Math.floor(Math.random() * powerups.length)];
+                            window.drops.push({
+                                x: z.x,
+                                y: z.y,
+                                type: selected,
+                                life: 1800
+                            });
+                            addText(z.x, z.y, "POWER-UP!", "#ffd700");
+                        }
                     }
                 }
             }
         }
     });
 
-    // Spawn decentralized visual explosions on host locally (clients handle it in network receiver comparisons)
+    // Spawn decentralized visual explosions locally
     spawnExplosionVisuals(b.x, b.y);
 }
 
@@ -1510,6 +1614,50 @@ function spawnExplosionVisuals(x, y) {
     if (window.bloodStains.length > 150) window.bloodStains.splice(0, window.bloodStains.length - 150);
 
     addText(x, y, "BOOM!", "#e74c3c");
+}
+
+function applyPowerup(type, picker) {
+    if (type === 'MAX_AMMO') {
+        Object.values(players).forEach(p => {
+            if (p.inventory) {
+                p.inventory.forEach(gun => {
+                    gun.ammo = gun.reserve;
+                    gun.clip = gun.mag; // Fill clip and reserve as standard
+                });
+            }
+        });
+        addText(picker.x, picker.y - 40, "MAX AMMO!", "#2ecc71");
+    } else if (type === 'NUKE') {
+        let nukeReward = 400;
+        if (window.doublePointsTimer > 0) nukeReward *= 2;
+
+        // Kill all active zombies and award kills (flat team points rather than points per zombie)
+        zombies.forEach(z => {
+            z.dead = true;
+            stats.zombiesAlive--;
+            if (picker) {
+                picker.kills++;
+            }
+        });
+        zombies = [];
+
+        // Award flat nuke score to all players
+        Object.values(players).forEach(p => {
+            p.score += nukeReward;
+            addText(p.x, p.y - 40, "NUKE! +" + nukeReward, "#e74c3c");
+        });
+        stats.score += nukeReward;
+    } else if (type === 'DOUBLE_POINTS') {
+        window.doublePointsTimer = 1800; // 30 seconds
+        Object.values(players).forEach(p => {
+            addText(p.x, p.y - 40, "DOUBLE POINTS!", "#f39c12");
+        });
+    } else if (type === 'INSTA_KILL') {
+        window.instaKillTimer = 1800; // 30 seconds
+        Object.values(players).forEach(p => {
+            addText(p.x, p.y - 40, "INSTA-KILL!", "#9b59b6");
+        });
+    }
 }
 
 function checkGameFlow() {
@@ -1553,7 +1701,6 @@ function drawScoreboard() {
 }
 
 function resetSession() { 
-    // Preserve map index across resets so synchronization doesn't fail on restarts
     const currentMapIdx = stats.selectedMapIdx !== undefined ? stats.selectedMapIdx : 0;
     const currentDiff = stats.difficulty || 'medium';
     
@@ -1574,6 +1721,12 @@ function resetSession() {
     }; 
 
     zombies = []; bullets = []; particles = []; texts = []; window.bloodStains = []; zombieIdCounter = 0; 
+    
+    // Reset power-ups
+    window.drops = [];
+    window.doublePointsTimer = 0;
+    window.instaKillTimer = 0;
+
     activeMap.rooms.forEach(r => r.unlocked = (r.id === 0)); 
     
     // Evaluate map layout and assign suitable barriers count
@@ -1590,7 +1743,7 @@ function gameOver() {
     gameActive = false; 
     if(Network.mode === 'HOST') Network.broadcastGameOver(stats); 
     
-    // Check if Tutorial is active - instantly retry instead of displaying high scores or returning to main menu
+    // Check if Tutorial is active - instantly retry instead of displaying high scores
     if (typeof Tutorial !== 'undefined' && Tutorial.isActive) {
         Tutorial.resetOnDeath();
         return;
@@ -1651,6 +1804,9 @@ function goToLobbyScreen() {
     particles = [];
     texts = [];
     window.bloodStains = [];
+    window.drops = [];
+    window.doublePointsTimer = 0;
+    window.instaKillTimer = 0;
     
     if (Network.mode === 'HOST') {
         document.getElementById('lobby-status').innerText = "LOBBY ACTIVE!";
@@ -1679,6 +1835,16 @@ function goToLobbyScreen() {
 
 function updateUI() {
     document.getElementById('round-box').innerText = stats.round;
+
+    // Power-up Alerts
+    const badgeDouble = document.getElementById('badge-double');
+    const badgeInsta = document.getElementById('badge-instakill');
+    if (badgeDouble) {
+        badgeDouble.style.display = (window.doublePointsTimer > 0) ? 'block' : 'none';
+    }
+    if (badgeInsta) {
+        badgeInsta.style.display = (window.instaKillTimer > 0) ? 'block' : 'none';
+    }
 
     ['p1', 'p2', 'p3', 'p4'].forEach(pId => {
         const p = players[pId];

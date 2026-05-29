@@ -84,6 +84,52 @@ function drawGame() {
         });
     }
 
+    // 2.6. Draw Rare Zombie Power-up Drops
+    if (window.drops) {
+        window.drops.forEach(d => {
+            ctx.save();
+            
+            // Outer glow based on active drop lifetime (starts flashing faster when decaying)
+            const isFlickering = d.life < 300 && Math.floor(d.life / 10) % 2 === 0;
+            if (!isFlickering) {
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#ffd700';
+            }
+            
+            // Pulsing geometry animation
+            const pulse = 1 + Math.sin(Date.now() / 120) * 0.12;
+            
+            // Draw golden glowing ring
+            ctx.strokeStyle = '#ffd700';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.arc(d.x, d.y, 18 * pulse, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            // Fill core base backing
+            ctx.fillStyle = 'rgba(10, 10, 10, 0.85)';
+            ctx.beginPath();
+            ctx.arc(d.x, d.y, 15 * pulse, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Text symbol mapping representation
+            let symbol = "?";
+            let symColor = "#fff";
+            if (d.type === 'MAX_AMMO') { symbol = "AMMO"; symColor = "#2ecc71"; }
+            else if (d.type === 'NUKE') { symbol = "NUKE"; symColor = "#e74c3c"; }
+            else if (d.type === 'DOUBLE_POINTS') { symbol = "2X"; symColor = "#f39c12"; }
+            else if (d.type === 'INSTA_KILL') { symbol = "INSTA"; symColor = "#9b59b6"; }
+            
+            ctx.fillStyle = symColor;
+            ctx.font = "bold 9px monospace";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(symbol, d.x, d.y);
+            
+            ctx.restore();
+        });
+    }
+
     // 3. Draw Furniture
     activeMap.furniture.forEach(f => {
         ctx.fillStyle = f.color;
@@ -333,6 +379,16 @@ function drawGame() {
 
 function updateUI() {
     document.getElementById('round-box').innerText = stats.round;
+
+    // Power-up Alerts
+    const badgeDouble = document.getElementById('badge-double');
+    const badgeInsta = document.getElementById('badge-instakill');
+    if (badgeDouble) {
+        badgeDouble.style.display = (window.doublePointsTimer > 0) ? 'block' : 'none';
+    }
+    if (badgeInsta) {
+        badgeInsta.style.display = (window.instaKillTimer > 0) ? 'block' : 'none';
+    }
 
     ['p1', 'p2', 'p3', 'p4'].forEach(pId => {
         const p = players[pId];

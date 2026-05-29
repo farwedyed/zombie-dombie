@@ -347,6 +347,12 @@
 <div id="game-ui">
     <div id="damage-flash"></div>
     <div id="round-box" class="hud-text">1</div>
+
+    <!-- ACTIVE POWERUP HUD -->
+    <div id="powerup-hud" style="position: absolute; top: 100px; left: 50%; transform: translateX(-50%); display: flex; gap: 15px; pointer-events: none; z-index: 1000;">
+        <div id="badge-double" style="display: none; background: rgba(230, 126, 34, 0.95); color: #fff; border: 2px solid #fff; padding: 6px 14px; font-weight: bold; border-radius: 4px; font-size: 14px; text-shadow: 1px 1px 0 #000; box-shadow: 0 0 10px rgba(230, 126, 34, 0.5);">2X POINTS</div>
+        <div id="badge-instakill" style="display: none; background: rgba(231, 76, 60, 0.95); color: #fff; border: 2px solid #fff; padding: 6px 14px; font-weight: bold; border-radius: 4px; font-size: 14px; text-shadow: 1px 1px 0 #000; box-shadow: 0 0 10px rgba(231, 76, 60, 0.5);">INSTA-KILL</div>
+    </div>
     
     <!-- Tutorial Objective Box (Centered Bottom Screen Overlay) -->
     <div id="tutorial-hud" style="position: absolute; bottom: 130px; left: 50%; transform: translateX(-50%); background: rgba(10, 10, 10, 0.95); border: 2px solid #a83232; border-top: 5px solid #a83232; padding: 20px; color: white; display: none; width: 550px; text-shadow: 2px 2px 0 #000; z-index: 1000; pointer-events: none; border-radius: 8px; box-shadow: 0 0 20px rgba(0,0,0,0.8); text-align: center;">
