@@ -218,6 +218,12 @@ const Tutorial = {
         });
     },
 
+    // Safely exits the session and reloads back to the main menu
+    skip: function() {
+        this.end();
+        location.reload();
+    },
+
     update: function() {
         if (!this.isActive || !me) return;
         

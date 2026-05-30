@@ -624,6 +624,7 @@
             <div class="card-content">
                 <!-- 1 Player, 3 Green Zombies, 1 Yellow, 1 Blue -->
                 <div class="card-illustration-box">
+                    <!-- 3 Green Zombies at the top -->
                     <div class="mini-zombie" style="background:#3a4a38; top: 8px; left: 15%; width:12px; height:12px;">
                         <span class="zombie-eyes eye-left" style="width:1.5px; height:1.5px;"></span><span class="zombie-eyes eye-right" style="width:1.5px; height:1.5px;"></span>
                     </div>
@@ -633,9 +634,11 @@
                     <div class="mini-zombie" style="background:#3a4a38; top: 8px; right: 15%; width:12px; height:12px;">
                         <span class="zombie-eyes eye-left" style="width:1.5px; height:1.5px;"></span><span class="zombie-eyes eye-right" style="width:1.5px; height:1.5px;"></span>
                     </div>
+                    <!-- 1 Yellow Zombie Middle Left -->
                     <div class="mini-zombie" style="background:#f1c40f; top: 28px; left: 22%; width:12px; height:12px;">
                         <span class="zombie-eyes eye-left" style="width:1.5px; height:1.5px;"></span><span class="zombie-eyes eye-right" style="width:1.5px; height:1.5px;"></span>
                     </div>
+                    <!-- 1 Blue Zombie Middle Right -->
                     <div class="mini-zombie" style="background:#2980b9; top: 28px; right: 22%; width:15px; height:15px; border-width:2px;">
                         <span class="zombie-eyes eye-left" style="top:2px;"></span><span class="zombie-eyes eye-right" style="top:2px;"></span>
                     </div>
@@ -918,8 +921,11 @@
     <div id="tutorial-hud" style="display:none; position:absolute; bottom:20px; left:50%; transform:translateX(-50%); width:460px; max-width:90%; background:rgba(10,10,10,0.92); border:1px solid #ffd700; border-top:3px solid #ffd700; border-radius:4px; padding:15px; color:white; z-index:1500; font-family:inherit; box-sizing:border-box; text-align:center; pointer-events:auto; box-shadow:0 10px 25px rgba(0,0,0,0.8);">
         <div id="tutorial-title" style="font-weight:bold; color:#ffd700; font-size:18px; margin-bottom:5px; text-transform:uppercase; letter-spacing:1px;">Boot Camp</div>
         <div id="tutorial-text" style="font-size:14px; color:#ddd; line-height:1.4; margin-bottom:10px;">Tutorial text loading...</div>
-        <div id="tutorial-progress" style="font-size:11px; color:#888; font-weight:bold; text-transform:uppercase; letter-spacing:0.5px;">Step 1 / 10</div>
+        <div id="tutorial-progress" style="font-size:11px; color:#888; font-weight:bold; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">Step 1 / 10</div>
         
+        <!-- Skip Button -->
+        <button onclick="Tutorial.skip()" style="width: auto; padding: 6px 15px; font-size: 11px; background: rgba(168, 50, 50, 0.15); border: 1px solid #a83232; color: #fff; margin: 0 auto; display: block; border-radius: 4px; cursor: pointer;">Skip Tutorial</button>
+
         <!-- Bouncing HTML Guidance Arrow pointing to coins indicator -->
         <div id="tutorial-coin-arrow" style="display:none; position:absolute; bottom:100%; left:20px; font-size:24px; animation:arrowBounce 0.4s infinite alternate;">⬇️</div>
     </div>
