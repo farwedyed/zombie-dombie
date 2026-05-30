@@ -538,7 +538,19 @@ function spawnSparks(x, y, bulletVx, bulletVy) {
 
 // Keep helper functions synchronized
 function handleReload() { forceReload(me); }
-function forceReload(p) { let gun = p.inventory[p.weapIdx]; if(!p.reloading && gun.clip < gun.mag && gun.ammo > 0) { p.reloading = true; p.reloadTimer = gun.reload; addText(p.x, p.y-40, "RELOADING...", "#fff"); } }
+function forceReload(p) { 
+    let gun = p.inventory[p.weapIdx]; 
+    if(!p.reloading && gun.clip < gun.mag && gun.ammo > 0) { 
+        p.reloading = true; 
+        p.reloadTimer = gun.reload; 
+        addText(p.x, p.y - 40, "RELOADING...", "#fff"); 
+        
+        // Play the reload sound effect
+        if (typeof SoundSystem !== 'undefined') {
+            SoundSystem.play('reload');
+        }
+    } 
+}
 
 function checkInteractUI() {
     if (!me) return;
