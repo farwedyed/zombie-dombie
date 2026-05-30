@@ -205,10 +205,10 @@ function drawGame() {
     });
 
     // 4. Draw Walls
-    ctx.fillStyle = '#2c3e50'; // Concrete metallic wall colour
+    ctx.fillStyle = '#2c3e50'; // Concrete wall colour
     activeMap.walls.forEach(w => {
         ctx.fillRect(w.x, w.y, w.w, w.h);
-        ctx.strokeStyle = '#000000'; // Crisp bold black border instead of grey
+        ctx.strokeStyle = '#000000'; 
         ctx.lineWidth = 2.5;
         ctx.strokeRect(w.x, w.y, w.w, w.h);
     });
@@ -356,7 +356,7 @@ function drawGame() {
         ctx.lineWidth = 2.5;
         ctx.stroke();
         
-        // Draw Gun Barrel with Black Outline (Includes safety checks to prevent thread crashes)
+        // Draw Gun Barrel with Black Outline
         const activeGunColor = p.gunColor || (p.inventory && p.inventory[p.weapIdx] ? p.inventory[p.weapIdx].color : '#999');
         ctx.fillStyle = activeGunColor;
         ctx.fillRect(0, -5, 25, 10);
@@ -374,7 +374,7 @@ function drawGame() {
             ctx.fillStyle = '#ff4757'; 
             z.hitTimer--; // Decay flash frame locally
         } else {
-            ctx.fillStyle = z.color || '#3a4a38'; // Dynamic body color support
+            ctx.fillStyle = z.color || '#3a4a38'; 
         }
         ctx.beginPath(); 
         ctx.arc(z.x, z.y, z.r, 0, Math.PI*2); 
@@ -414,16 +414,14 @@ function drawGame() {
 
     // 10. Draw Bullets
     bullets.forEach(b => {
-        // Fallback for dark colors to make bullet tracers highly visible on dark backgrounds
         let bulletColor = b.color;
         const darkColors = ['#000', '#222', '#333', '#444', '#3e2723', '#5c4033', '#2c3e50', '#212f3c', '#555'];
         if (darkColors.includes(bulletColor.toLowerCase())) {
-            bulletColor = '#ffd700'; // Bright gold/yellow tracer
+            bulletColor = '#ffd700'; 
         }
         
         ctx.save();
         
-        // Draw explosive rockets with a larger glowing green core
         if (b.type === 'explosive') {
             ctx.fillStyle = '#ff4757';
             ctx.beginPath();
@@ -433,13 +431,11 @@ function drawGame() {
             ctx.lineWidth = 2.5;
             ctx.stroke();
         } else {
-            // Draw a bright white core
             ctx.fillStyle = '#ffffff';
             ctx.beginPath(); 
             ctx.arc(b.x, b.y, 2.5, 0, Math.PI * 2); 
             ctx.fill();
             
-            // Draw glowing outer trace using bullet/weapon color
             ctx.strokeStyle = bulletColor;
             ctx.lineWidth = 1.5;
             ctx.stroke();
@@ -448,13 +444,13 @@ function drawGame() {
         ctx.restore();
     });
 
-    // Draw Ranged Archer projectiles with clean outline borders
+    // Draw Ranged Archer projectiles
     if (window.zombieArrows) {
         window.zombieArrows.forEach(a => {
             ctx.save();
             ctx.translate(a.x, a.y);
             ctx.rotate(Math.atan2(a.vy, a.vx));
-            ctx.fillStyle = '#ff3b30'; // Red burning arrow head
+            ctx.fillStyle = '#ff3b30'; 
             ctx.fillRect(-6, -1.5, 12, 3);
             ctx.strokeStyle = '#000000';
             ctx.lineWidth = 1.2;
@@ -474,18 +470,18 @@ function drawGame() {
         ctx.shadowBlur = 0;
     });
 
-    // 12. Draw Particles
+    // 12. Draw Particles (Visuals ONLY - Physics and Cleanup are handled in game1.js)
     particles.forEach(p => { 
         if (p.type === 'shell') {
             ctx.save();
             ctx.translate(p.x, p.y);
             ctx.rotate(p.angle);
             ctx.fillStyle = p.color;
-            ctx.fillRect(-2, -1, 4, 1.5); // Ejected rectangular shell casing
+            ctx.fillRect(-2, -1, 4, 1.5); 
             ctx.restore();
         } else if (p.type === 'spark') {
             ctx.fillStyle = p.color;
-            ctx.fillRect(p.x, p.y, 2, 2); // Friction sparks
+            ctx.fillRect(p.x, p.y, 2, 2); 
         } else {
             ctx.fillStyle = p.color; 
             ctx.fillRect(p.x, p.y, 3, 3); 
@@ -500,11 +496,11 @@ function drawGame() {
     ctx.restore(); // Camera restored
     
     // --- DRAW BOSS HEALTH BAR IN SCREEN SPACE ---
-    if (window.activeBoss) {
+    if (window.activeBoss && window.activeBoss.name) {
         const barW = 400;
         const barH = 16;
         const x = (canvas.width - barW) / 2;
-        const y = 170; // Shifted down further to 170px to guarantee no overlap with #round-box or powerups
+        const y = 170; 
         
         // Outer Border
         ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';

@@ -144,7 +144,10 @@ const achievements = [
     { id: 'k100', name: "Slayer", desc: "Get 100 Kills Total", icon: "💀", check: (s) => (saveData.kills + s.sessionKills) >= 100 },
     { id: 'k500', name: "Massacre", desc: "Get 500 Kills Total", icon: "☠️", check: (s) => (saveData.kills + s.sessionKills) >= 500 },
     { id: 'k1000', name: "Genocide", desc: "Get 1000 Kills Total", icon: "👹", check: (s) => (saveData.kills + s.sessionKills) >= 1000 },
+    { id: 'k2500', name: "Apocalyptic Legend", desc: "Get 2500 Kills Total", icon: "⚡", check: (s) => (saveData.kills + s.sessionKills) >= 2500 },
     { id: 'r5', name: "Survivor", desc: "Reach Round 5", icon: "🏕️", check: (s) => s.round >= 5 },
+    { id: 'r15', name: "Veteran Survivor", desc: "Reach Round 15", icon: "🎖️", check: (s) => s.round >= 15 },
+    { id: 'r25', name: "Apocalypse Survivor", desc: "Reach Round 25", icon: "🌋", check: (s) => s.round >= 25 },
     { id: 'jug', name: "Iron Belly", desc: "Drink Juggernog", icon: "🍷", check: (s, p) => p.hasJug },
     { id: 'rich', name: "Rich", desc: "Have 3000 Points", icon: "💰", check: (s) => s.score >= 3000 }
 ];
@@ -154,12 +157,56 @@ const cosmeticDB = [
     { id: 'cone_yellow', name: "Retro Cone Hat (Yellow)", price: 50, color: "#ffd700", type: "cone" },
     { id: 'backpack_survival', name: "Survival Backpack (Brown)", price: 150, color: "#8b5a2b", type: "backpack" },
     { id: 'cape_neon', name: "Neon Cape (Magenta)", price: 300, color: "#ff00ff", type: "cape" },
-    { id: 'jetpack_steel', name: "Steel Thruster (Cyan)", price: 500, color: "#00ffff", type: "jetpack" }
+    { id: 'halo_light', name: "Angelic Halo (Glowing Gold)", price: 800, color: "#ffd700", type: "cone" },
+    { id: 'cape_blood', name: "Vampire Cape (Deep Crimson)", price: 1200, color: "#a83232", type: "cape" },
+    { id: 'jetpack_steel', name: "Steel Thruster (Cyan)", price: 500, color: "#00ffff", type: "jetpack" },
+    { id: 'wings_carbon', name: "Cyber Wings (Black/Cyan)", price: 2000, color: "#00ffff", type: "cape" }
 ];
 
 /* --- BOSSES DATABASE --- */
 const bossesDB = [
-    { id: 'boss_logbreaker', name: "The Logbreaker", round: 10, desc: "A colossal, armored brute capable of smashing all defensive window barriers instantly on contact.", color: '#d35400', icon: "🪵" },
+    { id: 'boss_logbreaker', name: "The Golem Smasher", round: 10, desc: "A colossal, armored brute capable of smashing all defensive window barriers instantly on contact. He fires projectile rings outward in all directions.", color: '#d35400', icon: "🪵" },
     { id: 'boss_broodmother', name: "The Broodmother", round: 15, desc: "An infectious queen that periodically births standard zombie minions directly near her position.", color: '#10ac84', icon: "🕷️" },
     { id: 'boss_hydra', name: "The Hydra Omega", round: 20, desc: "An apex purple abomination that recursively splits into multiple generations of split-clones upon death.", color: '#8e44ad', icon: "🐙" }
 ];
+
+/* --- SOUND EFFECTS ENGINE --- */
+const SoundSystem = {
+    enabled: true,
+    volume: 0.5,
+    audioFiles: {
+        shoot: 'sounds/shoot.mp3',
+        dry_fire: 'sounds/dry_fire.mp3',
+        reload: 'sounds/reload.mp3',
+        powerup: 'sounds/powerup.mp3',
+        zombie_hurt: 'sounds/zombie_hurt.mp3',
+        round_start: 'sounds/round_start.mp3',
+        purchase: 'sounds/purchase.mp3'
+    },
+
+    init: function() {
+        // Direct instantiation on-play ensures robust performance on all browsers
+    },
+
+    play: function(key) {
+        if (!this.enabled || !this.audioFiles[key]) return;
+        
+        try {
+            // Fresh instantiation is completely immune to cloneNode loading state bugs
+            let audio = new Audio(this.audioFiles[key]);
+            audio.volume = this.volume;
+            
+            let playPromise = audio.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    // Suppress autoplay blockers gracefully
+                });
+            }
+        } catch(e) {
+            console.warn(`SoundSystem: Blocked playing sound "${key}":`, e);
+        }
+    }
+};
+
+// Initial setup
+SoundSystem.init();

@@ -134,6 +134,7 @@ const AccountSystem = {
         try {
             if (typeof saveData !== 'undefined') {
                 await docRef.set({
+                    displayName: this.currentUser.displayName || "Survivor",
                     kills: saveData.kills,
                     highestRound: saveData.highestRound,
                     prevScore: saveData.prevScore,
@@ -151,6 +152,47 @@ const AccountSystem = {
             }
         } catch (error) {
             console.warn("Failed to push profile updates to cloud:", error);
+        }
+    },
+
+    // Fetch and dynamically render the top 10 global records inside the Leaderboard Modal
+    fetchLeaderboard: async function() {
+        const boardBody = document.getElementById('leaderboard-body');
+        if (!boardBody) return;
+
+        boardBody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:30px; color:#888;">Synchronizing Global Combat Logs...</td></tr>`;
+
+        try {
+            // Fetch top 10 users sorted by highestRound descending
+            const snap = await db.collection("users").orderBy("highestRound", "desc").limit(10).get();
+            boardBody.innerHTML = "";
+            let rank = 1;
+            
+            if (snap.empty) {
+                boardBody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:#666;">No combat logs logged yet.</td></tr>`;
+                return;
+            }
+
+            snap.forEach(doc => {
+                const u = doc.data();
+                const name = u.displayName || "Survivor";
+                const lvl = Math.floor((u.xp || 0) / 1000) + 1;
+                const kills = u.kills !== undefined ? u.kills : 0;
+                const round = u.highestRound !== undefined ? u.highestRound : 1;
+
+                boardBody.innerHTML += `
+                    <tr style="border-bottom: 1px solid #222; transition: background 0.15s ease;">
+                        <td style="padding:12px; font-weight:bold; color:#ffd700; text-align:center;">#${rank}</td>
+                        <td style="padding:12px; color:#fff; font-weight:bold;">${name} <span style="font-size:10px; color:#555;">[Lv.${lvl}]</span></td>
+                        <td style="padding:12px; color:#ffd700; font-weight:bold; text-align:center;">Round ${round}</td>
+                        <td style="padding:12px; color:#ff4757; text-align:center; font-weight:bold;">${kills}</td>
+                    </tr>
+                `;
+                rank++;
+            });
+        } catch (e) {
+            console.warn("Leaderboard fetch failed gracefully:", e);
+            boardBody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:#e74c3c; font-size:12px;">Failed to synchronize leaderboard. Firestore indexing may be building.</td></tr>`;
         }
     },
 
@@ -179,7 +221,7 @@ const AccountSystem = {
             authContainer.innerHTML = `
                 <button onclick="AccountSystem.loginWithGoogle()" style="border-color: #a83232; background: rgba(168, 50, 50, 0.15); font-size: 14px; padding: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 15px;">
                     <svg style="width: 16px; height: 16px; fill: currentColor;" viewBox="0 0 24 24">
-                        <path d="M12.24 10.285V14.4h6.887c-.648 2.41-2.519 4.114-5.136 4.114-3.415 0-6.195-2.78-6.195-6.195s2.78-6.195 6.195-6.195c1.55 0 2.96.57 4.05 1.51l3.05-3.05C19.11 1.84 15.84 1 12.24 1 6.033 1 12.24s5.033 11.24 11.24 11.24c5.897 0 10.866-4.23 11.24-10.285H12.24z"/>
+                        <path d="M12.24 10.285V14.4h6.887c-.648 2.41-2.519 4.114-5.136 4.114-3.415 0-6.195-2.78-6.195-6.195s2.78-6.195 6.195-6.195c1.55 0 2.96.57 4.05 1.51l3.05-3.05C19.11 1.84 15.84 1c-6.207 0-11.24 5.033-11.24 11.24s5.033 11.24 11.24 11.24c5.897 0 10.866-4.23 11.24-10.285H12.24z"/>
                     </svg>
                     Sign In with Google
                 </button>

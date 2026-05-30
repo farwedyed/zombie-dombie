@@ -13,6 +13,7 @@ const Network = {
     mode: 'OFFLINE', 
     lastUpdate: 0,
     lastClientUpdate: 0, // Throttle client-to-host payloads
+    lastGameStateTime: 0, // Watchdog tracker for host status
     
     init: function(onOpen) {
         // Provider 1: Metered.ca Credentials
@@ -27,7 +28,7 @@ const Network = {
             debug: 1,
             config: {
                 iceServers: [
-                    // --- STUN SERVERS (Discovery) ---
+                    // --- STUN SERVERS ---
                     { urls: 'stun:stun.l.google.com:19302' },
                     { urls: 'stun:global.stun.twilio.com:3478' },
                     { urls: 'stun:stun.relay.metered.ca:80' },
@@ -55,7 +56,7 @@ const Network = {
                         credential: METERED_PASS 
                     },
 
-                    // --- TURN SERVER GROUP 2: EXPRESSTURN (Automatic Failover) ---
+                    // --- TURN SERVER GROUP 2: EXPRESSTURN ---
                     { 
                         urls: 'turn:free.expressturn.com:3478', 
                         username: EXPRESSTURN_USER, 
@@ -90,18 +91,17 @@ const Network = {
 
     join: function(hostId, onConnected) {
         this.mode = 'CLIENT';
-        // Connect in reliable mode with queue mitigations
         this.conn = this.peer.connect(hostId, {
             reliable: true,
             serialization: 'json'
         });
 
-        // Connection Error Boundary
         this.conn.on('error', (err) => {
             console.warn("Client data channel error caught gracefully:", err);
         });
 
         this.conn.on('open', () => {
+            this.lastGameStateTime = Date.now(); // Reset watchdog on successful connection
             if(onConnected) onConnected();
             this.setupClient();
             
@@ -116,7 +116,6 @@ const Network = {
 
     /* --- HOST MULTI-CONNECTION LOGIC --- */
     setupHostConnection: function(c) {
-        // Assign and immediately reserve slot to prevent race conditions on parallel joining
         let assignedId = "";
         if (!window.lobbyPlayers.p2 || window.lobbyPlayers.p2 === "Reserved") { assignedId = "p2"; }
         else if (!window.lobbyPlayers.p3 || window.lobbyPlayers.p3 === "Reserved") { assignedId = "p3"; }
@@ -129,7 +128,6 @@ const Network = {
         c.playerId = assignedId;
         window.lobbyPlayers[assignedId] = "Reserved";
 
-        // Error boundary for this client connection
         c.on('error', (err) => {
             console.warn(`Host Connection Error for ${c.playerId} caught gracefully:`, err);
         });
@@ -166,7 +164,6 @@ const Network = {
             else if(data.type === 'P_DATA') {
                 const p = players[c.playerId];
                 if (p) {
-                    // Host Authority Lock: Ignore client coordinates if the host knows they are downed
                     if (p.state === 'ALIVE') {
                         p.serverX = data.x;
                         p.serverY = data.y;
@@ -177,7 +174,7 @@ const Network = {
                     p.isShooting = data.shoot; 
                     if (data.reload) p.triggerReload = true;
                     p.equippedCosmetic = data.cosmetic || 'none';
-                    p.isTouch = data.isTouch || false; // Update touch status dynamically from client package
+                    p.isTouch = data.isTouch || false;
                 }
             }
             else if(data.type === 'INTERACT') {
@@ -246,7 +243,7 @@ const Network = {
             p4: getPrunedPlayer(players['p4']), 
             zombies: zombies.map(z => ({ id: z.id, x: z.x, y: z.y, hp: z.hp, maxHp: z.maxHp, hitTimer: z.hitTimer, color: z.color, r: z.r, isBoss: z.isBoss, name: z.name })), 
             bullets: bullets.map(b => ({ id: b.id, x: b.x, y: b.y, vx: b.vx, vy: b.vy, color: b.color, type: b.type })),
-            zombieArrows: window.zombieArrows.map(a => ({ x: a.x, y: a.y, vx: a.vx, vy: a.vy, life: a.life })), // Synchronize Archer Arrow Projectiles
+            zombieArrows: window.zombieArrows.map(a => ({ x: a.x, y: a.y, vx: a.vx, vy: a.vy, life: a.life })), 
             stats: stats,
             windows: activeMap.windows.map(w => ({ boards: w.boards })),
             doors: activeMap.rooms.map(r => ({ unlocked: r.unlocked })),
@@ -282,7 +279,8 @@ const Network = {
                 window.lobbyPlayers = data.lobbyPlayers;
                 stats.selectedMapIdx = data.mapIndex;
                 stats.difficulty = data.difficulty || 'medium';
-                
+                this.lastGameStateTime = Date.now(); // Feed watchdog
+
                 if (typeof updateLobbyPlayersList === 'function') updateLobbyPlayersList();
                 
                 const mapDisplay = document.getElementById('lobby-map-display-client');
@@ -304,6 +302,7 @@ const Network = {
             }
             else if (data.type === 'LOBBY_UPDATE') {
                 window.lobbyPlayers = data.lobbyPlayers;
+                this.lastGameStateTime = Date.now(); // Feed watchdog
                 if (typeof updateLobbyPlayersList === 'function') updateLobbyPlayersList();
             }
             else if (data.type === 'LOBBY_MAP_CHANGE') {
@@ -343,6 +342,8 @@ const Network = {
                 launchGame();
             }
             else if(data.type === 'GAME_STATE') {
+                this.lastGameStateTime = Date.now(); // Feed watchdog on every gamestate frame
+                
                 const serverZombies = data.zombies || [];
                 const serverMap = new Map();
                 
@@ -377,7 +378,6 @@ const Network = {
                             window.activeBoss = local;
                         }
                     } else {
-                        // Register new dynamic zombie structures
                         const newZ = {
                             id: sz.id,
                             x: sz.x,
@@ -444,7 +444,6 @@ const Network = {
                     }
                 }
                 
-                // Decode Synced Archer Projectiles
                 if (data.zombieArrows) {
                     window.zombieArrows = data.zombieArrows;
                 }
@@ -505,7 +504,6 @@ const Network = {
                             Object.assign(me, fallbackPId);
                             me.angle = myAngle; 
                             
-                            // Client-Side Lock: If downed, ignore local position changes and match host coordinates
                             if (fallbackPId.state === 'DOWNED') {
                                 me.x = fallbackPId.x;
                                 me.y = fallbackPId.y;
@@ -575,10 +573,73 @@ const Network = {
             }
         });
 
+        // 1. Connection Close Event Trigger
         this.conn.on('close', () => {
-            alert("Host Disconnected");
-            location.reload(); 
+            this.handleDisconnectFallback();
         });
+
+        // 2. Browser WebRTC ICE Connection State Triggers
+        if (this.conn.peerConnection) {
+            this.conn.peerConnection.addEventListener('iceconnectionstatechange', () => {
+                const state = this.conn.peerConnection.iceConnectionState;
+                if (state === 'disconnected' || state === 'failed' || state === 'closed') {
+                    this.handleDisconnectFallback("⚠️ ICE Disconnection: Lost network path to the Host.");
+                }
+            });
+            this.conn.peerConnection.addEventListener('connectionstatechange', () => {
+                const state = this.conn.peerConnection.connectionState;
+                if (state === 'disconnected' || state === 'failed' || state === 'closed') {
+                    this.handleDisconnectFallback("⚠️ peer Disconnection: Connection with host closed.");
+                }
+            });
+        }
+    },
+
+    // 3. Heartbeat Watchdog verification loop
+    checkHostHeartbeat: function() {
+        if (this.mode !== 'CLIENT' || !gameActive) return;
+        
+        if (this.lastGameStateTime === 0) {
+            this.lastGameStateTime = Date.now();
+            return;
+        }
+
+        const elapsed = Date.now() - this.lastGameStateTime;
+        if (elapsed > 4000) { // 4-second timeout threshold
+            console.warn("Watchdog: Host heartbeat lost. Redirecting.");
+            this.handleDisconnectFallback("⚠️ Connection Timed Out: The Host stopped responding.");
+        }
+    },
+
+    handleDisconnectFallback: function(customMsg) {
+        if (this.mode !== 'CLIENT') return;
+
+        gameActive = false;
+        if (animationFrameId) {
+            cancelAnimationFrame(animationFrameId);
+            animationFrameId = null;
+        }
+
+        try { if (Network.peer) Network.peer.destroy(); } catch(e){}
+        this.peer = null;
+        this.conn = null;
+        this.conns = [];
+        this.mode = 'OFFLINE';
+
+        resetSession();
+
+        document.getElementById('game-ui').style.display = 'none';
+        document.getElementById('game-over').style.display = 'none';
+        document.getElementById('lobby-screen').style.display = 'none';
+        document.getElementById('main-menu').style.display = 'flex';
+
+        const menuMsg = document.getElementById('main-menu-msg');
+        if (menuMsg) {
+            menuMsg.style.display = 'block';
+            menuMsg.innerText = customMsg || "⚠️ Connection Lost: The Host disconnected or closed the session.";
+            menuMsg.style.color = "#ff4757";
+            menuMsg.style.borderColor = "#ff4757";
+        }
     },
 
     sendClientData: function(p) {
@@ -595,7 +656,7 @@ const Network = {
                     reload: p.reloading,
                     name: p.name,
                     cosmetic: p.equippedCosmetic || 'none',
-                    isTouch: p.isTouch // Syncs the dynamically updated player state variable
+                    isTouch: p.isTouch
                 });
             } catch (e) {
                 console.warn("Failed to send client data payload:", e);
@@ -631,7 +692,7 @@ function getPrunedPlayer(p) {
         hp: p.hp,
         score: p.score,
         state: p.state,
-        hasJug: p.hasJug,
+        hasJug: p.hasJug, // Corrected Typo!
         reloading: p.reloading,
         weapIdx: p.weapIdx,
         clip: activeGun ? activeGun.clip : 0,

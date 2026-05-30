@@ -6,38 +6,126 @@ window.addEventListener('unhandledrejection', function(e) {
     showOnScreenDebug("Promise Rejected: " + e.reason, "", 0, 0);
 });
 
+// Advanced Screenshot Crash Reporter Diagnostics Overlay [2]
 function showOnScreenDebug(msg, file, line, col) {
     console.error("CRASH CAPTURED:", msg, file, line);
+    
+    // Check if diagnostic panel exists, otherwise construct from scratch
     let dbg = document.getElementById('debug-console-overlay');
     if (!dbg) {
         dbg = document.createElement('div');
         dbg.id = 'debug-console-overlay';
         dbg.style.position = 'absolute';
-        dbg.style.bottom = '10px';
-        dbg.style.left = '10px';
-        dbg.style.right = '10px';
-        dbg.style.maxHeight = '140px';
-        dbg.style.background = 'rgba(180, 0, 0, 0.95)';
+        dbg.style.top = '0';
+        dbg.style.left = '0';
+        dbg.style.width = '100%';
+        dbg.style.height = '100%';
+        dbg.style.background = 'radial-gradient(circle, rgba(20,0,0,0.95) 0%, rgba(5,0,0,0.98) 100%)';
         dbg.style.color = '#fff';
         dbg.style.fontFamily = 'monospace';
-        dbg.style.fontSize = '12px';
-        dbg.style.padding = '10px';
-        dbg.style.zIndex = '99999';
+        dbg.style.padding = '35px';
+        dbg.style.zIndex = '999999';
+        dbg.style.boxSizing = 'border-box';
         dbg.style.overflowY = 'auto';
-        dbg.style.border = '2px solid white';
-        dbg.style.borderRadius = '4px';
-        dbg.style.pointerEvents = 'auto';
+        dbg.style.display = 'flex';
+        dbg.style.flexDirection = 'column';
+        dbg.style.alignItems = 'center';
+        dbg.style.justifyContent = 'center';
+        dbg.style.border = '4px solid #a83232';
+        
         document.body.appendChild(dbg);
     }
+    
     const cleanFile = file ? file.substring(file.lastIndexOf('/') + 1) : "unknown";
-    const logMsg = document.createElement('div');
-    logMsg.style.marginBottom = '5px';
-    logMsg.style.borderBottom = '1px dashed rgba(255,255,255,0.3)';
-    logMsg.style.paddingBottom = '3px';
-    logMsg.innerHTML = `<strong>CRASH:</strong> ${msg}<br><span style="color:#ffd700;">File: ${cleanFile} | Line: ${line}:${col}</span>`;
-    dbg.appendChild(logMsg);
-    dbg.scrollTop = dbg.scrollHeight;
+    const rawStack = new Error().stack || "No stack trace recorded.";
+    
+    // Render robust screenshot card layout
+    dbg.innerHTML = `
+        <div style="width: 550px; max-width: 95%; background: #0c0c0c; border: 1px solid #a83232; border-top: 5px solid #a83232; border-radius: 6px; padding: 25px; box-shadow: 0 15px 40px rgba(0,0,0,0.9); text-align: center; box-sizing: border-box;">
+            <div style="font-size: 36px; margin-bottom: 10px;">🚨</div>
+            <div style="color: #ff4757; font-size: 18px; font-weight: bold; margin-bottom: 12px; letter-spacing: 1px; text-transform: uppercase;">Fatal System Crash</div>
+            
+            <p style="color: #bbb; font-size: 12px; line-height: 1.5; margin-bottom: 20px; text-align: left; background: rgba(255,255,255,0.02); padding: 10px; border-radius: 4px; border: 1px solid #222;">
+                <strong>INSTRUCTIONS:</strong> Please take a screenshot of this diagnostic report and send it to the developer to help investigate and patch this bug!
+            </p>
+            
+            <div style="text-align: left; font-size: 11px; margin-bottom: 20px;">
+                <div style="margin-bottom: 6px;"><strong style="color: #ffd700;">ERROR:</strong> <span style="color:#ff4757;">${msg}</span></div>
+                <div style="margin-bottom: 6px;"><strong style="color: #ffd700;">LOCATION:</strong> ${cleanFile} | Line: ${line}:${col}</div>
+                <div style="margin-bottom: 6px;"><strong style="color: #ffd700;">STACK:</strong></div>
+                <textarea readonly style="width: 100%; height: 90px; background: #050505; color: #888; border: 1px solid #222; font-family: inherit; font-size: 10px; padding: 8px; resize: none; border-radius: 4px; box-sizing: border-box;">${rawStack}</textarea>
+            </div>
+            
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button id="btn-copy-crash" onclick="copyCrashToClipboard('${msg}\\nLocation: ${cleanFile} | Line: ${line}:${col}')" style="background: #222; border-color: #444; color: #aaa; padding: 10px; font-size: 12px; flex: 1; margin: 0;">📋 Copy Details</button>
+                <button onclick="emergencyEscapeCrash()" style="background: #a83232; border-color: #a83232; color: #fff; padding: 10px; font-size: 12px; flex: 1; margin: 0;">Emergency Escape</button>
+            </div>
+        </div>
+    `;
 }
+
+// Diagnostic clipboard helper with safety checks
+window.copyCrashToClipboard = function(text) {
+    const btn = document.getElementById('btn-copy-crash');
+    
+    function showCopiedFeedback() {
+        if (btn) {
+            const originalText = btn.innerHTML;
+            btn.innerHTML = "✅ Copied!";
+            setTimeout(() => { btn.innerHTML = originalText; }, 2000);
+        }
+    }
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+            showCopiedFeedback();
+        }).catch(() => fallbackCopyCrash(text));
+    } else {
+        fallbackCopyCrash(text);
+    }
+};
+
+function fallbackCopyCrash(text) {
+    const tempInput = document.createElement("textarea");
+    tempInput.value = text;
+    document.body.appendChild(tempInput);
+    tempInput.select();
+    try {
+        document.execCommand("copy");
+        feedbackCopyButton();
+    } catch (e) {
+        alert("Copy failed. Please manually screenshot details.");
+    }
+    document.body.removeChild(tempInput);
+}
+
+// Instantly shuts down loops and exits active games directly back to menu [3]
+window.emergencyEscapeCrash = function() {
+    gameActive = false;
+    if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+    }
+    
+    // Clean up active connections
+    try { if (Network.peer) Network.peer.destroy(); } catch(e){}
+    Network.peer = null;
+    Network.conn = null;
+    Network.conns = [];
+    Network.mode = 'OFFLINE';
+
+    resetSession();
+    
+    // Safely remove debug overlay
+    const dbg = document.getElementById('debug-console-overlay');
+    if (dbg) {
+        dbg.remove();
+    }
+
+    document.getElementById('game-ui').style.display = 'none';
+    document.getElementById('game-over').style.display = 'none';
+    document.getElementById('main-menu').style.display = 'flex';
+};
 
 /* --- GAME LOGIC STATE --- */
 if (!window.lobbyPlayers) {
@@ -97,6 +185,10 @@ let previewAngle = 0;
 let previewAnimFrame = null;
 window.previewCosmeticId = 'none';
 
+// PHASE 3 STATE MANAGEMENT [1]
+let selectedSoloMapIdx = 0;
+let selectedSoloDifficulty = 'medium';
+
 document.oncontextmenu = () => false;
 
 function init() {
@@ -153,6 +245,15 @@ function init() {
     }
 
     checkTouchDevice();
+
+    // AUTO-LAUNCH TUTORIAL (BOOT CAMP) FOR ALL NEW SURVIVORS INSTANTLY [2]
+    const isNewUser = !localStorage.getItem('zombieSaveModular');
+    if (isNewUser) {
+        console.log("Onboarding: Welcome new survivor! Launching Boot Camp automatically...");
+        setTimeout(() => {
+            startTutorial();
+        }, 800); // 800ms DOM-stagger delay
+    }
 }
 
 function refreshMainMenuStats() {
@@ -427,7 +528,6 @@ function renderCosmeticShop() {
     if (!saveData.ownedCosmetics) saveData.ownedCosmetics = ['none'];
     if (!saveData.equippedCosmetic) saveData.equippedCosmetic = 'none';
     
-    // Set initial preview state
     resetPreviewCosmetic();
     
     const isEquippedNone = saveData.equippedCosmetic === 'none';
@@ -936,20 +1036,109 @@ function validateOnlineName() {
 
 /* --- LOBBY SYSTEMS --- */
 function startOffline() { 
+    // Legacy offline direct launch (Bypassed by solo cards popup)
+    openSoloDeploymentConsole();
+}
+
+/* --- PHASE 3: SOLO CARDS CONSOLE LOGIC [1] --- */
+window.openSoloDeploymentConsole = function() {
+    selectedSoloMapIdx = 0;
+    selectedSoloDifficulty = 'medium';
+    
+    // Reset visual selections
+    const cards = [0, 1, 2];
+    cards.forEach(idx => {
+        const el = document.getElementById(`solo-card-${idx}`);
+        if (el) {
+            el.classList.remove('selected');
+            if (idx === 0) el.classList.add('selected');
+        }
+    });
+
+    const diffCards = ['easy', 'medium', 'hard'];
+    diffCards.forEach(d => {
+        const el = document.getElementById(`solo-diff-card-${d}`);
+        if (el) {
+            el.classList.remove('selected');
+            if (d === 'medium') el.classList.add('selected');
+        }
+    });
+
+    openMenu('solo-deployment-modal');
+};
+
+window.selectSoloMap = function(mapIdx) {
+    selectedSoloMapIdx = mapIdx;
+    
+    const cards = [0, 1, 2];
+    cards.forEach(idx => {
+        const el = document.getElementById(`solo-card-${idx}`);
+        if (el) {
+            el.classList.remove('selected');
+            if (idx === mapIdx) el.classList.add('selected');
+        }
+    });
+};
+
+window.selectSoloDifficulty = function(diffLevel) {
+    selectedSoloDifficulty = diffLevel;
+    
+    const diffCards = ['easy', 'medium', 'hard'];
+    diffCards.forEach(d => {
+        const el = document.getElementById(`solo-diff-card-${d}`);
+        if (el) {
+            el.classList.remove('selected');
+            if (d === diffLevel) el.classList.add('selected');
+        }
+    });
+};
+
+window.deploySoloOffline = function() {
+    closeMenu('solo-deployment-modal');
+    
     Network.mode = 'OFFLINE'; 
     window.myPlayerId = 'p1';
     window.lobbyPlayers = { p1: "Survivor", p2: "", p3: "", p4: "" };
     
-    const selectDiff = document.getElementById('menu-diff-select');
-    stats.difficulty = selectDiff ? selectDiff.value : "medium";
-
+    // Set mapped values
+    stats.difficulty = selectedSoloDifficulty;
+    activeMap = playableMaps[selectedSoloMapIdx];
+    
     saveLocalUsername();
+    launchGame();
+};
 
-    const select = document.getElementById('map-select');
-    const mapIdx = select ? parseInt(select.value) : 0;
-    activeMap = playableMaps[mapIdx];
-    launchGame(); 
-}
+/* --- SYSTEM SETTINGS CONFIGURATION --- */
+window.updateSystemVolume = function(val) {
+    if (typeof SoundSystem !== 'undefined') {
+        SoundSystem.volume = parseFloat(val);
+        
+        const percentText = document.getElementById('settings-volume-percent');
+        if (percentText) {
+            percentText.innerText = Math.round(parseFloat(val) * 100) + "%";
+        }
+    }
+};
+
+window.toggleSystemAudio = function(checked) {
+    if (typeof SoundSystem !== 'undefined') {
+        SoundSystem.enabled = checked;
+        
+        const knob = document.getElementById('toggle-knob');
+        if (knob) {
+            knob.style.transform = checked ? 'translateX(21px)' : 'translateX(0px)';
+        }
+    }
+};
+
+// Global leaderboards window query triggers [1]
+window.openGlobalLeaderboardConsole = function() {
+    if (typeof AccountSystem !== 'undefined' && typeof AccountSystem.fetchLeaderboard === 'function') {
+        AccountSystem.fetchLeaderboard();
+    }
+    openMenu('leaderboard-modal');
+};
+
 function startLocalCoop() {
     p2InputConfig = document.getElementById('p2-input-select').value;
     closeMenu('coop-modal');

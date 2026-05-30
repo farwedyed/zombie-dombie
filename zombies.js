@@ -125,12 +125,13 @@ const ZombieVariants = {
         
         if (round === 10) {
             boss.type = 'boss_logbreaker';
-            boss.name = "The Logbreaker";
+            boss.name = "The Golem Smasher"; // Menacing new name!
             boss.maxHp = 1500;
             boss.hp = 1500;
-            boss.speed = 1.5;
+            boss.speed = 1.4;
             boss.r = 30;
             boss.color = '#d35400'; // Orange-Red
+            boss.shootRingCooldown = 90; // Timer to shoot 6 bullets in all directions
         } else if (round === 15) {
             boss.type = 'boss_broodmother';
             boss.name = "The Broodmother";
@@ -155,11 +156,39 @@ const ZombieVariants = {
         stats.zombiesToSpawn = 0;
         stats.zombiesAlive = 1;
         
+        // Log Discovery in portfolio! [3]
+        if (typeof discoverBoss === 'function') {
+            discoverBoss(boss.type);
+        }
+        
         addText(me.x, me.y - 120, `⚠️ BOSS INCOMING: ${boss.name}!`, "#e74c3c");
     },
 
     // Processes archery and minion spawns inside the 60Hz loop
     updateSpecialBehaviors: function(z) {
+        // Golem Smasher custom Ring Fire projectile pattern
+        if (z.type === 'boss_logbreaker') {
+            if (z.shootRingCooldown === undefined) z.shootRingCooldown = 90;
+            z.shootRingCooldown--;
+            if (z.shootRingCooldown <= 0) {
+                z.shootRingCooldown = 140 + Math.random() * 60; // Every 2-3 seconds
+                
+                // Fire 6 projectile bullets outward in all directions
+                const numProj = 6;
+                for (let i = 0; i < numProj; i++) {
+                    let angle = (i * Math.PI * 2) / numProj;
+                    window.zombieArrows.push({
+                        x: z.x,
+                        y: z.y,
+                        vx: Math.cos(angle) * 5.0,
+                        vy: Math.sin(angle) * 5.0,
+                        life: 180
+                    });
+                }
+                addText(z.x, z.y, "🔥 RING FIRE!", "#d35400");
+            }
+        }
+        
         // Ranged Archer shooting logic
         if (z.type === 'red') {
             z.shootCooldown--;

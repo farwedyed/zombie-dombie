@@ -90,6 +90,7 @@ function updateGameLogic() {
 
     if (Network.mode === 'CLIENT') {
         Network.sendClientData(me);
+        Network.checkHostHeartbeat(); // Watchdog Heartbeat
         
         zombies.forEach(z => {
             if(z.serverX !== undefined) {
@@ -98,13 +99,11 @@ function updateGameLogic() {
             }
         });
 
-        // Smoothly progress visual bullets locally on guest client POV
         bullets.forEach(b => {
             b.x += b.vx;
             b.y += b.vy;
         });
 
-        // Smoothly progress zombie arrows locally on guest client POV
         if (window.zombieArrows) {
             window.zombieArrows.forEach(a => {
                 a.x += a.vx;
@@ -137,7 +136,6 @@ function updateGameLogic() {
         updateZombies();
         updateBullets();
         
-        // Resolve ranged archer arrows physics loop (Host/Solo Authority only)
         if (typeof ZombieVariants !== 'undefined') {
             ZombieVariants.updateProjectiles();
         }
@@ -150,7 +148,6 @@ function updateGameLogic() {
         Object.values(players).forEach(p => {
             if (p.isShooting) {
                 const gun = p.inventory && p.inventory[p.weapIdx] ? p.inventory[p.weapIdx] : null;
-                // Treat the weapon as automatic if the player is on mobile, or if the gun itself is automatic
                 const treatAsAuto = p.isTouch || (gun && gun.auto);
                 
                 if (treatAsAuto) {
@@ -193,20 +190,8 @@ function updateGameLogic() {
 
     for (let i = particles.length - 1; i >= 0; i--) {
         let p = particles[i];
-        if (p.type === 'shell') {
-            ctx.save();
-            ctx.translate(p.x, p.y);
-            ctx.rotate(p.angle);
-            ctx.fillStyle = p.color;
-            ctx.fillRect(-2, -1, 4, 1.5);
-            ctx.restore();
-        } else if (p.type === 'spark') {
-            p.x += p.vx;
-            p.y += p.vy;
-        } else {
-            p.x += p.vx;
-            p.y += p.vy;
-        }
+        p.x += p.vx;
+        p.y += p.vy;
         p.life--;
         if (p.life <= 0) {
             particles.splice(i, 1);
@@ -223,22 +208,17 @@ function updateGameLogic() {
     }
 }
 
-// Custom function helper to handle real-time cheat level transitions
 function skipToBossRound(targetRound) {
     if (Network.mode === 'CLIENT') return;
     
-    // Clean existing map state
     zombies = [];
     bullets = [];
     window.zombieArrows = [];
     window.activeBoss = null;
     stats.zombiesAlive = 0;
     stats.zombiesToSpawn = 0;
-    
-    // Set target round value
     stats.round = targetRound;
     
-    // Instantly spawn boss
     if (typeof ZombieVariants !== 'undefined') {
         ZombieVariants.spawnBoss(targetRound);
     }
@@ -249,7 +229,6 @@ function skipToBossRound(targetRound) {
 function addPlayerXP(p, amount) {
     if (!p || p.state !== 'ALIVE' || Network.mode === 'CLIENT') return;
     
-    // XP and persistent coins are rewarded in real-time to the local active player profile
     if (p === me) {
         if (saveData.xp === undefined) saveData.xp = 0;
         if (saveData.lobbyCoins === undefined) saveData.lobbyCoins = 0;
@@ -260,16 +239,12 @@ function addPlayerXP(p, amount) {
         
         if (newLevel > oldLevel) {
             addText(p.x, p.y - 100, `LEVEL UP! LEVEL ${newLevel} 🎉`, "#ffd700");
-            
-            // Level Up persistent Coins bonus
             saveData.lobbyCoins += 50;
             addText(p.x, p.y - 130, `+50 COINS 🪙`, "#e67e22");
             
-            // Instantly update their name tag
             const baseName = p.name.split(" [Lv. ")[0];
             p.name = `${baseName} [Lv. ${newLevel}]`;
             
-            // Sync nickname configuration changes to remote clients
             if (Network.mode === 'HOST') {
                 window.lobbyPlayers.p1 = p.name;
                 Network.broadcastToAll({
@@ -454,6 +429,9 @@ function updateLocalCoopP2(p) {
             p.reloading = true;
             p.reloadTimer = gun.reload;
             addText(p.x, p.y - 40, "RELOADING...", "#fff");
+            if (typeof SoundSystem !== 'undefined') {
+                SoundSystem.play('reload'); 
+            }
         }
     }
 
@@ -488,8 +466,10 @@ function shootGun(p) {
         if(gun.clip > 0 || isInfinite) {
             gun.lastShot = stats.frame;
             p.muzzleFlash = 4;
+            if (typeof SoundSystem !== 'undefined') {
+                SoundSystem.play('shoot'); 
+            }
             
-            // Only spawn spent cartridge casings on successful ammunition discharge
             if (gun.name !== "Bazooka") {
                 spawnShellCasing(p.x, p.y, p.angle);
             }
@@ -502,7 +482,7 @@ function shootGun(p) {
             if(Network.mode !== 'CLIENT') {
                 for(let i=0; i<pellets; i++) {
                     let a = p.angle + (Math.random()-0.5) * (gun.type==='shotgun'?0.2:0.05);
-                    bulletIdCounter++; // Increment global bullet ID
+                    bulletIdCounter++; 
                     bullets.push({ 
                         id: bulletIdCounter,
                         x: p.x, y: p.y, 
@@ -514,6 +494,10 @@ function shootGun(p) {
             }
         } else if (gun.ammo > 0) {
             forceReload(p);
+        } else {
+            if (typeof SoundSystem !== 'undefined') {
+                SoundSystem.play('dry_fire'); 
+            }
         }
     }
 }
@@ -603,6 +587,9 @@ function processInteraction(p) {
             
             p.score += pointsToGive; 
             addText(t.obj.x+20, t.obj.y, "+" + pointsToGive, "#fff");
+            if (typeof SoundSystem !== 'undefined') {
+                SoundSystem.play('purchase'); 
+            }
             
             // Add real-time XP for board repair
             addPlayerXP(p, 15);
@@ -611,13 +598,16 @@ function processInteraction(p) {
                 Tutorial.onWindowRepaired();
             }
         }
-        else if(t.type==='DOOR' && p.score >= t.obj.price) { p.score-=t.obj.price; t.obj.unlocked=true; }
+        else if(t.type==='DOOR' && p.score >= t.obj.price) { p.score-=t.obj.price; t.obj.unlocked=true; if (typeof SoundSystem !== 'undefined') { SoundSystem.play('purchase'); } }
         else if(t.type==='WALLBUY') {
             const hasWeapon = p.inventory.some(w => w.name === t.obj.label);
             const cost = hasWeapon ? Math.floor(t.obj.price / 2) : t.obj.price;
             
             if (p.score >= cost) {
                 p.score -= cost;
+                if (typeof SoundSystem !== 'undefined') {
+                    SoundSystem.play('purchase');
+                }
                 if (hasWeapon) {
                     let ext = p.inventory.find(w => w.name === t.obj.label);
                     if (ext) {
@@ -637,7 +627,7 @@ function processInteraction(p) {
                 }
             }
         }
-        else if(t.type==='BOX' && p.score>=950) { p.score-=950; let rnd=weaponDB[Math.floor(Math.random()*weaponDB.length)]; p.inventory.push({...rnd, clip:rnd.mag, ammo:rnd.reserve}); p.weapIdx=p.inventory.length-1; addText(p.x, p.y, rnd.name+"!", "#0ff"); }
+        else if(t.type==='BOX' && p.score>=950) { p.score-=950; let rnd=weaponDB[Math.floor(Math.random()*weaponDB.length)]; p.inventory.push({...rnd, clip:rnd.mag, ammo:rnd.reserve}); p.weapIdx=p.inventory.length-1; addText(p.x, p.y, rnd.name+"!", "#0ff"); if (typeof SoundSystem !== 'undefined') { SoundSystem.play('purchase'); } }
         else if(t.type==='PERK' && p.score>=t.obj.price && !p.hasJug) { 
             p.score-=t.obj.price; 
             p.hasJug=true; 
@@ -650,6 +640,9 @@ function processInteraction(p) {
 
             if(p===me) checkAchievements(); 
             addText(p.x, p.y, "JUGGERNOG!", "#c0392b"); 
+            if (typeof SoundSystem !== 'undefined') {
+                SoundSystem.play('purchase');
+            }
         }
     }
 }
@@ -738,25 +731,78 @@ function updateZombies() {
             }
         }
 
-        if (attackingWindow) {
-            // Boss 1 Logbreaker instantly breaks all window logs on contact
-            if (z.type === 'boss_logbreaker') {
-                attackingWindow.boards = 0;
-                spawnParticles(attackingWindow.x + attackingWindow.w / 2, attackingWindow.y + attackingWindow.h / 2, '#8B4513', 12);
-                addText(attackingWindow.x + attackingWindow.w / 2, attackingWindow.y, "SMASH!", "#f39c12");
+        try {
+            if (attackingWindow) {
+                if (z.type === 'boss_logbreaker') {
+                    attackingWindow.boards = 0;
+                    spawnParticles(attackingWindow.x + attackingWindow.w / 2, attackingWindow.y + attackingWindow.h / 2, '#8B4513', 12);
+                    addText(attackingWindow.x + attackingWindow.w / 2, attackingWindow.y, "SMASH!", "#f39c12");
+                    if (typeof SoundSystem !== 'undefined') {
+                        SoundSystem.play('zombie_hurt'); 
+                    }
+                } else {
+                    if (stats.frame % 60 === 0) { 
+                        attackingWindow.boards--; 
+                        spawnParticles(attackingWindow.x + attackingWindow.w / 2, attackingWindow.y + attackingWindow.h / 2, '#8B4513', 2);
+                        if (typeof SoundSystem !== 'undefined') {
+                            SoundSystem.play('zombie_hurt'); 
+                        }
+                    }
+                }
             } else {
-                if (stats.frame % 60 === 0) { 
-                    attackingWindow.boards--; 
-                    spawnParticles(attackingWindow.x + attackingWindow.w / 2, attackingWindow.y + attackingWindow.h / 2, '#8B4513', 2);
+                let a = Math.atan2(targetY - z.y, targetX - z.x);
+                let mx = Math.cos(a) * z.speed;
+                let my = Math.sin(a) * z.speed;
+                
+                let movedX = false;
+                let movedY = false;
+
+                if (!RoomSystem.checkCollision(z.x + mx, z.y, false)) {
+                    z.x += mx;
+                    movedX = true;
+                }
+                if (!RoomSystem.checkCollision(z.x, z.y + my, false)) {
+                    z.y += my;
+                    movedY = true;
+                }
+
+                // Unstuck corner navigation algorithm:
+                if (!movedX && !movedY) {
+                    let slideAngle1 = a + Math.PI / 2;
+                    let slideAngle2 = a - Math.PI / 2;
+                    
+                    let smx1 = Math.cos(slideAngle1) * z.speed;
+                    let smy1 = Math.sin(slideAngle1) * z.speed;
+                    
+                    let smx2 = Math.cos(slideAngle2) * z.speed;
+                    let smy2 = Math.sin(slideAngle2) * z.speed;
+
+                    if (!RoomSystem.checkCollision(z.x + smx1, z.y + smy1, false)) {
+                        z.x += smx1;
+                        z.y += smy1;
+                    } else if (!RoomSystem.checkCollision(z.x + smx2, z.y + smy2, false)) {
+                        z.x += smx2;
+                        z.y += smy2;
+                    } else {
+                        let rx = (Math.random() - 0.5) * z.speed;
+                        let ry = (Math.random() - 0.5) * z.speed;
+                        if (!RoomSystem.checkCollision(z.x + rx, z.y + ry, false)) {
+                            z.x += rx;
+                            z.y += ry;
+                        }
+                    }
                 }
             }
-        } else {
-            let a = Math.atan2(targetY - z.y, targetX - z.x);
-            let mx = Math.cos(a) * z.speed;
-            let my = Math.sin(a) * z.speed;
-            
-            if (!RoomSystem.checkCollision(z.x + mx, z.y, false)) z.x += mx;
-            if (!RoomSystem.checkCollision(z.x, z.y + my, false)) z.y += my;
+        } catch (windowBreakError) {
+            console.error("DIAGNOSTICS - BOARD BREAK FAIL:", windowBreakError);
+            if (typeof showOnScreenDebug === 'function') {
+                showOnScreenDebug(
+                    "Board Break Fail: " + windowBreakError.message + " | Zombie: " + (z ? z.type : "unknown"),
+                    "game1.js",
+                    "Inside updateZombies() window-breaking section",
+                    "Line ~390"
+                );
+            }
         }
 
         for (let j = i + 1; j < zombies.length; j++) {
@@ -771,7 +817,6 @@ function updateZombies() {
             }
         }
 
-        // Run custom shooting/spawning loops for Red archers and Broodmother bosses
         if (typeof ZombieVariants !== 'undefined') {
             ZombieVariants.updateSpecialBehaviors(z);
         }
@@ -824,6 +869,9 @@ function updateBullets() {
                     z.hp -= dmgValue; 
                     z.hitTimer = 4;
                     spawnParticles(z.x, z.y, '#800', 3);
+                    if (typeof SoundSystem !== 'undefined') {
+                        SoundSystem.play('zombie_hurt'); 
+                    }
                     
                     if (Math.random() < 0.45) {
                         window.bloodStains.push({
@@ -1016,6 +1064,9 @@ function spawnExplosionVisuals(x, y) {
 }
 
 function applyPowerup(type, picker) {
+    if (typeof SoundSystem !== 'undefined') {
+        SoundSystem.play('powerup'); // Sound trigger
+    }
     if (type === 'MAX_AMMO') {
         Object.values(players).forEach(p => {
             if (p.inventory) {
@@ -1079,6 +1130,9 @@ function checkGameFlow() {
             stats.changingRound = false; 
             
             addText(me ? me.x : 200, (me ? me.y : 200) - 100, "ROUND "+stats.round, "#a83232"); 
+            if (typeof SoundSystem !== 'undefined') {
+                SoundSystem.play('round_start'); // Sound trigger
+            }
             checkAchievements();
             Object.values(players).forEach(p => {
                 if(p.state !== 'ALIVE') {
@@ -1100,29 +1154,6 @@ function drawScoreboard() {
         let status = p.state === 'ALIVE' ? '<span style="color:#0f0">ALIVE</span>' : '<span style="color:#f00">DOWN</span>';
         tbody.innerHTML += `<tr><td style="color:${p.color}">${p.name}</td><td>${p.kills}</td><td>${p.score}</td><td>${status}</td><td>${ping}</td></tr>`;
     });
-}
-
-// Custom function helper to handle real-time cheat level transitions
-function skipToBossRound(targetRound) {
-    if (Network.mode === 'CLIENT') return;
-    
-    // Clean existing map state
-    zombies = [];
-    bullets = [];
-    window.zombieArrows = [];
-    window.activeBoss = null;
-    stats.zombiesAlive = 0;
-    stats.zombiesToSpawn = 0;
-    
-    // Set target round value
-    stats.round = targetRound;
-    
-    // Instantly spawn boss
-    if (typeof ZombieVariants !== 'undefined') {
-        ZombieVariants.spawnBoss(targetRound);
-    }
-    
-    addText(me ? me.x : 200, (me ? me.y : 200) - 80, `SKIP TO ROUND ${targetRound}`, "#f1c40f");
 }
 
 function resetSession() { 
