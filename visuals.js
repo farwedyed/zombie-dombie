@@ -85,6 +85,84 @@ function drawBackCosmetic(id, r, targetCtx = ctx) {
             targetCtx.fillRect(-r - 18, 5, 4, 1);
         }
     }
+    // --- ANIMATED CYBER WINGS RENDERING SYSTEM [1] ---
+    else if (cos.type === 'wings') {
+        // Soft rhythmic flapping animation angle over time [1]
+        const flap = Math.sin(Date.now() / 100) * 0.25;
+        
+        // Left Wing geometry
+        targetCtx.save();
+        targetCtx.translate(-r + 2, -6);
+        targetCtx.rotate(-Math.PI / 4 + flap); // Base rotation + animation displacement [1]
+        
+        targetCtx.fillStyle = '#0f0f0f'; // Dark carbon plate
+        targetCtx.strokeStyle = cos.color; // Cyber cyan glow border [1]
+        targetCtx.lineWidth = 2.5;
+        targetCtx.beginPath();
+        targetCtx.moveTo(0, 0);
+        targetCtx.lineTo(-14, -30);
+        targetCtx.lineTo(-5, -34);
+        targetCtx.lineTo(6, -10);
+        targetCtx.closePath();
+        targetCtx.fill();
+        targetCtx.stroke();
+        
+        // Neon inner feathers Details
+        targetCtx.strokeStyle = '#ffffff';
+        targetCtx.lineWidth = 1;
+        targetCtx.beginPath();
+        targetCtx.moveTo(-6, -15);
+        targetCtx.lineTo(-2, -26);
+        targetCtx.moveTo(-2, -10);
+        targetCtx.lineTo(2, -20);
+        targetCtx.stroke();
+        targetCtx.restore();
+
+        // Right Wing geometry (Mirrored)
+        targetCtx.save();
+        targetCtx.translate(-r + 2, 6);
+        targetCtx.rotate(Math.PI / 4 - flap); // Base rotation - animation displacement [1]
+        
+        targetCtx.fillStyle = '#0f0f0f';
+        targetCtx.strokeStyle = cos.color;
+        targetCtx.lineWidth = 2.5;
+        targetCtx.beginPath();
+        targetCtx.moveTo(0, 0);
+        targetCtx.lineTo(-14, 30);
+        targetCtx.lineTo(-5, 34);
+        targetCtx.lineTo(6, 10);
+        targetCtx.closePath();
+        targetCtx.fill();
+        targetCtx.stroke();
+        
+        // Neon inner feathers Details
+        targetCtx.strokeStyle = '#ffffff';
+        targetCtx.lineWidth = 1;
+        targetCtx.beginPath();
+        targetCtx.moveTo(-6, 15);
+        targetCtx.lineTo(-2, 26);
+        targetCtx.moveTo(-2, 10);
+        targetCtx.lineTo(2, 20);
+        targetCtx.stroke();
+        targetCtx.restore();
+    }
+    // --- PULSING ANGELIC HALO RENDERING SYSTEM [1] ---
+    else if (cos.type === 'halo') {
+        targetCtx.save();
+        // Soft pulsing size scaling over time
+        const pulse = 1 + Math.sin(Date.now() / 150) * 0.08;
+        
+        targetCtx.shadowBlur = 12;
+        targetCtx.shadowColor = cos.color; // Golden glow [1]
+        targetCtx.strokeStyle = cos.color;
+        targetCtx.lineWidth = 3;
+        
+        // Render a tilted ellipse surrounding the player head for a 3D halo illusion [1]
+        targetCtx.beginPath();
+        targetCtx.ellipse(-r * 0.2, 0, r * 0.8 * pulse, r * 0.4 * pulse, 0, 0, Math.PI * 2);
+        targetCtx.stroke();
+        targetCtx.restore();
+    }
 
     targetCtx.restore();
 }
@@ -339,9 +417,12 @@ function drawGame() {
             ctx.globalAlpha = 0.3; 
         }
 
-        // --- DRAW BACK COSMETIC ---
+        // --- LAYERED COSMETICS SYSTEM ---
         const equippedCos = p.equippedCosmetic || (p.id === 'p1' ? saveData.equippedCosmetic : 'none');
-        if (equippedCos && equippedCos !== 'none') {
+        const cosObj = equippedCos !== 'none' ? cosmeticDB.find(c => c.id === equippedCos) : null;
+        
+        // Layer 1: Draw standard back cosmetics (backpack, cape, jetpack, wings) UNDER the body circle [1]
+        if (cosObj && cosObj.type !== 'halo') {
             drawBackCosmetic(equippedCos, p.r, ctx);
         }
         
@@ -363,6 +444,11 @@ function drawGame() {
         ctx.strokeStyle = '#000000';
         ctx.lineWidth = 2.5;
         ctx.strokeRect(0, -5, 25, 10);
+
+        // Layer 2: Draw over-body cosmetics (Halos) ON TOP of the head circle and gun barrel [1]
+        if (cosObj && cosObj.type === 'halo') {
+            drawBackCosmetic(equippedCos, p.r, ctx);
+        }
         
         ctx.restore();
     });

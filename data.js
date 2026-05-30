@@ -157,10 +157,10 @@ const cosmeticDB = [
     { id: 'cone_yellow', name: "Retro Cone Hat (Yellow)", price: 50, color: "#ffd700", type: "cone" },
     { id: 'backpack_survival', name: "Survival Backpack (Brown)", price: 150, color: "#8b5a2b", type: "backpack" },
     { id: 'cape_neon', name: "Neon Cape (Magenta)", price: 300, color: "#ff00ff", type: "cape" },
-    { id: 'halo_light', name: "Angelic Halo (Glowing Gold)", price: 800, color: "#ffd700", type: "cone" },
+    { id: 'halo_light', name: "Angelic Halo (Glowing Gold)", price: 800, color: "#ffd700", type: "halo" }, // Custom type "halo" [1]
     { id: 'cape_blood', name: "Vampire Cape (Deep Crimson)", price: 1200, color: "#a83232", type: "cape" },
     { id: 'jetpack_steel', name: "Steel Thruster (Cyan)", price: 500, color: "#00ffff", type: "jetpack" },
-    { id: 'wings_carbon', name: "Cyber Wings (Black/Cyan)", price: 2000, color: "#00ffff", type: "cape" }
+    { id: 'wings_carbon', name: "Cyber Wings (Black/Cyan)", price: 2000, color: "#00ffff", type: "wings" } // Custom type "wings" [1]
 ];
 
 /* --- BOSSES DATABASE --- */
