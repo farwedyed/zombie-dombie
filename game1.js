@@ -264,7 +264,7 @@ function addPlayerXP(p, amount) {
 
 function updatePlayerPhysics(p, isLocal) {
     if(p.state === 'DOWNED') {
-        if(p.reviveTimer > 0) { p.reviveTimer--; if(p.reviveTimer === 0) { p.state = 'ALIVE'; p.hp = p.maxHp; p.hasJug = false; p.invincibleTimer = 120; addText(p.x, p.y, "REVIVED (+INVINCIBLE!)", "#0f0"); } }
+        if(p.reviveTimer > 0) { p.reviveTimer--; if(p.reviveTimer === 0) { p.state = 'ALIVE'; p.hp = p.maxHp; p.hasVigor = false; p.invincibleTimer = 120; addText(p.x, p.y, "REVIVED (+INVINCIBLE!)", "#0f0"); } }
         return;
     }
     if(isLocal) {
@@ -321,7 +321,7 @@ function updateLocalCoopP2(p) {
             if (p.reviveTimer === 0) {
                 p.state = 'ALIVE';
                 p.hp = p.maxHp;
-                p.hasJug = false;
+                p.hasVigor = false;
                 p.invincibleTimer = 120;
                 addText(p.x, p.y, "REVIVED!", "#0f0");
             }
@@ -543,9 +543,7 @@ function forceReload(p) {
     if(!p.reloading && gun.clip < gun.mag && gun.ammo > 0) { 
         p.reloading = true; 
         p.reloadTimer = gun.reload; 
-        addText(p.x, p.y - 40, "RELOADING...", "#fff"); 
-        
-        // Play the reload sound effect
+        addText(p.x, p.y-40, "RELOADING...", "#fff"); 
         if (typeof SoundSystem !== 'undefined') {
             SoundSystem.play('reload');
         }
@@ -579,7 +577,7 @@ function processInteraction(p) {
     if(teammate) { 
         teammate.state = 'ALIVE'; 
         teammate.hp = teammate.maxHp; 
-        teammate.hasJug = false; 
+        teammate.hasVigor = false; 
         teammate.invincibleTimer = 120;
         addText(teammate.x, teammate.y, "REVIVED (+INVINCIBLE!)", "#0f0"); 
         return; 
@@ -640,18 +638,18 @@ function processInteraction(p) {
             }
         }
         else if(t.type==='BOX' && p.score>=950) { p.score-=950; let rnd=weaponDB[Math.floor(Math.random()*weaponDB.length)]; p.inventory.push({...rnd, clip:rnd.mag, ammo:rnd.reserve}); p.weapIdx=p.inventory.length-1; addText(p.x, p.y, rnd.name+"!", "#0ff"); if (typeof SoundSystem !== 'undefined') { SoundSystem.play('purchase'); } }
-        else if(t.type==='PERK' && p.score>=t.obj.price && !p.hasJug) { 
+        else if(t.type==='PERK' && p.score>=t.obj.price && !p.hasVigor) { 
             p.score-=t.obj.price; 
-            p.hasJug=true; 
+            p.hasVigor=true; 
             
             const currentDiff = stats.difficulty || 'medium';
-            let jugHp = 250;
-            if (currentDiff === 'easy') jugHp = 350;
-            p.maxHp=jugHp; 
-            p.hp=jugHp; 
+            let vigorHp = 250;
+            if (currentDiff === 'easy') vigorHp = 350;
+            p.maxHp=vigorHp; 
+            p.hp=vigorHp; 
 
             if(p===me) checkAchievements(); 
-            addText(p.x, p.y, "JUGGERNOG!", "#c0392b"); 
+            addText(p.x, p.y, "VIGOR-UP!", "#c0392b"); 
             if (typeof SoundSystem !== 'undefined') {
                 SoundSystem.play('purchase');
             }
@@ -840,8 +838,8 @@ function updateZombies() {
                 p.hp -= 5;
                 if (p.hp <= 0) {
                     p.state = 'DOWNED';
-                    p.reviveTimer = p.hasJug ? 300 : -1;
-                    if (p.hasJug) addText(p.x, p.y, "JUG SAVED YOU!", "#f00");
+                    p.reviveTimer = p.hasVigor ? 300 : -1;
+                    if (p.hasVigor) addText(p.x, p.y, "VIGOR SAVED YOU!", "#f00");
                     else addText(p.x, p.y, "DOWNED!", "#f00");
                 }
             }
@@ -1148,7 +1146,7 @@ function checkGameFlow() {
             checkAchievements();
             Object.values(players).forEach(p => {
                 if(p.state !== 'ALIVE') {
-                    p.state = 'ALIVE'; p.hp = 100; p.maxHp = 100; p.hasJug = false;
+                    p.state = 'ALIVE'; p.hp = 100; p.maxHp = 100; p.hasVigor = false;
                     let survivor = Object.values(players).find(pl => pl.state === 'ALIVE' && pl !== p);
                     if(survivor) { p.x = survivor.x; p.y = survivor.y; }
                     addText(p.x, p.y, "RESPAWNED!", "#0ff");
@@ -1300,12 +1298,12 @@ function updateUI() {
                 document.getElementById(pId + '-score').innerHTML = p.score + ' <span style="font-size:16px">⛃</span>';
                 
                 const gun = p.inventory && p.inventory[p.weapIdx] ? p.inventory[p.weapIdx] : null;
-                const gunName = p.gunName || (gun ? gun.name : "M1911");
+                const gunName = p.gunName || (gun ? gun.name : "Model 1911");
                 const ammoText = p.reloading ? "RELOADING" : (p.clip !== undefined && p.ammo !== undefined ? `${p.clip} / ${p.ammo}` : (gun ? `${gun.clip} / ${gun.ammo}` : "8 / 32"));
                 
                 document.getElementById(pId + '-gun-name').innerText = gunName;
                 document.getElementById(pId + '-ammo-text').innerText = ammoText;
-                document.getElementById(pId + '-icon-jug').style.display = p.hasJug ? 'block' : 'none';
+                document.getElementById(pId + '-icon-vig').style.display = p.hasVigor ? 'block' : 'none';
 
                 // Real-time HUD Health Bar update calculation
                 const hpBar = document.getElementById(pId + '-hp-bar');

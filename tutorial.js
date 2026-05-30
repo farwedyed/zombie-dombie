@@ -28,9 +28,9 @@ const Tutorial = {
         },
         {
             title: "Chalk Wallbuys",
-            text: "Good movement! Move into the Armory room and walk up to the Olympia shotgun chalk outline. Press [F] on PC or tap [INT] on Mobile to purchase it for free.",
+            text: "Good movement! Move into the Armory room and walk up to the Olympus shotgun chalk outline. Press [F] on PC or tap [INT] on Mobile to purchase it for free.",
             check: () => {
-                return me && me.inventory.some(w => w.name === "Olympia");
+                return me && me.inventory.some(w => w.name === "Olympus");
             },
             onStart: () => {
                 // Automatically open Door 1 leading to the Armory
@@ -43,7 +43,7 @@ const Tutorial = {
         },
         {
             title: "Weapon Switching",
-            text: "Excellent! Notice your HUD has updated. You now hold the Olympia! Press [Q] (or scroll your mouse wheel) on PC, or tap the blue [GUN] button on Mobile, to switch back to your starting pistol.",
+            text: "Excellent! Notice your HUD has updated. You now hold the Olympus! Press [Q] (or scroll your mouse wheel) on PC, or tap the blue [GUN] button on Mobile, to switch back to your starting pistol.",
             check: () => {
                 return me && me.weapIdx === 0; // Back to starting pistol slot (index 0)
             },
@@ -114,7 +114,7 @@ const Tutorial = {
         },
         {
             title: "Replenishing Ammunition",
-            text: "Click! You ran out of ammunition. Walk back to the Olympia outline and buy cheap Ammo refills for half price (0 ⛃ in tutorial) using [F] or [INT].",
+            text: "Click! You ran out of ammunition. Walk back to the Olympus outline and buy cheap Ammo refills for half price (0 ⛃ in tutorial) using [F] or [INT].",
             check: () => {
                 return Tutorial._ammoPurchased === true;
             },
@@ -302,10 +302,10 @@ const Tutorial = {
             case 0: // Move Step -> Point to the open door on the right
                 drawFloatingArrow(360, 200, '#2ecc71');
                 break;
-            case 1: // Buy Step -> Point to the Olympia wallbuy
+            case 1: // Buy Step -> Point to the Olympus wallbuy
                 drawFloatingArrow(580, 60, '#f1c40f');
                 break;
-            case 2: // Switch Weapon -> Draw bouncing arrow directly above the player model on screen [3]
+            case 2: // Switch Weapon -> Draw bouncing arrow directly above the player model on screen
                 if (me) {
                     drawFloatingArrow(me.x, me.y, '#ffd700');
                     
@@ -337,7 +337,7 @@ const Tutorial = {
                 break;
             case 5: // Read Round explanation -> No target
                 break;
-            case 6: // Ammo Step -> Point to Olympia wallbuy again
+            case 6: // Ammo Step -> Point to Olympus wallbuy again
                 drawFloatingArrow(580, 60, '#3498db');
                 break;
             case 7: // Clear Door Step -> Point to locked Door and HTML Coins

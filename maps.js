@@ -82,14 +82,14 @@ const playableMaps = [
             { x: 550, y: 200, w: 50, h: 50, color: "#111" }
         ],
         interactables: [
-            { x: 100, y: 100, w: 40, h: 40, type: 'WALLBUY', price: 500, label: "Olympia" },
-            { x: 700, y: 100, w: 40, h: 40, type: 'WALLBUY', price: 500, label: "M1911" },
-            { x: 1000, y: 250, w: 40, h: 40, type: 'WALLBUY', price: 1000, label: "MP40" },
-            { x: 1800, y: 300, w: 40, h: 40, type: 'WALLBUY', price: 1200, label: "Stakeout" },
-            { x: -1400, y: 300, w: 40, h: 40, type: 'WALLBUY', price: 1500, label: "L96A1" }, // Sniper on power room wall
-            { x: 2700, y: 250, w: 40, h: 40, type: 'WALLBUY', price: 2000, label: "Bazooka" }, // Bazooka Wallbuy
+            { x: 100, y: 100, w: 40, h: 40, type: 'WALLBUY', price: 500, label: "Olympus" },
+            { x: 700, y: 100, w: 40, h: 40, type: 'WALLBUY', price: 500, label: "Model 1911" },
+            { x: 1000, y: 250, w: 40, h: 40, type: 'WALLBUY', price: 1000, label: "MP-Retro" },
+            { x: 1800, y: 300, w: 40, h: 40, type: 'WALLBUY', price: 1200, label: "Enforcer" },
+            { x: -1400, y: 300, w: 40, h: 40, type: 'WALLBUY', price: 1500, label: "Arctic Bolt" },
+            { x: 2700, y: 250, w: 40, h: 40, type: 'WALLBUY', price: 2000, label: "Bazooka" },
             { x: 1700, y: 100, w: 60, h: 60, type: 'BOX', price: 950, color: '#8e44ad', label: "?" },
-            { x: -600, y: 400, w: 50, h: 50, type: 'PERK', price: 2500, color: '#c0392b', label: "JUG" }
+            { x: -600, y: 400, w: 50, h: 50, type: 'PERK', price: 2500, color: '#c0392b', label: "VIG" }
         ],
         spawnPoints: [
             { x: 250, y: 900, roomId: 0 }, { x: 550, y: 900, roomId: 0 },
@@ -154,12 +154,12 @@ const playableMaps = [
             { x: 150, y: 150, w: 100, h: 100, color: "#111" }
         ],
         interactables: [
-            { x: 80, y: 80, w: 40, h: 40, type: 'WALLBUY', price: 500, label: "M1911" },
-            { x: 480, y: 80, w: 40, h: 40, type: 'WALLBUY', price: 1000, label: "MP40" },
-            { x: -350, y: 100, w: 40, h: 40, type: 'WALLBUY', price: 1200, label: "Stakeout" },
-            { x: -1000, y: 200, w: 40, h: 40, type: 'WALLBUY', price: 2000, label: "Bazooka" }, // Rocket launcher wallbuy inside vault
-            { x: -450, y: -400, w: 40, h: 40, type: 'WALLBUY', price: 1500, label: "L96A1" }, // Sniper on mess hall wall
-            { x: -400, y: 400, w: 50, h: 50, type: 'PERK', price: 2500, color: '#c0392b', label: "JUG" }
+            { x: 80, y: 80, w: 40, h: 40, type: 'WALLBUY', price: 500, label: "Model 1911" },
+            { x: 480, y: 80, w: 40, h: 40, type: 'WALLBUY', price: 1000, label: "MP-Retro" },
+            { x: -350, y: 100, w: 40, h: 40, type: 'WALLBUY', price: 1200, label: "Enforcer" },
+            { x: -1000, y: 200, w: 40, h: 40, type: 'WALLBUY', price: 2000, label: "Bazooka" }, 
+            { x: -450, y: -400, w: 40, h: 40, type: 'WALLBUY', price: 1500, label: "Arctic Bolt" }, 
+            { x: -400, y: 400, w: 50, h: 50, type: 'PERK', price: 2500, color: '#c0392b', label: "VIG" }
         ],
         spawnPoints: [
             { x: 300, y: 700, roomId: 0 },
@@ -225,12 +225,12 @@ const playableMaps = [
             { x: 650, y: 200, w: 100, h: 100, color: "#222" }
         ],
         interactables: [
-            { x: 350, y: 60, w: 40, h: 40, type: 'WALLBUY', price: 500, label: "Olympia" },
-            { x: 60, y: 300, w: 40, h: 40, type: 'WALLBUY', price: 1000, label: "MP40" },
-            { x: 650, y: 60, w: 40, h: 40, type: 'WALLBUY', price: 1200, label: "Stakeout" },
-            { x: -300, y: -300, w: 40, h: 40, type: 'WALLBUY', price: 1500, label: "L96A1" }, // Sniper buy
-            { x: 1200, y: 350, w: 40, h: 40, type: 'WALLBUY', price: 2000, label: "Bazooka" }, // Rocket launcher wallbuy
-            { x: 850, y: 350, w: 50, h: 50, type: 'PERK', price: 2500, color: '#c0392b', label: "JUG" }
+            { x: 350, y: 60, w: 40, h: 40, type: 'WALLBUY', price: 500, label: "Olympus" },
+            { x: 60, y: 300, w: 40, h: 40, type: 'WALLBUY', price: 1000, label: "MP-Retro" },
+            { x: 650, y: 60, w: 40, h: 40, type: 'WALLBUY', price: 1200, label: "Enforcer" },
+            { x: -300, y: -300, w: 40, h: 40, type: 'WALLBUY', price: 1500, label: "Arctic Bolt" }, 
+            { x: 1200, y: 350, w: 40, h: 40, type: 'WALLBUY', price: 2000, label: "Bazooka" }, 
+            { x: 850, y: 350, w: 50, h: 50, type: 'PERK', price: 2500, color: '#c0392b', label: "VIG" }
         ],
         spawnPoints: [
             { x: 250, y: 600, roomId: 0 },
@@ -270,7 +270,7 @@ const tutorialMapData = {
         { x: 100, y: 100, w: 60, h: 60, color: "#111" }
     ],
     interactables: [
-        { x: 580, y: 60, w: 40, h: 40, type: 'WALLBUY', price: 0, label: "Olympia" }
+        { x: 580, y: 60, w: 40, h: 40, type: 'WALLBUY', price: 0, label: "Olympus" }
     ],
     spawnPoints: [
         { x: 1050, y: 450, roomId: 2 }

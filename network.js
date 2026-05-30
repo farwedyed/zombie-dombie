@@ -302,7 +302,7 @@ const Network = {
             }
             else if (data.type === 'LOBBY_UPDATE') {
                 window.lobbyPlayers = data.lobbyPlayers;
-                this.lastGameStateTime = Date.now(); // Feed watchdog
+                this.lastGameStateTime = Date.now(); // Feed watchdog on every gamestate frame
                 if (typeof updateLobbyPlayersList === 'function') updateLobbyPlayersList();
             }
             else if (data.type === 'LOBBY_MAP_CHANGE') {
@@ -512,7 +512,7 @@ const Network = {
                                 me.y = myY;
                             }
 
-                            me.gunName = fallbackPId.gunName !== undefined ? fallbackPId.gunName : "M1911";
+                            me.gunName = fallbackPId.gunName !== undefined ? fallbackPId.gunName : "Model 1911";
                             me.gunColor = fallbackPId.gunColor !== undefined ? fallbackPId.gunColor : "#999";
                             me.clip = fallbackPId.clip !== undefined ? fallbackPId.clip : 8;
                             me.ammo = fallbackPId.ammo !== undefined ? fallbackPId.ammo : 32;
@@ -549,11 +549,11 @@ const Network = {
                             p.hp = data[pId].hp !== undefined ? data[pId].hp : p.hp;
                             p.score = data[pId].score !== undefined ? data[pId].score : p.score;
                             p.state = data[pId].state !== undefined ? data[pId].state : p.state;
-                            p.hasJug = data[pId].hasJug !== undefined ? data[pId].hasJug : p.hasJug;
+                            p.hasVigor = data[pId].hasVigor !== undefined ? data[pId].hasVigor : p.hasVigor;
                             p.reloading = data[pId].reloading !== undefined ? data[pId].reloading : p.reloading;
                             p.weapIdx = data[pId].weapIdx !== undefined ? data[pId].weapIdx : p.weapIdx;
                             p.name = data[pId].name !== undefined ? data[pId].name : p.name;
-                            p.gunName = data[pId].gunName !== undefined ? data[pId].gunName : "M1911";
+                            p.gunName = data[pId].gunName !== undefined ? data[pId].gunName : "Model 1911";
                             p.gunColor = data[pId].gunColor !== undefined ? data[pId].gunColor : "#999";
                             p.clip = data[pId].clip !== undefined ? data[pId].clip : 8;
                             p.ammo = data[pId].ammo !== undefined ? data[pId].ammo : 32;
@@ -692,12 +692,12 @@ function getPrunedPlayer(p) {
         hp: p.hp,
         score: p.score,
         state: p.state,
-        hasJug: p.hasJug, // Corrected Typo!
+        hasVigor: p.hasVigor,
         reloading: p.reloading,
         weapIdx: p.weapIdx,
         clip: activeGun ? activeGun.clip : 0,
         ammo: activeGun ? activeGun.ammo : 0,
-        gunName: activeGun ? activeGun.name : "M1911",
+        gunName: activeGun ? activeGun.name : "Model 1911",
         gunColor: activeGun ? activeGun.color : "#999",
         name: p.name,
         cosmetic: p.equippedCosmetic || 'none'

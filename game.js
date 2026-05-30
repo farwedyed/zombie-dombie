@@ -65,7 +65,7 @@ window.emergencyEscapeCrash = function() {
     document.getElementById('main-menu').style.display = 'flex';
 };
 
-/* --- CORE CANVAS DECLARATIONS [1] --- */
+/* --- CORE CANVAS DECLARATIONS --- */
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 canvas.width = window.innerWidth;
@@ -137,7 +137,7 @@ function init() {
     }
     checkTouchDevice();
 
-    // AUTO-LAUNCH TUTORIAL ON FIRST LOAD [2]
+    // AUTO-LAUNCH TUTORIAL ON FIRST LOAD
     if (!localStorage.getItem('zombieSaveModular')) {
         console.log("Welcome! Automatically launching Boot Camp...");
         setTimeout(() => { startTutorial(); }, 800);
@@ -329,13 +329,13 @@ function startCosmeticPreviewLoop() {
         const currentPreviewId = window.previewCosmeticId || saveData.equippedCosmetic || 'none', radius = 22;
         const cosObj = currentPreviewId !== 'none' ? cosmeticDB.find(c => c.id === currentPreviewId) : null;
         
-        // Under-Body Cosmetic Layer [1]
+        // Under-Body Cosmetic Layer
         if (cosObj && cosObj.type !== 'halo' && typeof drawBackCosmetic === 'function') drawBackCosmetic(currentPreviewId, radius, previewCtx);
         
         previewCtx.fillStyle = '#3498db'; previewCtx.strokeStyle = '#000000'; previewCtx.lineWidth = 2.5; previewCtx.beginPath(); previewCtx.arc(0, 0, radius, 0, Math.PI * 2); previewCtx.fill(); previewCtx.stroke();
         previewCtx.fillStyle = '#999'; previewCtx.fillRect(0, -5, 30, 10); previewCtx.strokeStyle = '#000000'; previewCtx.lineWidth = 2.5; previewCtx.strokeRect(0, -5, 30, 10);
         
-        // Over-Body Cosmetic Layer [1]
+        // Over-Body Cosmetic Layer
         if (cosObj && cosObj.type === 'halo' && typeof drawBackCosmetic === 'function') drawBackCosmetic(currentPreviewId, radius, previewCtx);
         
         previewCtx.restore(); previewAnimFrame = requestAnimationFrame(drawPreviewFrame);
@@ -487,7 +487,7 @@ function validateOnlineName() {
 
 function startOffline() { openSoloDeploymentConsole(); }
 
-/* --- PHASE 3 & 4 SOLO MAP CONSOLE & LEADERBOARDS [1] --- */
+/* --- PHASE 3 & 4 SOLO MAP CONSOLE & LEADERBOARDS --- */
 window.openSoloDeploymentConsole = () => {
     selectedSoloMapIdx = 0; selectedSoloDifficulty = 'medium';
     [0, 1, 2].forEach(idx => {
@@ -574,7 +574,7 @@ function enterLobbyHost() {
     document.getElementById('lobby-visibility-select').value = 'public';
 
     myUsername = (document.getElementById('username-input').value || "Survivor").substring(0, 12);
-    const myLvl = Math.floor((saveData.xp || 0) / 1000) + 1;
+    const myLvl = Math.floor((saveData.xp || 0) / 1000) + 1, displayName = myUsername + " [Lv. " + myLvl + "]";
     window.myPlayerId = 'p1'; window.lobbyPlayers = { p1: myUsername + " [Lv. " + myLvl + "]", p2: "", p3: "", p4: "" }; updateLobbyPlayersList();
     
     document.getElementById('main-menu').style.display = 'none'; document.getElementById('lobby-screen').style.display = 'flex';
@@ -670,7 +670,7 @@ function createPlayer(id, x, y, color, name) {
     return { 
         id: id, name: name, x: x, y: y, r: 15, hp: startingHp, maxHp: startingHp, state: 'ALIVE', 
         inventory: [{ ...weaponDB[0], clip: 8, ammo: 32 }], 
-        weapIdx: 0, angle: 0, reloading: false, reloadTimer: 0, hasJug: false, reviveTimer: 0, 
+        weapIdx: 0, angle: 0, reloading: false, reloadTimer: 0, hasVigor: false, reviveTimer: 0, 
         color: color, kills: 0, score: 500, isShooting: false, pressHandled: false, lastRepairTime: 0,
         invincibleTimer: 0, muzzleFlash: 0, equippedCosmetic: (id === 'p1') ? (saveData.equippedCosmetic || 'none') : 'none', isTouch: (id === window.myPlayerId) ? isTouchDevice : false
     }; 

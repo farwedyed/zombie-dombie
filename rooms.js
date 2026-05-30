@@ -87,7 +87,7 @@ const RoomSystem = {
                         }
                     }
                     else if(i.type === 'BOX') txt = `[F] Box (950 ⛃)`;
-                    else if(i.type === 'PERK') txt = `[F] Jug (2500 ⛃)`;
+                    else if(i.type === 'PERK') txt = `[F] Vigor-Up (2500 ⛃)`;
                     return { type: i.type, obj: i, label: txt };
                 }
             }

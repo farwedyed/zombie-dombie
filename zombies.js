@@ -156,7 +156,7 @@ const ZombieVariants = {
         stats.zombiesToSpawn = 0;
         stats.zombiesAlive = 1;
         
-        // Log Discovery in portfolio! [3]
+        // Log Discovery in portfolio!
         if (typeof discoverBoss === 'function') {
             discoverBoss(boss.type);
         }
@@ -274,8 +274,8 @@ const ZombieVariants = {
                     }
                     if (p.hp <= 0) {
                         p.state = 'DOWNED';
-                        p.reviveTimer = p.hasJug ? 300 : -1;
-                        if (p.hasJug) addText(p.x, p.y, "JUG SAVED YOU!", "#f00");
+                        p.reviveTimer = p.hasVigor ? 300 : -1;
+                        if (p.hasVigor) addText(p.x, p.y, "VIGOR SAVED YOU!", "#f00");
                         else addText(p.x, p.y, "DOWNED!", "#f00");
                     }
                 }

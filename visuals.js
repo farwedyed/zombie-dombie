@@ -85,18 +85,18 @@ function drawBackCosmetic(id, r, targetCtx = ctx) {
             targetCtx.fillRect(-r - 18, 5, 4, 1);
         }
     }
-    // --- ANIMATED CYBER WINGS RENDERING SYSTEM [1] ---
+    // --- ANIMATED CYBER WINGS RENDERING SYSTEM ---
     else if (cos.type === 'wings') {
-        // Soft rhythmic flapping animation angle over time [1]
+        // Soft rhythmic flapping animation angle over time
         const flap = Math.sin(Date.now() / 100) * 0.25;
         
         // Left Wing geometry
         targetCtx.save();
         targetCtx.translate(-r + 2, -6);
-        targetCtx.rotate(-Math.PI / 4 + flap); // Base rotation + animation displacement [1]
+        targetCtx.rotate(-Math.PI / 4 + flap); // Base rotation + animation displacement
         
         targetCtx.fillStyle = '#0f0f0f'; // Dark carbon plate
-        targetCtx.strokeStyle = cos.color; // Cyber cyan glow border [1]
+        targetCtx.strokeStyle = cos.color; // Cyber cyan glow border
         targetCtx.lineWidth = 2.5;
         targetCtx.beginPath();
         targetCtx.moveTo(0, 0);
@@ -121,7 +121,7 @@ function drawBackCosmetic(id, r, targetCtx = ctx) {
         // Right Wing geometry (Mirrored)
         targetCtx.save();
         targetCtx.translate(-r + 2, 6);
-        targetCtx.rotate(Math.PI / 4 - flap); // Base rotation - animation displacement [1]
+        targetCtx.rotate(Math.PI / 4 - flap); // Base rotation - animation displacement
         
         targetCtx.fillStyle = '#0f0f0f';
         targetCtx.strokeStyle = cos.color;
@@ -146,18 +146,18 @@ function drawBackCosmetic(id, r, targetCtx = ctx) {
         targetCtx.stroke();
         targetCtx.restore();
     }
-    // --- PULSING ANGELIC HALO RENDERING SYSTEM [1] ---
+    // --- PULSING ANGELIC HALO RENDERING SYSTEM ---
     else if (cos.type === 'halo') {
         targetCtx.save();
         // Soft pulsing size scaling over time
         const pulse = 1 + Math.sin(Date.now() / 150) * 0.08;
         
         targetCtx.shadowBlur = 12;
-        targetCtx.shadowColor = cos.color; // Golden glow [1]
+        targetCtx.shadowColor = cos.color; // Golden glow
         targetCtx.strokeStyle = cos.color;
         targetCtx.lineWidth = 3;
         
-        // Render a tilted ellipse surrounding the player head for a 3D halo illusion [1]
+        // Render a tilted ellipse surrounding the player head for a 3D halo illusion
         targetCtx.beginPath();
         targetCtx.ellipse(-r * 0.2, 0, r * 0.8 * pulse, r * 0.4 * pulse, 0, 0, Math.PI * 2);
         targetCtx.stroke();
@@ -365,7 +365,7 @@ function drawGame() {
         }
         else if (i.type === 'PERK') { 
             ctx.font = "bold 10px Arial"; 
-            ctx.fillText("JUG", i.x+25, i.y+25); 
+            ctx.fillText("VIG", i.x+25, i.y+25); 
         }
         else { 
             ctx.font = "30px Arial"; 
@@ -421,13 +421,13 @@ function drawGame() {
         const equippedCos = p.equippedCosmetic || (p.id === 'p1' ? saveData.equippedCosmetic : 'none');
         const cosObj = equippedCos !== 'none' ? cosmeticDB.find(c => c.id === equippedCos) : null;
         
-        // Layer 1: Draw standard back cosmetics (backpack, cape, jetpack, wings) UNDER the body circle [1]
+        // Layer 1: Draw standard back cosmetics (backpack, cape, jetpack, wings) UNDER the body circle
         if (cosObj && cosObj.type !== 'halo') {
             drawBackCosmetic(equippedCos, p.r, ctx);
         }
         
-        // Body Color (Jug makes you redder)
-        ctx.fillStyle = p.hasJug ? '#c0392b' : p.color;
+        // Body Color (Vig makes you redder)
+        ctx.fillStyle = p.hasVigor ? '#c0392b' : p.color;
         
         // Draw Circle Body with Black Outline
         ctx.beginPath(); 
@@ -445,7 +445,7 @@ function drawGame() {
         ctx.lineWidth = 2.5;
         ctx.strokeRect(0, -5, 25, 10);
 
-        // Layer 2: Draw over-body cosmetics (Halos) ON TOP of the head circle and gun barrel [1]
+        // Layer 2: Draw over-body cosmetics (Halos) ON TOP of the head circle and gun barrel
         if (cosObj && cosObj.type === 'halo') {
             drawBackCosmetic(equippedCos, p.r, ctx);
         }
@@ -637,12 +637,12 @@ function updateUI() {
                 document.getElementById(pId + '-score').innerHTML = p.score + ' <span style="font-size:16px">⛃</span>';
                 
                 const gun = p.inventory && p.inventory[p.weapIdx] ? p.inventory[p.weapIdx] : null;
-                const gunName = p.gunName || (gun ? gun.name : "M1911");
+                const gunName = p.gunName || (gun ? gun.name : "Model 1911");
                 const ammoText = p.reloading ? "RELOADING" : (p.clip !== undefined && p.ammo !== undefined ? `${p.clip} / ${p.ammo}` : (gun ? `${gun.clip} / ${gun.ammo}` : "8 / 32"));
                 
                 document.getElementById(pId + '-gun-name').innerText = gunName;
                 document.getElementById(pId + '-ammo-text').innerText = ammoText;
-                document.getElementById(pId + '-icon-jug').style.display = p.hasJug ? 'block' : 'none';
+                document.getElementById(pId + '-icon-vig').style.display = p.hasVigor ? 'block' : 'none';
             } else {
                 hud.style.display = 'none';
             }
