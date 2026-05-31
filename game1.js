@@ -383,7 +383,7 @@ function updateBullets() {
                     if(z.hp <= 0) {
                         z.dead = true; let pointsKill = GameBalanceConfig.SCORE_ZOMBIE_KILL; if (window.doublePointsTimer > 0) pointsKill *= 2; stats.score += pointsKill; stats.zombiesAlive--;
                         if(players[b.ownerId]) { players[b.ownerId].score += pointsKill; players[b.ownerId].kills++; addPlayerXP(players[b.ownerId], GameBalanceConfig.XP_ZOMBIE_KILL); if (b.ownerId === 'p1') saveData.lobbyCoins = (saveData.lobbyCoins || 0) + GameBalanceConfig.LOBBY_COINS_PER_KILL; }
-                        if(me && b.ownerId === me.id) { stats.sessionKills++; checkAchievements(); addText(z.x, z.y, "+" + pointsKill, "#ff0"); }
+                        if(me && b.ownerId === me.id) { stats.sessionKills++; checkAchievements(); addText(me.x, me.y - 40, "+" + pointsKill, "#ff0"); }
                         if (typeof ZombieVariants !== 'undefined') { ZombieVariants.handleSplittingOnDeath(z); if (z.isBoss && window.activeBoss && window.activeBoss.id === z.id) { window.activeBoss = null; addText(z.x, z.y - 40, "BOSS SLAIN!", "#f1c40f"); if (typeof defeatBoss === 'function') defeatBoss(z.type); } }
                         if (Network.mode !== 'CLIENT') {
                             if (Math.random() < GameBalanceConfig.POWERUP_DROP_CHANCE) {
@@ -499,6 +499,15 @@ window.buyAndEquipCosmeticOver = function(id, price) {
 
 function gameOver() { 
     if(!gameActive) return; gameActive = false; if(Network.mode === 'HOST') Network.broadcastGameOver(stats); if (typeof Tutorial !== 'undefined' && Tutorial.isActive) { Tutorial.resetOnDeath(); return; }
+    
+    // Safety check fallback to heal any undefined array parameters in legacy save structures [1]
+    if (!saveData.unlockedBosses) saveData.unlockedBosses = [];
+    if (!saveData.defeatedBosses) saveData.defeatedBosses = [];
+    if (!saveData.ownedCosmetics) saveData.ownedCosmetics = ['none'];
+    if (!saveData.unlockedGuns) saveData.unlockedGuns = ['Model 1911'];
+    if (saveData.xp === undefined) saveData.xp = 0;
+    if (saveData.lobbyCoins === undefined) saveData.lobbyCoins = 0;
+
     let oldXP = window.matchStartingXP !== undefined ? window.matchStartingXP : (saveData.xp || 0), oldCoins = window.matchStartingCoins !== undefined ? window.matchStartingCoins : (saveData.lobbyCoins || 0);
     let msg = ""; try { msg = saveGame(stats.round, stats.sessionKills, me.score); } catch(e) {} 
     let newXP = saveData.xp || 0, newCoins = saveData.lobbyCoins || 0, oldLvl = Math.floor(oldXP / 1000) + 1, newLvl = Math.floor(newXP / 1000) + 1;

@@ -106,6 +106,7 @@ function defeatBoss(bossId) {
 function resetData() {
     if(confirm("Delete all progress? This will also wipe your cloud saves!")) {
         localStorage.removeItem('zombieSaveModular');
+        localStorage.removeItem('zombieTutorialSkippedOrCompleted'); // Erases persistent skip flag on complete wipes
         saveData = { ...startData };
 
         if (typeof AccountSystem !== 'undefined' && AccountSystem.currentUser) {

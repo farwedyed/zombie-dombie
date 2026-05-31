@@ -167,6 +167,7 @@ const Tutorial = {
             check: () => false, // Terminal success step
             onStart: () => {
                 addText(me.x, me.y - 40, "YOU ESCAPED!", "#0f0");
+                localStorage.setItem('zombieTutorialSkippedOrCompleted', 'true'); // Save tutorial completion!
                 setTimeout(() => {
                     Tutorial.end();
                     location.reload(); // Return to main menu
@@ -220,6 +221,7 @@ const Tutorial = {
 
     // Safely exits the session and reloads back to the main menu
     skip: function() {
+        localStorage.setItem('zombieTutorialSkippedOrCompleted', 'true'); // Set skip flag to bypass auto-launch loops!
         this.end();
         location.reload();
     },

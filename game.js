@@ -141,8 +141,8 @@ function init() {
     }
     checkTouchDevice();
 
-    // AUTO-LAUNCH TUTORIAL ON FIRST LOAD
-    if (!localStorage.getItem('zombieSaveModular')) {
+    // AUTO-LAUNCH TUTORIAL ON FIRST LOAD ONLY (Skip bypass enabled)
+    if (!localStorage.getItem('zombieSaveModular') && !localStorage.getItem('zombieTutorialSkippedOrCompleted')) {
         console.log("Welcome! Automatically launching Boot Camp...");
         setTimeout(() => { startTutorial(); }, 800);
     }
@@ -846,6 +846,11 @@ function launchGame() {
     
     myUsername = (document.getElementById('username-input').value || "Survivor").substring(0, 12);
     const myLvl = Math.floor((saveData.xp || 0) / 1000) + 1, displayName = myUsername + " [Lv. " + myLvl + "]";
+    
+    // Captures baseline progression states to drive post-match animations
+    window.matchStartingXP = saveData.xp || 0;
+    window.matchStartingCoins = saveData.lobbyCoins || 0;
+
     players = {};
     
     let spawnX = 200, spawnY = 200;
