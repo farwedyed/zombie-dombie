@@ -695,36 +695,39 @@
             }
             .main-menu-grid {
                 flex-direction: row !important; /* Force side-by-side even on small screens to fit wide screens */
-                gap: 8px !important;
+                gap: 6px !important;
                 margin-top: 5px !important;
                 width: 100% !important;
                 align-items: stretch !important;
             }
             .menu-column {
-                padding: 10px !important;
+                padding: 8px 10px !important;
                 min-height: 180px !important;
                 max-height: 200px !important; /* Cap height to completely avoid scroll bars */
                 overflow-y: auto !important; /* Let column scroll internally if overflowed */
-                min-width: 180px !important;
-                max-width: 320px !important;
+                min-width: 140px !important; /* Fluid columns let narrow devices fit safely */
+                max-width: 32% !important;   /* Hard-keeps columns to 1/3 of total screen width */
                 border-top: 2px solid #a83232 !important;
             }
             .menu-label {
-                font-size: 9px !important;
+                font-size: 8px !important;
                 margin-bottom: 5px !important;
                 padding-bottom: 3px !important;
             }
             input, select, button {
-                padding: 6px !important;
-                font-size: 11px !important;
+                padding: 6px 4px !important;
+                font-size: 10px !important;
                 margin: 2px 0 !important;
             }
             .priority-grid {
                 gap: 4px !important;
             }
             .priority-grid button {
-                padding: 5px 2px !important;
+                padding: 4px 2px !important;
                 font-size: 8px !important;
+                white-space: nowrap !important;
+                overflow: hidden !important;
+                text-overflow: ellipsis !important; /* Safeguards long words from wrapping onto two lines */
             }
 
             /* --- RESPONSIVE MODAL COMPRESSION FOR LANDSCAPES --- */
@@ -781,7 +784,9 @@
 
             /* --- RESPONSIVE GAME OVER CARD ADJUSTMENTS FOR LANDSCAPES --- */
             #game-over > div {
-                padding: 12px !important;
+                width: 480px !important; /* Reduced card width to fit narrow viewport aspects */
+                max-width: 98% !important;
+                padding: 10px 12px !important;
                 max-height: 95vh !important;
             }
             #over-title {
@@ -840,6 +845,14 @@
                 height: 32px !important;
                 font-size: 11px !important;
                 padding: 4px !important;
+            }
+
+            /* Leaderboard Table Scale-Down inside Left Panel */
+            #menu-leaderboard-body-container table {
+                font-size: 9px !important;
+            }
+            #menu-leaderboard-body-container td, #menu-leaderboard-body-container th {
+                padding: 3px 2px !important;
             }
         }
 
