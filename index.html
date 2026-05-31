@@ -673,8 +673,7 @@
         /* Forces landscape mobile view to use compact sizes instead of wrapping vertically */
         @media (max-height: 550px) {
             .screen {
-                justify-content: flex-start;
-                padding: 10px;
+                padding: 4px !important;
             }
             h1 { 
                 font-size: 24px !important; 
@@ -695,19 +694,24 @@
             }
             .main-menu-grid {
                 flex-direction: row !important; /* Force side-by-side even on small screens to fit wide screens */
-                gap: 6px !important;
-                margin-top: 5px !important;
+                gap: 5px !important;
+                margin-top: 4px !important;
                 width: 100% !important;
                 align-items: stretch !important;
+                padding: 0 4px !important;
             }
             .menu-column {
-                padding: 8px 10px !important;
+                padding: 6px 8px !important;
                 min-height: 180px !important;
                 max-height: 200px !important; /* Cap height to completely avoid scroll bars */
                 overflow-y: auto !important; /* Let column scroll internally if overflowed */
-                min-width: 140px !important; /* Fluid columns let narrow devices fit safely */
+                min-width: 130px !important; /* Fluid columns let narrow devices fit safely */
                 max-width: 32% !important;   /* Hard-keeps columns to 1/3 of total screen width */
+                flex: 1 1 32% !important;
                 border-top: 2px solid #a83232 !important;
+            }
+            .left-panel, .center-panel, .right-panel {
+                max-width: 32% !important;
             }
             .menu-label {
                 font-size: 8px !important;
@@ -720,7 +724,8 @@
                 margin: 2px 0 !important;
             }
             .priority-grid {
-                gap: 4px !important;
+                grid-template-columns: 1fr !important; /* Stack vertically to prevent button clipping */
+                gap: 2px !important;
             }
             .priority-grid button {
                 padding: 4px 2px !important;
@@ -783,68 +788,103 @@
             }
 
             /* --- RESPONSIVE GAME OVER CARD ADJUSTMENTS FOR LANDSCAPES --- */
-            #game-over > div {
-                width: 480px !important; /* Reduced card width to fit narrow viewport aspects */
-                max-width: 98% !important;
-                padding: 10px 12px !important;
-                max-height: 95vh !important;
+            #over-card-wrapper {
+                padding: 8px !important;
+                max-height: 98vh !important;
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+            .over-columns-container {
+                flex-direction: row !important; /* Force cards to align horizontally side-by-side */
+                gap: 6px !important;
+                align-items: stretch !important;
+            }
+            .over-column {
+                padding: 4px !important;
+                min-height: 190px !important;
+                max-height: 210px !important;
+                overflow-y: auto !important; /* Internal panel scrolling blocks global page scrolls */
+                flex: 1 1 32% !important;
+                max-width: 32% !important;
             }
             #over-title {
-                font-size: 26px !important;
+                font-size: 20px !important;
                 margin-bottom: 2px !important;
             }
             #over-round-box {
-                font-size: 14px !important;
-                margin-bottom: 8px !important;
+                font-size: 11px !important;
+                margin-bottom: 4px !important;
             }
             #over-round-val {
-                font-size: 20px !important;
+                font-size: 14px !important;
             }
             #card-stats {
-                padding: 6px !important;
-                margin-bottom: 10px !important;
+                padding: 4px !important;
+                margin-bottom: 4px !important;
+                gap: 8px !important;
             }
             #card-stats div div:first-child {
-                font-size: 8px !important;
-            }
-            #card-stats div div:last-child {
-                font-size: 18px !important;
-            }
-            #perf-msg {
-                font-size: 11px !important;
-                margin-bottom: 8px !important;
-            }
-            #card-xp {
-                padding: 8px !important;
-                margin-bottom: 8px !important;
-            }
-            #card-boss {
-                padding: 8px !important;
-                margin-bottom: 8px !important;
-            }
-            #over-bosses-row canvas {
-                width: 36px !important;
-                height: 36px !important;
-            }
-            #over-bosses-row span {
                 font-size: 7px !important;
             }
-            #card-cosmetic {
-                padding: 8px !important;
-                margin-bottom: 10px !important;
+            #card-stats div div:last-child {
+                font-size: 14px !important;
             }
-            #card-cosmetic canvas {
-                width: 36px !important;
-                height: 36px !important;
+            #perf-msg {
+                font-size: 8px !important;
+                margin-bottom: 4px !important;
             }
-            #over-cos-action button {
-                font-size: 9px !important;
-                padding: 2px 6px !important;
+            #over-controls {
+                gap: 4px !important;
+                margin-top: 2px !important;
             }
             #over-controls button {
+                padding: 5px !important;
+                font-size: 9px !important;
+                margin: 1px 0 !important;
+            }
+            #card-xp {
+                padding: 6px !important;
+                flex: 1 !important;
+                justify-content: center !important;
+            }
+            #card-cosmetic {
+                padding: 6px !important;
+                flex: 1 !important;
+                gap: 6px !important;
+            }
+            #card-cosmetic canvas {
+                width: 32px !important;
                 height: 32px !important;
-                font-size: 11px !important;
-                padding: 4px !important;
+            }
+            #over-cosmetic-title {
+                font-size: 8px !important;
+            }
+            #cosmetic-bar-container {
+                height: 6px !important;
+            }
+            #over-cos-action button {
+                font-size: 8px !important;
+                padding: 1px 4px !important;
+            }
+            #card-boss {
+                padding: 6px !important;
+                height: 100% !important;
+            }
+            #card-boss div:first-child {
+                font-size: 9px !important;
+                margin-bottom: 6px !important;
+                padding-bottom: 3px !important;
+            }
+            #over-bosses-row {
+                gap: 3px !important;
+            }
+            #over-bosses-row canvas {
+                width: 26px !important;
+                height: 26px !important;
+            }
+            #over-bosses-row span {
+                font-size: 5px !important;
+                line-height: 1 !important;
             }
 
             /* Leaderboard Table Scale-Down inside Left Panel */
@@ -1348,87 +1388,100 @@
 </div>
 
 <!-- DYNAMIC COGNITIVE GAME OVER LAYOUT -->
-<div id="game-over" class="screen" style="display: none; justify-content: center; align-items: center; z-index: 2500;">
-    <div style="width: 620px; max-width: 95%; background: rgba(5,5,5,0.96); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border: 2px solid #a83232; border-top: 6px solid #a83232; border-radius: 8px; padding: 25px; box-shadow: 0 20px 60px rgba(0,0,0,0.95); text-align: center; box-sizing: border-box; overflow-y: auto; max-height: 95vh; position: relative;">
+<div id="game-over" class="screen" style="display: none; justify-content: center; align-items: center; z-index: 2500; overflow: hidden !important;">
+    <!-- This is the outer container that grows/shrinks dynamically to use screen space -->
+    <div id="over-card-wrapper" style="width: 98%; max-width: 1340px; background: rgba(5,5,5,0.96); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border: 2px solid #a83232; border-top: 6px solid #a83232; border-radius: 8px; padding: 25px; box-shadow: 0 20px 60px rgba(0,0,0,0.95); box-sizing: border-box; overflow-y: auto; max-height: 95vh; position: relative;">
         
-        <h1 id="over-title" class="smash-item" style="color: #ff4757; font-size: 40px; margin: 0 0 5px 0; letter-spacing: 4px; text-transform: uppercase; text-shadow: 0 0 10px rgba(255, 71, 87, 0.4);">GAME OVER</h1>
-        
-        <h2 id="over-round-box" class="smash-item" style="color: #fff; font-size: 22px; margin: 0 0 15px 0; text-transform: uppercase;">
-            Survived to <span id="over-round-val" style="color:#ff4757; font-size: 28px; font-weight: 900;">Round 1</span>
-        </h2>
-        
-        <!-- COMBAT STATS CARD -->
-        <div id="card-stats" class="smash-item" style="background: rgba(255,255,255,0.02); border: 1px solid #222; border-radius: 6px; padding: 12px; display: flex; justify-content: space-around; align-items: center; gap: 15px; margin-bottom: 15px;">
-            <div>
-                <div style="font-size: 10px; color: #888; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px;">KILLS</div>
-                <div style="font-size: 26px; color: #ff4757; font-weight: 900;" id="stat-kills-val">0</div>
-            </div>
-            <div style="width: 1px; height: 35px; background: #222;"></div>
-            <div>
-                <div style="font-size: 10px; color: #888; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px;">COINS</div>
-                <div style="font-size: 26px; color: #ffd700; font-weight: 900;" id="stat-coins-val">0 🪙</div>
-            </div>
-        </div>
-
-        <div id="perf-msg" class="smash-item" style="color: #ffd700; margin-bottom: 18px; font-size: 13px; font-style: italic;"></div>
-        
-        <!-- PROGRESS CARDS LIST -->
-        <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; text-align: left;">
+        <!-- FLEXBOARD GRID FOR GAME OVER SCREEN -->
+        <div class="over-columns-container" style="display: flex; gap: 20px; align-items: stretch; justify-content: center; width: 100%; box-sizing: border-box;">
             
-            <!-- XP PROGRESS CARD -->
-            <div id="card-xp" class="smash-item" style="background: rgba(255,255,255,0.02); border: 1px solid #222; border-radius: 6px; padding: 12px; position: relative; overflow: hidden;">
-                <div id="lvl-up-rays" class="level-up-glow"></div>
-                <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 12px; color: #ffd700; text-transform: uppercase; margin-bottom: 5px; position: relative; z-index: 1;">
-                    <span>XP Progress</span><span id="xp-percentage-text">0%</span>
+            <!-- COLUMN 1: OVERVIEW & STATS & CONTROLS -->
+            <div class="over-column over-left-panel" style="flex: 1.1; display: flex; flex-direction: column; justify-content: space-between; max-width: 440px; box-sizing: border-box;">
+                <div>
+                    <h1 id="over-title" class="smash-item" style="color: #ff4757; font-size: 38px; margin: 0 0 5px 0; letter-spacing: 4px; text-transform: uppercase; text-shadow: 0 0 10px rgba(255, 71, 87, 0.4); text-align: center;">GAME OVER</h1>
+                    
+                    <h2 id="over-round-box" class="smash-item" style="color: #fff; font-size: 20px; margin: 0 0 15px 0; text-transform: uppercase; text-align: center;">
+                        Survived to <span id="over-round-val" style="color:#ff4757; font-size: 26px; font-weight: 900;">Round 1</span>
+                    </h2>
+                    
+                    <!-- COMBAT STATS CARD -->
+                    <div id="card-stats" class="smash-item" style="background: rgba(255,255,255,0.02); border: 1px solid #222; border-radius: 6px; padding: 12px; display: flex; justify-content: space-around; align-items: center; gap: 15px; margin-bottom: 12px; box-sizing: border-box;">
+                        <div>
+                            <div style="font-size: 10px; color: #888; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px;">KILLS</div>
+                            <div style="font-size: 26px; color: #ff4757; font-weight: 900;" id="stat-kills-val">0</div>
+                        </div>
+                        <div style="width: 1px; height: 35px; background: #222;"></div>
+                        <div>
+                            <div style="font-size: 10px; color: #888; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px;">COINS</div>
+                            <div style="font-size: 26px; color: #ffd700; font-weight: 900;" id="stat-coins-val">0 🪙</div>
+                        </div>
+                    </div>
+
+                    <div id="perf-msg" class="smash-item" style="color: #ffd700; margin-bottom: 15px; font-size: 12px; font-style: italic; text-align: center;"></div>
                 </div>
-                <div style="width: 100%; height: 12px; background: #000; border: 1px solid #333; border-radius: 6px; overflow: hidden; position: relative; z-index: 1;">
-                    <div id="xp-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #ff9f43, #ff5252); border-radius: 6px;"></div>
-                </div>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px; position: relative; z-index: 1;">
-                    <span id="level-badge" style="background: #e74c3c; color: white; font-size: 9px; font-weight: bold; padding: 2px 6px; border-radius: 4px;">Lv. 1</span>
-                    <span id="xp-details-text" style="color: #888; font-size: 10px; font-weight: bold;">0 / 1000 XP</span>
-                </div>
-                <div id="lvl-up-flash" style="display: none; position: absolute; inset: 0; background: rgba(255, 215, 0, 0.2); border-radius: 6px; border: 2px solid #ffd700; justify-content: center; align-items: center; z-index: 2;">
-                    <span style="color: #ffd700; font-size: 16px; font-weight: 900; letter-spacing: 2px; animation: shake 0.3s infinite;">LEVEL UP! 🎉</span>
+
+                <!-- CONTROLS -->
+                <div id="over-controls" class="smash-item" style="display: flex; flex-direction: column; gap: 8px; box-sizing: border-box; margin-top: auto;">
+                    <button id="return-lobby-btn" onclick="returnToLobby()" style="display: none; background: #2e86de; border-color: #2e86de; color: #fff; margin: 0; font-size: 12px; padding: 10px;">RETURN TO LOBBY</button>
+                    <button onclick="requestRestart()" style="background: #a83232; border-color: #a83232; color: #fff; margin: 0; font-size: 12px; padding: 10px;">PLAY AGAIN</button>
+                    <button onclick="location.reload()" style="background: #111; border-color: #333; color: #aaa; margin: 0; font-size: 12px; padding: 10px;">MAIN MENU</button>
                 </div>
             </div>
 
-            <!-- BOSS DISCOVERY CARD (Restructured to render horizontally like your sketch) -->
-            <div id="card-boss" class="smash-item" style="background: rgba(255,255,255,0.02); border: 1px solid #222; border-radius: 6px; padding: 12px 14px; position: relative; text-align: left;">
-                <div style="font-weight: bold; font-size: 11px; color: #ff4757; text-transform: uppercase; margin-bottom: 12px; letter-spacing: 1px;">
-                    Bosses Encountered:
+            <!-- COLUMN 2: PROGRESS (XP & NEXT UNLOCK) -->
+            <div class="over-column over-center-panel" style="flex: 1.2; display: flex; flex-direction: column; gap: 15px; max-width: 480px; box-sizing: border-box;">
+                <!-- XP PROGRESS CARD -->
+                <div id="card-xp" class="smash-item" style="background: rgba(255,255,255,0.02); border: 1px solid #222; border-radius: 6px; padding: 15px; position: relative; overflow: hidden; box-sizing: border-box; flex: 1; display: flex; flex-direction: column; justify-content: center;">
+                    <div id="lvl-up-rays" class="level-up-glow"></div>
+                    <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 12px; color: #ffd700; text-transform: uppercase; margin-bottom: 5px; position: relative; z-index: 1;">
+                        <span>XP Progress</span><span id="xp-percentage-text">0%</span>
+                    </div>
+                    <div style="width: 100%; height: 12px; background: #000; border: 1px solid #333; border-radius: 6px; overflow: hidden; position: relative; z-index: 1; box-sizing: border-box; margin-bottom: 6px;">
+                        <div id="xp-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #ff9f43, #ff5252); border-radius: 6px;"></div>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; position: relative; z-index: 1;">
+                        <span id="level-badge" style="background: #e74c3c; color: white; font-size: 9px; font-weight: bold; padding: 2px 6px; border-radius: 4px;">Lv. 1</span>
+                        <span id="xp-details-text" style="color: #888; font-size: 10px; font-weight: bold;">0 / 1000 XP</span>
+                    </div>
+                    <div id="lvl-up-flash" style="display: none; position: absolute; inset: 0; background: rgba(255, 215, 0, 0.2); border-radius: 6px; border: 2px solid #ffd700; justify-content: center; align-items: center; z-index: 2;">
+                        <span style="color: #ffd700; font-size: 16px; font-weight: 900; letter-spacing: 2px; animation: shake 0.3s infinite;">LEVEL UP! 🎉</span>
+                    </div>
                 </div>
-                <div id="over-bosses-row" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; width: 100%; box-sizing: border-box; flex-wrap: wrap;">
-                    <!-- Rendered dynamically and staggered via animateBoss() -->
+
+                <!-- NEXT UNLOCK CARD -->
+                <div id="card-cosmetic" class="smash-item" style="background: rgba(255,255,255,0.02); border: 1px solid #222; border-radius: 6px; padding: 15px; position: relative; display: flex; align-items: center; gap: 15px; box-sizing: border-box; flex: 1;">
+                    <div style="position: relative; width: 60px; height: 60px; border-radius: 50%; overflow: hidden; border: 1px solid #333; background: #080808; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-sizing: border-box;">
+                        <canvas id="over-cos-preview" width="80" height="80" style="width: 60px; height: 60px; pointer-events: none;"></canvas>
+                    </div>
+                    <div style="flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0;">
+                        <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 12px; color: #3498db; text-transform: uppercase; width: 100%;">
+                            <span id="over-cosmetic-title" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">NEXT UNLOCK: Loading...</span><span id="cosmetic-percentage-text">0%</span>
+                        </div>
+                        <div id="cosmetic-bar-container" style="width: 100%; height: 10px; background: #000; border: 1px solid #333; border-radius: 5px; overflow: hidden; box-sizing: border-box;">
+                            <div id="cosmetic-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #54a0ff, #10ac84);"></div>
+                        </div>
+                        <div id="over-cos-action" style="margin-top: 5px;">
+                            <!-- Dynamically populated by JS -->
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <!-- NEXT UNLOCK CARD -->
-            <div id="card-cosmetic" class="smash-item" style="background: rgba(255,255,255,0.02); border: 1px solid #222; border-radius: 6px; padding: 12px; position: relative; display: flex; align-items: center; gap: 15px;">
-                <div style="position: relative; width: 60px; height: 60px; border-radius: 50%; overflow: hidden; border: 1px solid #333; background: #080808; display: flex; align-items: center; justify-content: center;">
-                    <canvas id="over-cos-preview" width="80" height="80" style="width: 60px; height: 60px; pointer-events: none;"></canvas>
-                </div>
-                <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
-                    <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 12px; color: #3498db; text-transform: uppercase; width: 100%;">
-                        <span id="over-cosmetic-title">NEXT UNLOCK: Loading...</span><span id="cosmetic-percentage-text">0%</span>
+            <!-- COLUMN 3: BOSSES ENCOUNTERED -->
+            <div class="over-column over-right-panel" style="flex: 1.1; display: flex; flex-direction: column; max-width: 420px; box-sizing: border-box;">
+                <!-- BOSS DISCOVERY CARD -->
+                <div id="card-boss" class="smash-item" style="background: rgba(255,255,255,0.02); border: 1px solid #222; border-radius: 6px; padding: 15px; position: relative; text-align: left; height: 100%; box-sizing: border-box; display: flex; flex-direction: column;">
+                    <div style="font-weight: bold; font-size: 12px; color: #ff4757; text-transform: uppercase; margin-bottom: 15px; letter-spacing: 1px; border-bottom: 1px dashed #222; padding-bottom: 5px;">
+                        Bosses Encountered:
                     </div>
-                    <div style="width: 100%; height: 10px; background: #000; border: 1px solid #333; border-radius: 5px; overflow: hidden;">
-                        <div id="cosmetic-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #54a0ff, #10ac84);"></div>
-                    </div>
-                    <div id="over-cos-action" style="margin-top: 5px;">
-                        <!-- Dynamically populated by JS -->
+                    <div id="over-bosses-row" style="display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: flex-start; width: 100%; box-sizing: border-box; flex: 1;">
+                        <!-- Rendered dynamically and staggered via animateBoss() -->
                     </div>
                 </div>
             </div>
 
         </div>
 
-        <!-- CONTROLS -->
-        <div id="over-controls" class="smash-item" style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <button id="return-lobby-btn" onclick="returnToLobby()" style="display: none; background: #2e86de; border-color: #2e86de; color: #fff; flex: 1; min-width: 150px; height: 40px; margin: 0; font-size: 12px;">RETURN TO LOBBY</button>
-            <button onclick="requestRestart()" style="background: #a83232; border-color: #a83232; color: #fff; flex: 1; min-width: 150px; height: 40px; margin: 0; font-size: 12px;">PLAY AGAIN</button>
-            <button onclick="location.reload()" style="background: #111; border-color: #333; color: #aaa; flex: 1; min-width: 150px; height: 40px; margin: 0; font-size: 12px;">MAIN MENU</button>
-        </div>
     </div>
 </div>
 
