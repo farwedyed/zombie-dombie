@@ -492,7 +492,7 @@
             <input type="text" id="username-input" placeholder="ENTER CODENAME" maxlength="12">
         </div>
 
-        <!-- ARMORY & TACTICAL INTEL (PRIORITIZED GRID) -->
+        <!-- ARMORY & TACTICAL INTEL -->
         <div class="menu-section">
             <span class="menu-label">Armory & Intel:</span>
             <div class="priority-grid">
@@ -511,7 +511,6 @@
             <button onclick="openMenu('coop-modal')">LOCAL CO-OP</button>
             <button onclick="enterLobbyHost()">HOST ONLINE</button>
             <button onclick="openMenu('lobby-browser-modal')" style="border-color: #3498db; background: rgba(52, 152, 219, 0.08);">SERVER BROWSER</button>
-            <!-- LEADERBOARD TAB TRIGGER -->
             <button onclick="openGlobalLeaderboardConsole()" style="border-color: #ffd700; background: rgba(255, 215, 0, 0.04);">🏆 GLOBAL LEADERBOARD</button>
         </div>
 
@@ -537,16 +536,14 @@
                     <th style="padding:10px; text-align:center;">ZOMBIE KILLS</th>
                 </tr>
             </thead>
-            <tbody id="leaderboard-body">
-                <!-- Dynamically loaded from Firestore -->
-            </tbody>
+            <tbody id="leaderboard-body"></tbody>
         </table>
     </div>
 
     <button onclick="closeMenu('leaderboard-modal')" style="background: #333;">CLOSE</button>
 </div>
 
-<!-- SOLO DEPLOYMENT CARD-BASED CONSOLE -->
+<!-- SOLO DEPLOYMENT -->
 <div id="solo-deployment-modal" class="modal" style="width: 740px; max-width: 95%; height: 580px; max-height: 90vh; padding: 20px; overflow-y: auto;">
     <h2 style="color:white; text-align:center; margin-top:0; margin-bottom:15px;">SELECT DEPLOYMENT ZONE</h2>
     
@@ -557,7 +554,7 @@
             <div class="card-banner banner-facility">Lab Area</div>
             <div class="card-content">
                 <div class="card-title">The Facility</div>
-                <div class="card-desc">An abandoned underground laboratory featuring scientific test corridors, supply corridors, and isolated backup power structures.</div>
+                <div class="card-desc">An abandoned underground laboratory featuring scientific corridors, supply areas, and isolated power rooms.</div>
             </div>
         </div>
 
@@ -566,7 +563,7 @@
             <div class="card-banner banner-bunker">Outpost</div>
             <div class="card-content">
                 <div class="card-title">Bunker Outpost</div>
-                <div class="card-desc">A deep-level concrete military bunker containing narrow access wings, tactical storage lockers, and vault compartments.</div>
+                <div class="card-desc">A deep-level concrete military bunker containing narrow access wings, tactical storage, and vault compartments.</div>
             </div>
         </div>
 
@@ -587,7 +584,6 @@
         <div class="deployment-card" id="solo-diff-card-easy" onclick="selectSoloDifficulty('easy')">
             <div class="card-banner" style="background: #555;">Easy</div>
             <div class="card-content">
-                <!-- 1 Player, 1 Green Zombie -->
                 <div class="card-illustration-box">
                     <div class="mini-zombie" style="background:#3a4a38; top: 12px; left: 50%; transform: translateX(-50%);">
                         <span class="zombie-eyes eye-left"></span><span class="zombie-eyes eye-right"></span>
@@ -603,7 +599,6 @@
         <div class="deployment-card selected" id="solo-diff-card-medium" onclick="selectSoloDifficulty('medium')">
             <div class="card-banner" style="background: #e67e22;">Medium</div>
             <div class="card-content">
-                <!-- 1 Player, 2 Green Zombies -->
                 <div class="card-illustration-box">
                     <div class="mini-zombie" style="background:#3a4a38; top: 12px; left: 25%;">
                         <span class="zombie-eyes eye-left"></span><span class="zombie-eyes eye-right"></span>
@@ -614,7 +609,7 @@
                     <div class="mini-player"><span class="mini-player-barrel"></span></div>
                 </div>
                 <div class="card-title" style="color:#e67e22; font-size:11px;">MEDIUM MODE</div>
-                <div class="card-desc" style="text-align:center; font-weight:bold; color:#d67c27;">NORMAL ZOMBIE SPEED AND NORMAL ZOMBIE NUMBER</div>
+                <div class="card-desc" style="text-align:center; font-weight:bold; color:#d67c27;">NORMAL SPEED AND SPAWN COUNT</div>
             </div>
         </div>
 
@@ -622,9 +617,7 @@
         <div class="deployment-card" id="solo-diff-card-hard" onclick="selectSoloDifficulty('hard')">
             <div class="card-banner" style="background: #c0392b;">Hard</div>
             <div class="card-content">
-                <!-- 1 Player, 3 Green Zombies, 1 Yellow, 1 Blue -->
                 <div class="card-illustration-box">
-                    <!-- 3 Green Zombies at the top -->
                     <div class="mini-zombie" style="background:#3a4a38; top: 8px; left: 15%; width:12px; height:12px;">
                         <span class="zombie-eyes eye-left" style="width:1.5px; height:1.5px;"></span><span class="zombie-eyes eye-right" style="width:1.5px; height:1.5px;"></span>
                     </div>
@@ -634,19 +627,16 @@
                     <div class="mini-zombie" style="background:#3a4a38; top: 8px; right: 15%; width:12px; height:12px;">
                         <span class="zombie-eyes eye-left" style="width:1.5px; height:1.5px;"></span><span class="zombie-eyes eye-right" style="width:1.5px; height:1.5px;"></span>
                     </div>
-                    <!-- 1 Yellow Zombie Middle Left -->
                     <div class="mini-zombie" style="background:#f1c40f; top: 28px; left: 22%; width:12px; height:12px;">
                         <span class="zombie-eyes eye-left" style="width:1.5px; height:1.5px;"></span><span class="zombie-eyes eye-right" style="width:1.5px; height:1.5px;"></span>
                     </div>
-                    <!-- 1 Blue Zombie Middle Right -->
                     <div class="mini-zombie" style="background:#2980b9; top: 28px; right: 22%; width:15px; height:15px; border-width:2px;">
                         <span class="zombie-eyes eye-left" style="top:2px;"></span><span class="zombie-eyes eye-right" style="top:2px;"></span>
                     </div>
-                    
                     <div class="mini-player"><span class="mini-player-barrel"></span></div>
                 </div>
                 <div class="card-title" style="color:#c0392b; font-size:11px;">HARD MODE</div>
-                <div class="card-desc" style="text-align:center; font-weight:bold; color:#c0392b;">FAST ZOMBIES AND MORE ZOMBIES</div>
+                <div class="card-desc" style="text-align:center; font-weight:bold; color:#c0392b;">FAST ZOMBIES AND MORE FREQUENT SPAWNS</div>
             </div>
         </div>
     </div>
@@ -658,7 +648,7 @@
     </div>
 </div>
 
-<!-- AUDIO & INPUT SETTINGS PANEL -->
+<!-- SETTINGS PANEL -->
 <div id="settings-modal" class="modal" style="width: 440px; max-width: 95%; height: 380px; max-height: 85vh; padding: 25px;">
     <h2 style="color:white; text-align:center; margin-top:0; margin-bottom:20px;">SYSTEM SETTINGS</h2>
     
@@ -683,12 +673,11 @@
         </label>
     </div>
 
-    <!-- INPUT OPTIONS INFO -->
     <div class="menu-section" style="margin-bottom: 20px; font-size: 10px; color: #666; text-align: left; line-height: 1.4; border-top: 1px dashed #333; padding-top: 15px;">
         <strong>INPUT SCHEMES:</strong><br>
         • PC: WASD to Move, Mouse to Aim/Shoot, R to Reload, F to Interact.<br>
-        • MOBILE: Use Left Joystick to Move, Right Joystick to Aim/Shoot, and HUD buttons to Reload, switch weapons, and interact.<br>
-        • LOCAL CO-OP: Configure keyboard arrows or Dual Gamepad slots on the Local Co-op window tab.
+        • MOBILE: Use joysticks to move/aim, HUD buttons to reload, swap weapons, and interact.<br>
+        • LOCAL CO-OP: Configure keyboard arrows or Controller inputs.
     </div>
 
     <button onclick="closeMenu('settings-modal')" style="background: #333; margin-top: 10px;">BACK TO MENU</button>
@@ -705,7 +694,6 @@
     </div>
     <div id="lobby-status">Waiting for players...</div>
     
-    <!-- Map Selection Display/Selector in Lobby -->
     <div id="lobby-map-container" style="margin-top: 15px; margin-bottom: 5px; width: 100%; max-width: 320px; text-align: center; background: rgba(0,0,0,0.4); padding: 15px; border: 1px solid #333; box-sizing: border-box;">
         <label for="lobby-map-select" style="color: #666; display: block; font-size: 12px; margin-bottom: 8px; text-transform: uppercase; font-weight: bold; letter-spacing: 1px;">DEPLOYMENT ZONE:</label>
         <select id="lobby-map-select" onchange="lobbyChangeMap()">
@@ -716,7 +704,6 @@
         <div id="lobby-map-display-client" style="color: #ffd700; font-weight: bold; font-size: 16px; margin-top: 5px; display: none;">Retrieving map...</div>
     </div>
 
-    <!-- Difficulty Selection in Lobby -->
     <div id="lobby-diff-container" style="margin-top: 5px; margin-bottom: 5px; width: 100%; max-width: 320px; text-align: center; background: rgba(0,0,0,0.4); padding: 15px; border: 1px solid #333; box-sizing: border-box;">
         <label for="lobby-diff-select" style="color: #666; display: block; font-size: 12px; margin-bottom: 8px; text-transform: uppercase; font-weight: bold; letter-spacing: 1px;">DIFFICULTY:</label>
         <select id="lobby-diff-select" onchange="lobbyChangeDifficulty()">
@@ -727,7 +714,6 @@
         <div id="lobby-diff-display-client" style="color: #ffd700; font-weight: bold; font-size: 16px; margin-top: 5px; display: none;">Retrieving difficulty...</div>
     </div>
 
-    <!-- Lobby Visibility Selection in Lobby (Visible to Host only) -->
     <div id="lobby-visibility-container" style="margin-top: 5px; margin-bottom: 15px; width: 100%; max-width: 320px; text-align: center; background: rgba(0,0,0,0.4); padding: 15px; border: 1px solid #333; box-sizing: border-box;">
         <label for="lobby-visibility-select" style="color: #666; display: block; font-size: 12px; margin-bottom: 8px; text-transform: uppercase; font-weight: bold; letter-spacing: 1px;">LOBBY TYPE:</label>
         <select id="lobby-visibility-select" onchange="lobbyChangeVisibility()">
@@ -762,19 +748,17 @@
     <h2 style="color:white;text-align:center;margin-top:0;margin-bottom:15px;">COSMETICS SHOP</h2>
     
     <div style="display: flex; gap: 15px; height: calc(100% - 100px); box-sizing: border-box; flex-wrap: wrap;">
-        <!-- Fitting Room Preview -->
+        <!-- Preview -->
         <div id="cosmetics-preview-container" style="flex: 1; min-width: 180px; background: #000; border: 1px solid #333; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 15px; box-sizing: border-box; position: relative; height: 100%;">
             <span style="color: #666; font-size: 11px; margin-bottom: 12px; text-transform: uppercase; font-weight: bold; letter-spacing: 1px;">Fitting Room</span>
             <canvas id="cosmeticPreviewCanvas" width="140" height="140" style="background: #111; border: 1px solid #222; border-radius: 50%; box-shadow: 0 0 10px rgba(0,0,0,0.5);"></canvas>
             <div id="cosmetic-preview-name" style="color: #666; font-size: 13px; margin-top: 15px; font-weight: bold; text-align: center; text-transform: uppercase; letter-spacing: 0.5px;">Unequipped</div>
         </div>
         
-        <!-- Cosmetics List -->
         <div id="cosmetics-list-scroll" style="flex: 1.5; min-width: 240px; overflow-y: auto; height: 100%; border: 1px solid #222; background: rgba(0,0,0,0.2); padding: 5px; box-sizing: border-box; border-radius: 4px;">
             <div id="cosmetics-list"></div>
         </div>
     </div>
-    
     <button class="close-btn" onclick="closeMenu('cosmetics-modal')" style="margin-top: 15px;">CLOSE</button>
 </div>
 
@@ -801,13 +785,10 @@
                     <th style="padding:8px; text-align:right;">ACTION</th>
                 </tr>
             </thead>
-            <tbody id="lobby-browser-list">
-                <!-- Dynamically populated -->
-            </tbody>
+            <tbody id="lobby-browser-list"></tbody>
         </table>
         <div id="no-lobbies-msg" style="color:#666; text-align:center; margin-top:40px; display:none;">No active public lobbies found. Start one!</div>
     </div>
-    
     <button class="close-btn" onclick="closeMenu('lobby-browser-modal')" style="margin-top: 15px;">CLOSE</button>
 </div>
 
@@ -841,20 +822,19 @@
         <div id="p2-keyboard-help" style="color:#ccc; font-size:12px; line-height: 1.4;">
             <span style="color:#e67e22; font-weight:bold;">Keyboard Controls:</span><br>
             Arrows: Move | Comma (,): Interact | Period (.): Reload | Slash (/): Shoot<br>
-            <span style="color:#ffd700;">Aiming:</span> Automatically points to the nearest zombie or movement direction.
+            <span style="color:#ffd700;">Aiming:</span> Auto-points to nearest zombie or movement direction.
         </div>
         
         <div id="p2-gamepad-help" style="color:#ccc; font-size:12px; line-height: 1.4; display:none;">
             <span style="color:#e67e22; font-weight:bold;">Controller Controls:</span><br>
-            Left Stick / D-Pad: Move | Right Stick: Aim | RT / RB / Button A: Shoot | Button X: Reload | Button Y / B: Interact<br>
-            <span style="color:#ffd700;">Aiming Fallback:</span> Auto-aims at the nearest zombie if no right stick is detected (ideal for retro gamepads).
+            Left Stick: Move | Right Stick: Aim | RT / Button A: Shoot | Button X: Reload | Button Y: Interact<br>
+            <span style="color:#ffd700;">Aiming Fallback:</span> Auto-aims if right stick is idle.
         </div>
     </div>
 
     <button onclick="startLocalCoop()" style="background:#a83232; margin-top:10px;">START GAME</button>
     <button onclick="closeMenu('coop-modal')" style="background:#333; margin-top:5px;">BACK TO MENU</button>
 </div>
-
 
 <div id="game-over" class="screen" style="display: none;">
     <h1>GAME OVER</h1>
@@ -869,8 +849,13 @@
 <div id="game-ui">
     <div id="damage-flash"></div>
     <div id="round-box" class="hud-text">1</div>
+    
+    <!-- Next Boss Countdown Indicator -->
+    <div id="boss-timer-box" style="position: absolute; top: 80px; left: 50%; transform: translateX(-50%); color: #ffd700; font-size: 14px; font-weight: bold; text-shadow: 2px 2px 0 #000; text-align: center; z-index: 1000; pointer-events: none;">
+        Next Boss in: 4 Round(s)
+    </div>
 
-    <!-- Player 1 HUD (Bottom Left) -->
+    <!-- Player 1 HUD -->
     <div id="hud-p1" class="hud-cluster">
         <div id="p1-name" style="color: #3498db; font-size: 18px; font-weight: bold;">Survivor</div>
         <div id="p1-hp-bar-container" style="width: 140px; height: 8px; background: #222; border: 1px solid #444; border-radius: 4px; margin-top: 5px; overflow: hidden; box-sizing: border-box;">
@@ -882,7 +867,7 @@
         <div id="p1-perks" class="perk-area"><div id="p1-icon-vig" class="perk" style="background: #c0392b;"></div></div>
     </div>
 
-    <!-- Player 2 HUD (Bottom Right) -->
+    <!-- Player 2 HUD -->
     <div id="hud-p2" class="hud-cluster">
         <div id="p2-name" style="color: #e67e22; font-size: 18px; font-weight: bold;">Player 2</div>
         <div id="p2-hp-bar-container" style="width: 140px; height: 8px; background: #222; border: 1px solid #444; border-radius: 4px; margin-top: 5px; margin-left: auto; overflow: hidden; box-sizing: border-box;">
@@ -894,7 +879,7 @@
         <div id="p2-perks" class="perk-area"><div id="p2-icon-vig" class="perk" style="background: #c0392b;"></div></div>
     </div>
 
-    <!-- Player 3 HUD (Top Left) -->
+    <!-- Player 3 HUD -->
     <div id="hud-p3" class="hud-cluster">
         <div id="hud-p3-hp-bar-container" style="width: 140px; height: 8px; background: #222; border: 1px solid #444; border-radius: 4px; margin-top: 5px; overflow: hidden; box-sizing: border-box;">
             <div id="p3-hp-bar" style="width: 100%; height: 100%; background: #2ecc71; transition: width 0.2s ease;"></div>
@@ -905,7 +890,7 @@
         <div id="p3-perks" class="perk-area"><div id="p3-icon-vig" class="perk" style="background: #c0392b;"></div></div>
     </div>
 
-    <!-- Player 4 HUD (Top Right) -->
+    <!-- Player 4 HUD -->
     <div id="hud-p4" class="hud-cluster">
         <div id="p4-name" style="color: #9b59b6; font-size: 18px; font-weight: bold;">Player 4</div>
         <div id="p4-hp-bar-container" style="width: 140px; height: 8px; background: #222; border: 1px solid #444; border-radius: 4px; margin-top: 5px; margin-left: auto; overflow: hidden; box-sizing: border-box;">
@@ -917,16 +902,13 @@
         <div id="p4-perks" class="perk-area"><div id="p4-icon-vig" class="perk" style="background: #c0392b;"></div></div>
     </div>
 
-    <!-- DYNAMIC ON-SCREEN TUTORIAL TEXT HUD -->
+    <!-- TUTORIAL HUD -->
     <div id="tutorial-hud" style="display:none; position:absolute; bottom:20px; left:50%; transform:translateX(-50%); width:460px; max-width:90%; background:rgba(10,10,10,0.92); border:1px solid #ffd700; border-top:3px solid #ffd700; border-radius:4px; padding:15px; color:white; z-index:1500; font-family:inherit; box-sizing:border-box; text-align:center; pointer-events:auto; box-shadow:0 10px 25px rgba(0,0,0,0.8);">
         <div id="tutorial-title" style="font-weight:bold; color:#ffd700; font-size:18px; margin-bottom:5px; text-transform:uppercase; letter-spacing:1px;">Boot Camp</div>
         <div id="tutorial-text" style="font-size:14px; color:#ddd; line-height:1.4; margin-bottom:10px;">Tutorial text loading...</div>
         <div id="tutorial-progress" style="font-size:11px; color:#888; font-weight:bold; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">Step 1 / 10</div>
         
-        <!-- Skip Button -->
         <button onclick="Tutorial.skip()" style="width: auto; padding: 6px 15px; font-size: 11px; background: rgba(168, 50, 50, 0.15); border: 1px solid #a83232; color: #fff; margin: 0 auto; display: block; border-radius: 4px; cursor: pointer;">Skip Tutorial</button>
-
-        <!-- Bouncing HTML Guidance Arrow pointing to coins indicator -->
         <div id="tutorial-coin-arrow" style="display:none; position:absolute; bottom:100%; left:20px; font-size:24px; animation:arrowBounce 0.4s infinite alternate;">⬇️</div>
     </div>
 
@@ -935,31 +917,21 @@
     <div id="interact-msg">Press F</div>
 </div>
 
-<!-- VIRTUAL JOYSTICKS & MOBILE BUTTON OVERLAY -->
+<!-- JOYSTICKS -->
 <div id="mobile-overlay" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; user-select: none; z-index: 1005;">
-    <!-- Left Joystick (Movement) -->
     <div id="touch-stick-left" style="position: absolute; bottom: 30px; left: 30px; width: 120px; height: 120px; background: rgba(255, 255, 255, 0.08); border: 2px solid rgba(255, 255, 255, 0.25); border-radius: 50%; pointer-events: auto;">
         <div id="touch-knob-left" style="position: absolute; top: 35px; left: 35px; width: 50px; height: 50px; background: rgba(255, 255, 255, 0.45); border-radius: 50%; pointer-events: none; box-shadow: 0 0 10px rgba(0,0,0,0.5);"></div>
     </div>
     
-    <!-- Right Joystick (Aiming & Shooting) -->
     <div id="touch-stick-right" style="position: absolute; bottom: 30px; right: 30px; width: 120px; height: 120px; background: rgba(255, 255, 255, 0.08); border: 2px solid rgba(255, 255, 255, 0.25); border-radius: 50%; pointer-events: auto;">
         <div id="touch-knob-right" style="position: absolute; top: 35px; left: 35px; width: 50px; height: 50px; background: rgba(168, 50, 50, 0.6); border: 2px solid rgba(255, 255, 255, 0.2); border-radius: 50%; pointer-events: none; box-shadow: 0 0 10px rgba(0,0,0,0.5);"></div>
     </div>
 
-    <!-- Action Buttons Row (Above the Right Joystick) -->
     <div style="position: absolute; bottom: 170px; right: 30px; display: flex; gap: 15px; pointer-events: auto;">
-        <button id="btn-touch-interact" style="width: 55px; height: 55px; border-radius: 50%; background: rgba(30, 30, 30, 0.85); border: 2px solid #a83232; color: #fff; font-size: 13px; font-weight: bold; margin: 0; padding: 0; transform: none; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: none; display: flex; align-items: center; justify-content: center;">INT</button>
-        <button id="btn-touch-reload" style="width: 55px; height: 55px; border-radius: 50%; background: rgba(30, 30, 30, 0.85); border: 2px solid #fff; color: #fff; font-size: 13px; font-weight: bold; margin: 0; padding: 0; transform: none; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: none; display: flex; align-items: center; justify-content: center;">REL</button>
-        <button id="btn-touch-switch" style="width: 55px; height: 55px; border-radius: 50%; background: rgba(30, 30, 30, 0.85); border: 2px solid #3498db; color: #fff; font-size: 13px; font-weight: bold; margin: 0; padding: 0; transform: none; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: none; display: flex; align-items: center; justify-content: center;">GUN</button>
+        <button id="btn-touch-interact" style="width: 55px; height: 55px; border-radius: 50%; background: rgba(30, 30, 30, 0.85); border: 2px solid #a83232; color: #fff; font-size: 13px; font-weight: bold; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center;">INT</button>
+        <button id="btn-touch-reload" style="width: 55px; height: 55px; border-radius: 50%; background: rgba(30, 30, 30, 0.85); border: 2px solid #fff; color: #fff; font-size: 13px; font-weight: bold; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center;">REL</button>
+        <button id="btn-touch-switch" style="width: 55px; height: 55px; border-radius: 50%; background: rgba(30, 30, 30, 0.85); border: 2px solid #3498db; color: #fff; font-size: 13px; font-weight: bold; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center;">GUN</button>
     </div>
-
-    <!-- Bounding Mobile Tutorial Pointer Guide Indicators -->
-    <div id="tut-guide-left-stick" style="display: none; position: absolute; bottom: 160px; left: 90px; transform: translateX(-50%); font-size: 32px; pointer-events: none; z-index: 1010; animation: arrowBounce 0.4s infinite alternate;">👇</div>
-    <div id="tut-guide-right-stick" style="display: none; position: absolute; bottom: 160px; right: 90px; transform: translateX(50%); font-size: 32px; pointer-events: none; z-index: 1010; animation: arrowBounce 0.4s infinite alternate;">👇</div>
-    <div id="tut-guide-interact" style="display: none; position: absolute; bottom: 235px; right: 185px; font-size: 28px; pointer-events: none; z-index: 1010; animation: arrowBounce 0.4s infinite alternate;">👇</div>
-    <div id="tut-guide-reload" style="display: none; position: absolute; bottom: 235px; right: 115px; font-size: 28px; pointer-events: none; z-index: 1010; animation: arrowBounce 0.4s infinite alternate;">👇</div>
-    <div id="tut-guide-switch" style="display: none; position: absolute; bottom: 235px; right: 45px; font-size: 28px; pointer-events: none; z-index: 1010; animation: arrowBounce 0.4s infinite alternate;">👇</div>
 </div>
 
 <canvas id="gameCanvas"></canvas>

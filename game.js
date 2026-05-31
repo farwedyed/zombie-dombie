@@ -467,11 +467,134 @@ function renderBossesMenu() {
                     <div class="item-desc" style="font-size:12px; color:#aaa; margin-top:5px; line-height:1.4;">${unlocked ? b.desc : `Reach Round ${b.round} to unlock portfolio log.`}</div>
                 </div>
                 <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; min-width:90px; gap:8px;">
-                    <div style="font-size:24px;">${unlocked ? b.icon : "🔒"}</div>
+                    <canvas id="boss-canvas-${b.id}" width="60" height="60" style="background:#111; border:1px solid #2d2d2d; border-radius:50%; width:50px; height:50px; display:block;"></canvas>
                     <div>${defeated ? '<span style="color:#2ecc71; font-weight:bold; font-size:13px;">🏆 SLAYED</span>' : (unlocked ? '<span style="color:#f1c40f; font-weight:bold; font-size:13px;">💀 ENCOUNTERED</span>' : '<span style="color:#666; font-weight:bold; font-size:13px;">🔒 LOCKED</span>')}</div>
                 </div>
             </div>
         `;
+    });
+
+    // Dynamically draw visual representation of zombies directly on their miniature card canvases
+    bossesDB.forEach(b => {
+        const unlocked = saveData.unlockedBosses && saveData.unlockedBosses.includes(b.id);
+        const cv = document.getElementById(`boss-canvas-${b.id}`);
+        if (!cv) return;
+        const c = cv.getContext('2d');
+        c.clearRect(0, 0, 60, 60);
+
+        if (!unlocked) {
+            // Draw locked silhouette
+            c.fillStyle = '#222';
+            c.strokeStyle = '#333';
+            c.lineWidth = 2.5;
+            c.beginPath(); c.arc(30, 30, 16, 0, Math.PI * 2); c.fill(); c.stroke();
+            
+            // Render lock lock symbol
+            c.fillStyle = '#444';
+            c.fillRect(25, 28, 10, 8);
+            c.strokeStyle = '#444';
+            c.lineWidth = 1.5;
+            c.beginPath(); c.arc(30, 28, 4, Math.PI, 0); c.stroke();
+        } else {
+            // Render the unlocked sprite profiles
+            if (b.id === 'boss_logbreaker') {
+                // 1. Golem Smasher: White body, fissure cross, red eyes
+                c.fillStyle = '#ffffff';
+                c.beginPath(); c.arc(30, 30, 18, 0, Math.PI*2); c.fill();
+                c.strokeStyle = '#000'; c.lineWidth = 2.5; c.stroke();
+                
+                c.strokeStyle = 'rgba(0,0,0,0.5)'; c.lineWidth = 2.5;
+                c.beginPath();
+                c.moveTo(30 - 8, 30 - 8); c.lineTo(30 + 8, 30 + 8);
+                c.moveTo(30 + 8, 30 - 8); c.lineTo(30 - 8, 30 + 8);
+                c.stroke();
+
+                // Eyes
+                c.fillStyle = '#f00'; c.strokeStyle = '#000'; c.lineWidth = 1;
+                c.beginPath(); c.arc(30 - 5, 30 - 5, 2.5, 0, Math.PI*2); c.fill(); c.stroke();
+                c.beginPath(); c.arc(30 + 5, 30 - 5, 2.5, 0, Math.PI*2); c.fill(); c.stroke();
+            }
+            else if (b.id === 'boss_blink') {
+                // 2. Warp Phantom: Violet void body, cyan tri-eyes
+                c.fillStyle = '#9b59b6';
+                c.beginPath(); c.arc(30, 30, 16, 0, Math.PI*2); c.fill();
+                c.strokeStyle = '#000'; c.lineWidth = 2.5; c.stroke();
+
+                // Eyes
+                c.fillStyle = '#00ffff'; c.strokeStyle = '#000'; c.lineWidth = 1;
+                c.beginPath(); c.arc(30 - 5, 30 - 2, 2.5, 0, Math.PI*2); c.fill(); c.stroke();
+                c.beginPath(); c.arc(30 + 5, 30 - 2, 2.5, 0, Math.PI*2); c.fill(); c.stroke();
+                c.beginPath(); c.arc(30, 30 - 8, 2.8, 0, Math.PI*2); c.fill(); c.stroke();
+            }
+            else if (b.id === 'boss_miasma') {
+                // 3. Miasma Horror: Emerald green body, toxic gas glow background
+                let grad = c.createRadialGradient(30, 30, 2, 30, 30, 28);
+                grad.addColorStop(0, 'rgba(39, 174, 96, 0.6)');
+                grad.addColorStop(1, 'rgba(39, 174, 96, 0)');
+                c.fillStyle = grad;
+                c.beginPath(); c.arc(30, 30, 28, 0, Math.PI*2); c.fill();
+
+                c.fillStyle = '#27ae60';
+                c.beginPath(); c.arc(30, 30, 16, 0, Math.PI*2); c.fill();
+                c.strokeStyle = '#000'; c.lineWidth = 2.5; c.stroke();
+
+                // Eyes
+                c.fillStyle = '#f00'; c.strokeStyle = '#000'; c.lineWidth = 1;
+                c.beginPath(); c.arc(30 - 5, 30 - 5, 2.5, 0, Math.PI*2); c.fill(); c.stroke();
+                c.beginPath(); c.arc(30 + 5, 30 - 5, 2.5, 0, Math.PI*2); c.fill(); c.stroke();
+            }
+            else if (b.id === 'boss_rampager') {
+                // 4. Rampager: Red body, armor shoulder arcs, horns
+                c.fillStyle = '#e74c3c';
+                c.beginPath(); c.arc(30, 30, 18, 0, Math.PI*2); c.fill();
+                c.strokeStyle = '#000'; c.lineWidth = 2.5; c.stroke();
+
+                // Armor plates
+                c.strokeStyle = '#7f8c8d'; c.lineWidth = 3;
+                c.beginPath(); c.arc(30, 30, 13, 0, Math.PI, true); c.stroke();
+
+                // Front Horns
+                c.fillStyle = '#fff'; c.strokeStyle = '#000'; c.lineWidth = 1.5;
+                c.beginPath(); c.moveTo(30 - 8, 30 - 10); c.lineTo(30 - 15, 30 - 18); c.lineTo(30 - 4, 30 - 12); c.fill(); c.stroke();
+                c.beginPath(); c.moveTo(30 + 8, 30 - 10); c.lineTo(30 + 15, 30 - 18); c.lineTo(30 + 4, 30 - 12); c.fill(); c.stroke();
+
+                // Eyes
+                c.fillStyle = '#f00'; c.strokeStyle = '#000'; c.lineWidth = 1;
+                c.beginPath(); c.arc(30 - 5, 30 - 5, 2.5, 0, Math.PI*2); c.fill(); c.stroke();
+                c.beginPath(); c.arc(30 + 5, 30 - 5, 2.5, 0, Math.PI*2); c.fill(); c.stroke();
+            }
+            else if (b.id === 'boss_decayer') {
+                // 5. Decayer: Lime green body, interior acid bubblers
+                c.fillStyle = '#2ecc71';
+                c.beginPath(); c.arc(30, 30, 16, 0, Math.PI*2); c.fill();
+                c.strokeStyle = '#000'; c.lineWidth = 2.5; c.stroke();
+
+                // Bubbles
+                c.fillStyle = 'rgba(46, 204, 113, 0.6)';
+                c.beginPath(); c.arc(30 - 5, 30 + 5, 4, 0, Math.PI*2); c.arc(30 + 6, 30 - 6, 3.5, 0, Math.PI*2); c.fill();
+
+                // Eyes
+                c.fillStyle = '#f00'; c.strokeStyle = '#000'; c.lineWidth = 1;
+                c.beginPath(); c.arc(30 - 5, 30 - 5, 2.5, 0, Math.PI*2); c.fill(); c.stroke();
+                c.beginPath(); c.arc(30 + 5, 30 - 5, 2.5, 0, Math.PI*2); c.fill(); c.stroke();
+            }
+            else if (b.id === 'boss_pyromaniac') {
+                // 6. Pyromaniac: Deep orange body, centered flame thermal layer rings
+                c.fillStyle = '#d35400';
+                c.beginPath(); c.arc(30, 30, 17, 0, Math.PI*2); c.fill();
+                c.strokeStyle = '#000'; c.lineWidth = 2.5; c.stroke();
+
+                c.fillStyle = '#e67e22';
+                c.beginPath(); c.arc(30, 30, 11, 0, Math.PI*2); c.fill();
+                c.fillStyle = '#f1c40f';
+                c.beginPath(); c.arc(30, 30, 6, 0, Math.PI*2); c.fill();
+
+                // Eyes
+                c.fillStyle = '#f00'; c.strokeStyle = '#000'; c.lineWidth = 1;
+                c.beginPath(); c.arc(30 - 5, 30 - 5, 2.5, 0, Math.PI*2); c.fill(); c.stroke();
+                c.beginPath(); c.arc(30 + 5, 30 - 5, 2.5, 0, Math.PI*2); c.fill(); c.stroke();
+            }
+        }
     });
 }
 

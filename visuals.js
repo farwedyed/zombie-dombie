@@ -9,7 +9,6 @@ function drawFloatingArrow(x, y, color = '#ffd700') {
     ctx.lineWidth = 2.5;
     ctx.translate(x, y + bounce - 25);
     
-    // Path drawing for custom downward-pointing 2D arrow
     ctx.beginPath();
     ctx.moveTo(-10, -20);
     ctx.lineTo(10, -20);
@@ -32,27 +31,22 @@ function drawBackCosmetic(id, r, targetCtx = ctx) {
     targetCtx.save();
     targetCtx.fillStyle = cos.color;
     targetCtx.strokeStyle = '#000';
-    targetCtx.lineWidth = 2; // Bold outline to match theme
+    targetCtx.lineWidth = 2;
 
-    // Based on the game canvas coordinate transformations,
-    // the player faces positive X, meaning the "back" is at negative X (-r)
     if (cos.type === 'cone') {
-        // Triangular backwards-pointing cone (matches your drawing)
         targetCtx.beginPath();
         targetCtx.moveTo(-r + 2, -10);
-        targetCtx.lineTo(-r - 20, 0); // Point extending backwards
+        targetCtx.lineTo(-r - 20, 0);
         targetCtx.lineTo(-r + 2, 10);
         targetCtx.closePath();
         targetCtx.fill();
         targetCtx.stroke();
     } 
     else if (cos.type === 'backpack') {
-        // Robust adventure backpack
         targetCtx.fillRect(-r - 12, -8, 12, 16);
         targetCtx.strokeRect(-r - 12, -8, 12, 16);
     } 
     else if (cos.type === 'cape') {
-        // Flows backward
         targetCtx.beginPath();
         targetCtx.moveTo(-r + 3, -12);
         targetCtx.lineTo(-r - 24, -18);
@@ -63,19 +57,16 @@ function drawBackCosmetic(id, r, targetCtx = ctx) {
         targetCtx.stroke();
     }
     else if (cos.type === 'jetpack') {
-        // Steel thruster unit with glowing neon cyan nozzle caps
         targetCtx.fillStyle = '#7f8c8d';
         targetCtx.fillRect(-r - 10, -10, 10, 20);
         targetCtx.strokeRect(-r - 10, -10, 10, 20);
         
-        // Thrusters
         targetCtx.fillStyle = cos.color;
         targetCtx.fillRect(-r - 14, -8, 4, 5);
         targetCtx.strokeRect(-r - 14, -8, 4, 5);
         targetCtx.fillRect(-r - 14, 3, 4, 5);
         targetCtx.strokeRect(-r - 14, 3, 4, 5);
         
-        // Fire particles flicker
         if (Math.random() < 0.6) {
             targetCtx.fillStyle = '#ff3300';
             targetCtx.fillRect(-r - 22, -7, 8, 3);
@@ -85,18 +76,15 @@ function drawBackCosmetic(id, r, targetCtx = ctx) {
             targetCtx.fillRect(-r - 18, 5, 4, 1);
         }
     }
-    // --- ANIMATED CYBER WINGS RENDERING SYSTEM ---
     else if (cos.type === 'wings') {
-        // Soft rhythmic flapping animation angle over time
         const flap = Math.sin(Date.now() / 100) * 0.25;
         
-        // Left Wing geometry
         targetCtx.save();
         targetCtx.translate(-r + 2, -6);
-        targetCtx.rotate(-Math.PI / 4 + flap); // Base rotation + animation displacement
+        targetCtx.rotate(-Math.PI / 4 + flap);
         
-        targetCtx.fillStyle = '#0f0f0f'; // Dark carbon plate
-        targetCtx.strokeStyle = cos.color; // Cyber cyan glow border
+        targetCtx.fillStyle = '#0f0f0f';
+        targetCtx.strokeStyle = cos.color;
         targetCtx.lineWidth = 2.5;
         targetCtx.beginPath();
         targetCtx.moveTo(0, 0);
@@ -107,7 +95,6 @@ function drawBackCosmetic(id, r, targetCtx = ctx) {
         targetCtx.fill();
         targetCtx.stroke();
         
-        // Neon inner feathers Details
         targetCtx.strokeStyle = '#ffffff';
         targetCtx.lineWidth = 1;
         targetCtx.beginPath();
@@ -118,10 +105,9 @@ function drawBackCosmetic(id, r, targetCtx = ctx) {
         targetCtx.stroke();
         targetCtx.restore();
 
-        // Right Wing geometry (Mirrored)
         targetCtx.save();
         targetCtx.translate(-r + 2, 6);
-        targetCtx.rotate(Math.PI / 4 - flap); // Base rotation - animation displacement
+        targetCtx.rotate(Math.PI / 4 - flap);
         
         targetCtx.fillStyle = '#0f0f0f';
         targetCtx.strokeStyle = cos.color;
@@ -135,7 +121,6 @@ function drawBackCosmetic(id, r, targetCtx = ctx) {
         targetCtx.fill();
         targetCtx.stroke();
         
-        // Neon inner feathers Details
         targetCtx.strokeStyle = '#ffffff';
         targetCtx.lineWidth = 1;
         targetCtx.beginPath();
@@ -146,18 +131,15 @@ function drawBackCosmetic(id, r, targetCtx = ctx) {
         targetCtx.stroke();
         targetCtx.restore();
     }
-    // --- PULSING ANGELIC HALO RENDERING SYSTEM ---
     else if (cos.type === 'halo') {
         targetCtx.save();
-        // Soft pulsing size scaling over time
         const pulse = 1 + Math.sin(Date.now() / 150) * 0.08;
         
         targetCtx.shadowBlur = 12;
-        targetCtx.shadowColor = cos.color; // Golden glow
+        targetCtx.shadowColor = cos.color;
         targetCtx.strokeStyle = cos.color;
         targetCtx.lineWidth = 3;
         
-        // Render a tilted ellipse surrounding the player head for a 3D halo illusion
         targetCtx.beginPath();
         targetCtx.ellipse(-r * 0.2, 0, r * 0.8 * pulse, r * 0.4 * pulse, 0, 0, Math.PI * 2);
         targetCtx.stroke();
@@ -170,34 +152,35 @@ function drawBackCosmetic(id, r, targetCtx = ctx) {
 function drawGame() {
     if (!activeMap) return;
 
-    // 1. Clear Screen
     ctx.fillStyle = '#050505'; 
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
     ctx.save();
 
-    // Scale view relative to standard vertical resolution baseline (900px target height)
     const baseHeight = 900;
     const scale = canvas.height / baseHeight;
     ctx.scale(scale, scale);
 
-    // Apply Camera
-    ctx.translate(-camera.x, -camera.y);
+    let shakeX = 0;
+    let shakeY = 0;
+    if (window.screenShake > 0) {
+        shakeX = (Math.random() - 0.5) * window.screenShake;
+        shakeY = (Math.random() - 0.5) * window.screenShake;
+        window.screenShake *= 0.88;
+        if (window.screenShake < 0.4) window.screenShake = 0;
+    }
 
-    // 2. Draw Rooms (Floor Tiles & Concrete Texturing)
+    ctx.translate(-camera.x + shakeX, -camera.y + shakeY);
+
     activeMap.rooms.forEach(r => {
         ctx.fillStyle = r.color;
-        
-        // Locked rooms are darker/transparent
         if(r.unlocked) {
             ctx.globalAlpha = 1.0;
         } else {
             ctx.globalAlpha = 0.15; 
         }
-        
         ctx.fillRect(r.x, r.y, r.w, r.h);
         
-        // Draw elegant subtle tiled floor lines for tactile texture feedback
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.035)';
         ctx.lineWidth = 1;
         for (let gx = r.x; gx < r.x + r.w; gx += 80) {
@@ -212,11 +195,9 @@ function drawGame() {
             ctx.lineTo(r.x + r.w, gy);
             ctx.stroke();
         }
-        
-        ctx.globalAlpha = 1.0; // Reset alpha
+        ctx.globalAlpha = 1.0;
     });
 
-    // 2.5. Draw Permanent viscerally satisfying Blood Pools on the Floor Layer
     if (window.bloodStains) {
         window.bloodStains.forEach(s => {
             ctx.fillStyle = s.color;
@@ -226,35 +207,159 @@ function drawGame() {
         });
     }
 
-    // 2.6. Draw Rare Zombie Power-up Drops
+    if (window.acidPools) {
+        window.acidPools.forEach(p => {
+            ctx.save();
+            ctx.fillStyle = 'rgba(46, 204, 113, 0.22)';
+            ctx.strokeStyle = '#2ecc71';
+            ctx.lineWidth = 1.8;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            
+            ctx.fillStyle = 'rgba(46, 204, 113, 0.4)';
+            for (let j = 0; j < 3; j++) {
+                const bubbleX = p.x + Math.sin((Date.now() / 200) + j) * (p.r * 0.45);
+                const bubbleY = p.y + Math.cos((Date.now() / 250) + j) * (p.r * 0.45);
+                ctx.beginPath();
+                ctx.arc(bubbleX, bubbleY, 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        });
+    }
+
+    if (window.toxicClouds) {
+        window.toxicClouds.forEach(c => {
+            ctx.save();
+            const grad = ctx.createRadialGradient(c.x, c.y, 2, c.x, c.y, c.r);
+            grad.addColorStop(0, 'rgba(39, 174, 96, 0.45)');
+            grad.addColorStop(0.7, 'rgba(46, 204, 113, 0.18)');
+            grad.addColorStop(1, 'rgba(46, 204, 113, 0)');
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.arc(c.x, c.y, c.r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        });
+    }
+
+    if (window.fireZones) {
+        window.fireZones.forEach(fz => {
+            ctx.save();
+            ctx.fillStyle = 'rgba(230, 126, 34, 0.18)';
+            ctx.beginPath();
+            ctx.arc(fz.x, fz.y, fz.r, 0, Math.PI * 2);
+            ctx.fill();
+            
+            for (let j = 0; j < 6; j++) {
+                const angle = (j * Math.PI * 2) / 6 + (Date.now() / 800);
+                const offsetDist = (fz.r * 0.55) * (0.4 + 0.6 * Math.sin((Date.now() / 120) + j));
+                const fx = fz.x + Math.cos(angle) * offsetDist;
+                const fy = fz.y + Math.sin(angle) * offsetDist;
+                const h = 10 + Math.random() * 12;
+                ctx.fillStyle = j % 2 === 0 ? '#e67e22' : '#e74c3c';
+                ctx.fillRect(fx - 2, fy - h, 4, h);
+            }
+            ctx.restore();
+        });
+    }
+
+    if (window.mortarTargets) {
+        window.mortarTargets.forEach(t => {
+            ctx.save();
+            const pulse = 1 + Math.sin(Date.now() / 70) * 0.08;
+            ctx.strokeStyle = 'rgba(231, 76, 60, 0.85)';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.arc(t.x, t.y, t.r * pulse, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            ctx.setLineDash([6, 4]);
+            ctx.strokeStyle = 'rgba(231, 76, 60, 0.4)';
+            ctx.beginPath();
+            ctx.arc(t.x, t.y, t.r + 10, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            ctx.setLineDash([]);
+            ctx.strokeStyle = 'rgba(231, 76, 60, 0.6)';
+            ctx.beginPath();
+            ctx.moveTo(t.x - 20, t.y); ctx.lineTo(t.x + 20, t.y);
+            ctx.moveTo(t.x, t.y - 20); ctx.lineTo(t.x, t.y + 20);
+            ctx.stroke();
+            ctx.restore();
+        });
+    }
+
+    if (window.groundSmashes) {
+        window.groundSmashes.forEach(s => {
+            ctx.save();
+            let alpha = s.life / 25;
+            if (alpha < 0) alpha = 0; if (alpha > 1) alpha = 1;
+            
+            // Decides between custom color template or the default dark orange
+            ctx.strokeStyle = s.color ? s.color.replace('ALPHA', alpha) : `rgba(211, 84, 0, ${alpha})`;
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+        });
+    }
+
+    // --- DRAW RAMPAGER CHARGING PATH LINE ---
+    zombies.forEach(z => {
+        if (z.type === 'boss_rampager' && z.chargeState === 'TELEGRAPH') {
+            ctx.save();
+            ctx.strokeStyle = 'rgba(192, 57, 43, 0.15)';
+            ctx.lineWidth = z.r * 2;
+            ctx.lineCap = 'round';
+            
+            // Dynamic path calculation depending on short Rapid bursts vs long Heavy charges
+            const speed = (z.chargeAttackType === 'RAPID') ? 20 : 24;
+            const ticks = (z.chargeAttackType === 'RAPID') ? 18 : 35;
+            const chargeLen = speed * ticks;
+            
+            ctx.beginPath();
+            ctx.moveTo(z.x, z.y);
+            ctx.lineTo(z.x + Math.cos(z.chargeAngle) * chargeLen, z.y + Math.sin(z.chargeAngle) * chargeLen);
+            ctx.stroke();
+            
+            ctx.strokeStyle = '#e74c3c';
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([12, 6]);
+            ctx.beginPath();
+            ctx.moveTo(z.x + Math.cos(z.chargeAngle + Math.PI/2)*z.r, z.y + Math.sin(z.chargeAngle + Math.PI/2)*z.r);
+            ctx.lineTo(z.x + Math.cos(z.chargeAngle + Math.PI/2)*z.r + Math.cos(z.chargeAngle) * chargeLen, z.y + Math.sin(z.chargeAngle + Math.PI/2)*z.r + Math.sin(z.chargeAngle) * chargeLen);
+            ctx.moveTo(z.x - Math.cos(z.chargeAngle + Math.PI/2)*z.r, z.y - Math.sin(z.chargeAngle + Math.PI/2)*z.r);
+            ctx.lineTo(z.x - Math.cos(z.chargeAngle + Math.PI/2)*z.r + Math.cos(z.chargeAngle) * chargeLen, z.y - Math.sin(z.chargeAngle + Math.PI/2)*z.r + Math.sin(z.chargeAngle) * chargeLen);
+            ctx.stroke();
+            ctx.restore();
+        }
+    });
+
     if (window.drops) {
         window.drops.forEach(d => {
             ctx.save();
-            
-            // Outer glow based on active drop lifetime (starts flashing faster when decaying)
             const isFlickering = d.life < 300 && Math.floor(d.life / 10) % 2 === 0;
             if (!isFlickering) {
                 ctx.shadowBlur = 15;
                 ctx.shadowColor = '#ffd700';
             }
-            
-            // Pulsing geometry animation
             const pulse = 1 + Math.sin(Date.now() / 120) * 0.12;
             
-            // Draw glowing golden ring
             ctx.strokeStyle = '#ffd700';
             ctx.lineWidth = 2.5;
             ctx.beginPath();
             ctx.arc(d.x, d.y, 18 * pulse, 0, Math.PI * 2);
             ctx.stroke();
             
-            // Fill core base backing
             ctx.fillStyle = 'rgba(10, 10, 10, 0.85)';
             ctx.beginPath();
             ctx.arc(d.x, d.y, 15 * pulse, 0, Math.PI * 2);
             ctx.fill();
             
-            // Text symbol mapping representation
             let symbol = "?";
             let symColor = "#fff";
             if (d.type === 'MAX_AMMO') { symbol = "AMMO"; symColor = "#2ecc71"; }
@@ -267,23 +372,19 @@ function drawGame() {
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
             ctx.fillText(symbol, d.x, d.y);
-            
             ctx.restore();
         });
     }
 
-    // 3. Draw Furniture
     activeMap.furniture.forEach(f => {
         ctx.fillStyle = f.color;
         ctx.fillRect(f.x, f.y, f.w, f.h);
-        
         ctx.strokeStyle = '#000000';
         ctx.lineWidth = 2.5;
         ctx.strokeRect(f.x, f.y, f.w, f.h);
     });
 
-    // 4. Draw Walls
-    ctx.fillStyle = '#2c3e50'; // Concrete wall colour
+    ctx.fillStyle = '#2c3e50'; 
     activeMap.walls.forEach(w => {
         ctx.fillRect(w.x, w.y, w.w, w.h);
         ctx.strokeStyle = '#000000'; 
@@ -291,21 +392,18 @@ function drawGame() {
         ctx.strokeRect(w.x, w.y, w.w, w.h);
     });
 
-    // 5. Draw Windows (With Dynamic Board/Log Scaling)
     activeMap.windows.forEach(w => {
-        // Frame
         ctx.strokeStyle = '#000000'; 
         ctx.lineWidth = 2.5;
         ctx.strokeRect(w.x, w.y, w.w, w.h);
         
-        // Boards
         ctx.fillStyle = '#8B4513';
         if(w.boards > 0) {
             const isHorizontal = (w.orientation === 'H');
             const totalLength = isHorizontal ? w.w : w.h;
             const boardSpacing = totalLength / w.max;
-            const boardWidth = boardSpacing * 0.7; // 70% of the space is the board, 30% is gap
-            const padding = boardSpacing * 0.15; // Centering the board inside its segment
+            const boardWidth = boardSpacing * 0.7; 
+            const padding = boardSpacing * 0.15; 
             
             for(let i=0; i<w.boards; i++) {
                 if(isHorizontal) {
@@ -323,23 +421,18 @@ function drawGame() {
         }
     });
 
-    // 6. Draw Doors
     activeMap.rooms.forEach(r => {
         if(!r.unlocked && r.door) {
-            // Door Color
             ctx.fillStyle = '#8d6e63'; 
             ctx.fillRect(r.door.x, r.door.y, r.door.w, r.door.h);
-            
             ctx.strokeStyle = '#000000';
             ctx.lineWidth = 2.5;
             ctx.strokeRect(r.door.x, r.door.y, r.door.w, r.door.h);
             
-            // Door Detail (Knob/Bar)
             ctx.fillStyle = '#5d4037';
             ctx.fillRect(r.door.x + 5, r.door.y + r.door.h/2 - 2, r.door.w - 10, 4);
             ctx.strokeRect(r.door.x + 5, r.door.y + r.door.h/2 - 2, r.door.w - 10, 4);
 
-            // Price Tag
             ctx.fillStyle = '#fff'; 
             ctx.textAlign = 'center'; 
             ctx.font="14px monospace";
@@ -347,11 +440,9 @@ function drawGame() {
         }
     });
 
-    // 7. Draw Interactables (Wallbuys, Box, Perks)
     activeMap.interactables.forEach(i => {
         ctx.fillStyle = i.type === 'BOX' ? i.color : '#555';
         ctx.fillRect(i.x, i.y, i.w, i.h);
-        
         ctx.strokeStyle = '#000000';
         ctx.lineWidth = 2.5;
         ctx.strokeRect(i.x, i.y, i.w, i.h);
@@ -373,35 +464,28 @@ function drawGame() {
         }
     });
 
-    // 8. Draw Players
     Object.values(players).forEach(p => {
         ctx.save();
         ctx.translate(p.x, p.y);
         
-        // --- DRAW USERNAME ---
         if(p.state === 'ALIVE' && p.name) {
             ctx.fillStyle = "#fff";
             ctx.font = "bold 12px Arial";
             ctx.textAlign = "center";
             ctx.shadowColor = "black";
             ctx.shadowBlur = 2;
-            ctx.fillText(p.name, 0, -45); // Float above head
+            ctx.fillText(p.name, 0, -45); 
             ctx.shadowBlur = 0;
         }
 
-        // --- DRAW DOWNED VISUALS ---
         if(p.state === 'DOWNED') {
-            ctx.globalAlpha = 0.5; // Transparent if down
-            
+            ctx.globalAlpha = 0.5; 
             if(p.reviveTimer > 0) {
-                // Background Bar
                 ctx.fillStyle = "black"; 
                 ctx.fillRect(-20, -35, 40, 5);
-                // Green Progress
                 ctx.fillStyle = "#0f0"; 
                 ctx.fillRect(-20, -35, 40 * (p.reviveTimer/300), 5);
             } else {
-                // "NEED HELP" text
                 ctx.fillStyle = "red"; 
                 ctx.font = "bold 12px Arial"; 
                 ctx.textAlign = "center";
@@ -409,27 +493,20 @@ function drawGame() {
             }
         }
         
-        // Rotate Player Body
         ctx.rotate(p.angle);
-        
-        // Render blinking/flashing effect if player is currently invincible
         if (p.invincibleTimer > 0 && Math.floor(p.invincibleTimer / 4) % 2 === 0) {
             ctx.globalAlpha = 0.3; 
         }
 
-        // --- LAYERED COSMETICS SYSTEM ---
         const equippedCos = p.equippedCosmetic || (p.id === 'p1' ? saveData.equippedCosmetic : 'none');
         const cosObj = equippedCos !== 'none' ? cosmeticDB.find(c => c.id === equippedCos) : null;
         
-        // Layer 1: Draw standard back cosmetics (backpack, cape, jetpack, wings) UNDER the body circle
         if (cosObj && cosObj.type !== 'halo') {
             drawBackCosmetic(equippedCos, p.r, ctx);
         }
         
-        // Body Color (Vig makes you redder)
         ctx.fillStyle = p.hasVigor ? '#c0392b' : p.color;
         
-        // Draw Circle Body with Black Outline
         ctx.beginPath(); 
         ctx.arc(0, 0, p.r, 0, Math.PI*2); 
         ctx.fill();
@@ -437,7 +514,6 @@ function drawGame() {
         ctx.lineWidth = 2.5;
         ctx.stroke();
         
-        // Draw Gun Barrel with Black Outline
         const activeGunColor = p.gunColor || (p.inventory && p.inventory[p.weapIdx] ? p.inventory[p.weapIdx].color : '#999');
         ctx.fillStyle = activeGunColor;
         ctx.fillRect(0, -5, 25, 10);
@@ -445,48 +521,89 @@ function drawGame() {
         ctx.lineWidth = 2.5;
         ctx.strokeRect(0, -5, 25, 10);
 
-        // Layer 2: Draw over-body cosmetics (Halos) ON TOP of the head circle and gun barrel
         if (cosObj && cosObj.type === 'halo') {
             drawBackCosmetic(equippedCos, p.r, ctx);
         }
-        
         ctx.restore();
     });
 
-    // 9. Draw Zombies
     zombies.forEach(z => {
-        // Body (With local damage hit flashing)
+        ctx.save();
         if (z.hitTimer && z.hitTimer > 0) {
             ctx.fillStyle = '#ff4757'; 
-            z.hitTimer--; // Decay flash frame locally
+            z.hitTimer--; 
         } else {
             ctx.fillStyle = z.color || '#3a4a38'; 
         }
+        
         ctx.beginPath(); 
         ctx.arc(z.x, z.y, z.r, 0, Math.PI*2); 
         ctx.fill();
         
-        // Body Outline
         ctx.strokeStyle = '#000000';
         ctx.lineWidth = 2.5;
         ctx.stroke();
         
-        // Red Eyes with crisp Black Outlines
+        if (z.isBoss) {
+            if (z.type === 'boss_logbreaker') {
+                ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+                ctx.moveTo(z.x - 12, z.y - 12); ctx.lineTo(z.x + 12, z.y + 12);
+                ctx.moveTo(z.x + 12, z.y - 12); ctx.lineTo(z.x - 12, z.y + 12);
+                ctx.stroke();
+            }
+            else if (z.type === 'boss_rampager') {
+                ctx.strokeStyle = '#7f8c8d';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(z.x, z.y, z.r - 4, 0, Math.PI, true);
+                ctx.stroke();
+                
+                ctx.fillStyle = '#fff';
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 1.5;
+                ctx.save();
+                ctx.translate(z.x, z.y);
+                ctx.rotate(z.chargeAngle || 0);
+                ctx.beginPath();
+                ctx.moveTo(10, -12); ctx.lineTo(25, -20); ctx.lineTo(14, -5);
+                ctx.closePath(); ctx.fill(); ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(10, 12); ctx.lineTo(25, 20); ctx.lineTo(14, 5);
+                ctx.closePath(); ctx.fill(); ctx.stroke();
+                ctx.restore();
+            }
+            else if (z.type === 'boss_decayer') {
+                ctx.fillStyle = 'rgba(46, 204, 113, 0.4)';
+                ctx.beginPath();
+                ctx.arc(z.x - 6, z.y + 6, 5, 0, Math.PI*2);
+                ctx.arc(z.x + 8, z.y - 8, 4, 0, Math.PI*2);
+                ctx.fill();
+            }
+        }
+        
         ctx.fillStyle = '#f00';
         ctx.strokeStyle = '#000000';
         ctx.lineWidth = 1;
         
-        ctx.beginPath(); 
-        ctx.arc(z.x - 5, z.y - 5, 2.5, 0, Math.PI*2); 
-        ctx.fill();
-        ctx.stroke();
+        if (z.type === 'boss_blink') {
+            ctx.fillStyle = '#00ffff';
+            ctx.beginPath(); ctx.arc(z.x - 6, z.y - 4, 2.8, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+            ctx.beginPath(); ctx.arc(z.x + 6, z.y - 4, 2.8, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+            ctx.beginPath(); ctx.arc(z.x, z.y - 10, 3.2, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+        } else {
+            ctx.beginPath(); 
+            ctx.arc(z.x - 5, z.y - 5, 2.5, 0, Math.PI*2); 
+            ctx.fill();
+            ctx.stroke();
+            
+            ctx.beginPath();
+            ctx.arc(z.x + 5, z.y - 5, 2.5, 0, Math.PI*2); 
+            ctx.fill();
+            ctx.stroke();
+        }
         
-        ctx.beginPath();
-        ctx.arc(z.x + 5, z.y - 5, 2.5, 0, Math.PI*2); 
-        ctx.fill();
-        ctx.stroke();
-        
-        // Health Bar
         if(z.hp < z.maxHp) {
             ctx.fillStyle = '#000'; 
             ctx.fillRect(z.x - 12, z.y - 25, 24, 4);
@@ -496,9 +613,9 @@ function drawGame() {
             if(pct < 0) pct = 0;
             ctx.fillRect(z.x - 12, z.y - 25, 24 * pct, 4);
         }
+        ctx.restore();
     });
 
-    // 10. Draw Bullets
     bullets.forEach(b => {
         let bulletColor = b.color;
         const darkColors = ['#000', '#222', '#333', '#444', '#3e2723', '#5c4033', '#2c3e50', '#212f3c', '#555'];
@@ -507,7 +624,6 @@ function drawGame() {
         }
         
         ctx.save();
-        
         if (b.type === 'explosive') {
             ctx.fillStyle = '#ff4757';
             ctx.beginPath();
@@ -526,11 +642,9 @@ function drawGame() {
             ctx.lineWidth = 1.5;
             ctx.stroke();
         }
-        
         ctx.restore();
     });
 
-    // Draw Ranged Archer projectiles
     if (window.zombieArrows) {
         window.zombieArrows.forEach(a => {
             ctx.save();
@@ -545,7 +659,6 @@ function drawGame() {
         });
     }
 
-    // 11. Draw Floating Texts
     texts.forEach(t => { 
         ctx.fillStyle = t.color; 
         ctx.textAlign = 'center'; 
@@ -556,7 +669,6 @@ function drawGame() {
         ctx.shadowBlur = 0;
     });
 
-    // 12. Draw Particles (Visuals ONLY - Physics and Cleanup are handled in game1.js)
     particles.forEach(p => { 
         if (p.type === 'shell') {
             ctx.save();
@@ -574,78 +686,36 @@ function drawGame() {
         }
     });
 
-    // 13. Draw Bouncing Guidance Indicators during Tutorial Mode
     if (typeof Tutorial !== 'undefined' && Tutorial.isActive && me) {
         Tutorial.drawIndicators();
     }
 
-    ctx.restore(); // Camera restored
+    ctx.restore(); 
     
-    // --- DRAW BOSS HEALTH BAR IN SCREEN SPACE ---
     if (window.activeBoss && window.activeBoss.name) {
         const barW = 400;
         const barH = 16;
         const x = (canvas.width - barW) / 2;
         const y = 170; 
         
-        // Outer Border
         ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
         ctx.fillRect(x - 4, y - 4, barW + 8, barH + 8);
         ctx.strokeStyle = '#e74c3c';
         ctx.lineWidth = 2.5;
         ctx.strokeRect(x - 4, y - 4, barW + 8, barH + 8);
         
-        // Health Fill
         let pct = window.activeBoss.hp / window.activeBoss.maxHp;
         if (pct < 0) pct = 0;
         ctx.fillStyle = '#c0392b';
         ctx.fillRect(x, y, barW * pct, barH);
         
-        // Highlight shine
         ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
         ctx.fillRect(x, y, barW * pct, barH / 2);
         
-        // Boss name text overlay
         ctx.fillStyle = '#ffffff';
         ctx.font = "bold 13px monospace";
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(`${window.activeBoss.name.toUpperCase()} (${Math.floor(pct * 100)}%)`, x + barW / 2, y + barH / 2);
     }
-}
-
-function updateUI() {
-    document.getElementById('round-box').innerText = stats.round;
-
-    // Power-up Alerts
-    const badgeDouble = document.getElementById('badge-double');
-    const badgeInsta = document.getElementById('badge-instakill');
-    if (badgeDouble) {
-        badgeDouble.style.display = (window.doublePointsTimer > 0) ? 'block' : 'none';
-    }
-    if (badgeInsta) {
-        badgeInsta.style.display = (window.instaKillTimer > 0) ? 'block' : 'none';
-    }
-
-    ['p1', 'p2', 'p3', 'p4'].forEach(pId => {
-        const p = players[pId];
-        const hud = document.getElementById('hud-' + pId);
-        if (hud) {
-            if (p) {
-                hud.style.display = 'block';
-                document.getElementById(pId + '-name').innerText = p.name || pId.toUpperCase();
-                document.getElementById(pId + '-score').innerHTML = p.score + ' <span style="font-size:16px">⛃</span>';
-                
-                const gun = p.inventory && p.inventory[p.weapIdx] ? p.inventory[p.weapIdx] : null;
-                const gunName = p.gunName || (gun ? gun.name : "Model 1911");
-                const ammoText = p.reloading ? "RELOADING" : (p.clip !== undefined && p.ammo !== undefined ? `${p.clip} / ${p.ammo}` : (gun ? `${gun.clip} / ${gun.ammo}` : "8 / 32"));
-                
-                document.getElementById(pId + '-gun-name').innerText = gunName;
-                document.getElementById(pId + '-ammo-text').innerText = ammoText;
-                document.getElementById(pId + '-icon-vig').style.display = p.hasVigor ? 'block' : 'none';
-            } else {
-                hud.style.display = 'none';
-            }
-        }
-    });
 }

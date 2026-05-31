@@ -163,11 +163,14 @@ const cosmeticDB = [
     { id: 'wings_carbon', name: "Cyber Wings (Black/Cyan)", price: 2000, color: "#00ffff", type: "wings" }
 ];
 
-/* --- BOSSES DATABASE --- */
+/* --- BOSSES DATABASE (EXPANDED TO 6 BOSSES) --- */
 const bossesDB = [
-    { id: 'boss_logbreaker', name: "The Golem Smasher", round: 10, desc: "A colossal, armored brute capable of smashing all defensive window barriers instantly on contact. He fires projectile rings outward in all directions.", color: '#d35400', icon: "🪵" },
-    { id: 'boss_broodmother', name: "The Broodmother", round: 15, desc: "An infectious queen that periodically births standard zombie minions directly near her position.", color: '#10ac84', icon: "🕷️" },
-    { id: 'boss_hydra', name: "The Hydra Omega", round: 20, desc: "An apex purple abomination that recursively splits into multiple generations of split-clones upon death.", color: '#8e44ad', icon: "🐙" }
+    { id: 'boss_logbreaker', name: "The Golem Smasher", round: 5, desc: "A colossal, alabaster stone brute. He pounds the ground, sending a traveling sequence of devastating seismic fractures along the floor toward survivors.", color: '#ffffff', icon: "🗿" },
+    { id: 'boss_blink', name: "The Warp Phantom", round: 5, desc: "An elusive teleporter with three glowing cyan eyes that warps directly near players' positions to initiate ambush attacks.", color: '#9b59b6', icon: "👁️" },
+    { id: 'boss_miasma', name: "The Miasma Horror", round: 5, desc: "An abomination that constantly emits lingering toxic clouds. Standing in these fumes slowly drains health and slows survivors.", color: '#27ae60', icon: "🤢" },
+    { id: 'boss_rampager', name: "The Rampager", round: 5, desc: "An armored heavy zombie built for momentum. It targets players with a straight line charging lane before violently locking in charge velocity.", color: '#e74c3c', icon: "🐂" },
+    { id: 'boss_decayer', name: "The Decayer", round: 5, desc: "A rotting pathogen container that leaves a continuous trail of glowing green acid pools. Players walking in pools receive slow damage ticks and speed impairment.", color: '#2ecc71', icon: "🧪" },
+    { id: 'boss_pyromaniac', name: "The Pyromaniac", round: 5, desc: "A stationary ordnance launcher that targets players' coordinates with high firebombs. Bombs land after a delay, leaving scorched fire fields.", color: '#d35400', icon: "🔥" }
 ];
 
 /* --- SOUND EFFECTS ENGINE --- */
