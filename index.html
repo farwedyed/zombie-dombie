@@ -246,21 +246,21 @@
             display: flex; 
             flex-direction: column; 
             align-items: center; 
-            justify-content: flex-start; /* Modified to scroll nicely on short landscapes */
+            justify-content: center; /* Center horizontally/vertically on PC */
             pointer-events: auto; 
             z-index: 2000; 
             box-shadow: inset 0 0 100px rgba(0,0,0,0.8);
-            overflow-y: auto;
+            overflow: hidden !important; /* Block global window-level scrollbars */
             padding: 20px;
             box-sizing: border-box;
         }
 
-        /* NEW UNIFIED 3-COLUMN LAYOUT */
+        /* UNIFIED 3-COLUMN LAYOUT WITH REDUCED BORDERS ON PC */
         .main-menu-grid {
             display: flex;
             gap: 20px;
             width: 98%;
-            max-width: 1280px;
+            max-width: 1340px; /* Wider allocation to reduce dead space on 1080p and higher */
             margin-top: 15px;
             box-sizing: border-box;
             align-items: stretch;
@@ -280,37 +280,19 @@
             display: flex;
             flex-direction: column;
             justify-content: flex-start;
+            flex: 1; /* Stretch columns equally to fill blank margins */
+            min-width: 240px; /* Fluid shrinking values prevent horizontal overflows */
         }
 
-        /* Specific Width Constraints */
+        /* Column Caps */
         .left-panel {
-            flex: 1.1;
-            min-width: 300px;
-            max-width: 360px;
+            max-width: 420px;
         }
         .center-panel {
-            flex: 1.3;
-            min-width: 320px;
-            max-width: 440px;
+            max-width: 480px;
         }
         .right-panel {
-            flex: 1.1;
-            min-width: 300px;
-            max-width: 360px;
-        }
-
-        @media (max-width: 1024px) {
-            .main-menu-grid {
-                flex-direction: column;
-                align-items: center;
-                gap: 15px;
-                padding-bottom: 30px;
-            }
-            .menu-column {
-                width: 100%;
-                max-width: 480px;
-                flex: none !important;
-            }
+            max-width: 420px;
         }
 
         h1 { 
@@ -458,8 +440,8 @@
             transform: translate(-50%, -50%); 
             width: 650px; 
             max-width: 95%;
-            height: 520px; 
-            max-height: 85vh;
+            height: auto;
+            max-height: 95vh;
             background: rgba(12, 12, 12, 0.95); 
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
@@ -469,6 +451,7 @@
             z-index: 2100; 
             padding: 25px; 
             box-sizing: border-box;
+            overflow-y: auto;
         }
         .modal h2 {
             color: #a83232;
@@ -651,22 +634,222 @@
             display: none; 
         }
 
-        /* --- MOBILE ADAPTATIONS --- */
+        /* --- SCREEN SIZE RESPONSIVE TWEAKS --- */
+        @media (min-height: 800px) {
+            .menu-column {
+                min-height: 440px; /* Push panels deeper vertically to occupy PC resolution empty space */
+            }
+            #menu-leaderboard-body-container {
+                max-height: 380px !important;
+            }
+        }
+
+        @media (max-width: 1100px) {
+            .main-menu-grid {
+                gap: 10px !important;
+                width: 100% !important;
+            }
+            .menu-column {
+                padding: 12px !important;
+                min-width: 220px !important;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .main-menu-grid {
+                flex-direction: column;
+                align-items: center;
+                gap: 15px;
+                padding-bottom: 30px;
+            }
+            .menu-column {
+                width: 100%;
+                max-width: 480px;
+                flex: none !important;
+            }
+        }
+
+        /* --- LANDSCAPE PHONE VIEWPORT FIX --- */
+        /* Forces landscape mobile view to use compact sizes instead of wrapping vertically */
+        @media (max-height: 550px) {
+            .screen {
+                justify-content: flex-start;
+                padding: 10px;
+            }
+            h1 { 
+                font-size: 24px !important; 
+                margin-bottom: 4px !important; 
+            }
+            .stats-text { 
+                font-size: 9px !important; 
+                padding: 4px 8px !important; 
+                margin-bottom: 4px !important; 
+            }
+            #menu-xp-bar-container {
+                height: 5px !important;
+                margin-bottom: 1px !important;
+            }
+            #menu-xp-text { 
+                margin-bottom: 4px !important; 
+                font-size: 8px !important;
+            }
+            .main-menu-grid {
+                flex-direction: row !important; /* Force side-by-side even on small screens to fit wide screens */
+                gap: 8px !important;
+                margin-top: 5px !important;
+                width: 100% !important;
+                align-items: stretch !important;
+            }
+            .menu-column {
+                padding: 10px !important;
+                min-height: 180px !important;
+                max-height: 200px !important; /* Cap height to completely avoid scroll bars */
+                overflow-y: auto !important; /* Let column scroll internally if overflowed */
+                min-width: 180px !important;
+                max-width: 320px !important;
+                border-top: 2px solid #a83232 !important;
+            }
+            .menu-label {
+                font-size: 9px !important;
+                margin-bottom: 5px !important;
+                padding-bottom: 3px !important;
+            }
+            input, select, button {
+                padding: 6px !important;
+                font-size: 11px !important;
+                margin: 2px 0 !important;
+            }
+            .priority-grid {
+                gap: 4px !important;
+            }
+            .priority-grid button {
+                padding: 5px 2px !important;
+                font-size: 8px !important;
+            }
+
+            /* --- RESPONSIVE MODAL COMPRESSION FOR LANDSCAPES --- */
+            .modal {
+                padding: 12px !important;
+            }
+            .modal h2 {
+                font-size: 15px !important;
+                margin-bottom: 10px !important;
+            }
+            .deployment-cards-container {
+                margin-bottom: 8px !important;
+                gap: 6px !important;
+            }
+            .deployment-card {
+                min-width: 75px !important;
+            }
+            .card-banner {
+                height: 24px !important;
+                font-size: 8px !important;
+            }
+            .card-content {
+                padding: 4px !important;
+            }
+            .card-title {
+                font-size: 9px !important;
+            }
+            .card-desc {
+                display: none !important; /* Collapses descriptions to fit modal on phone screens */
+            }
+            .card-illustration-box {
+                height: 26px !important;
+                margin-bottom: 4px !important;
+            }
+            .mini-player {
+                width: 10px !important;
+                height: 10px !important;
+                bottom: 3px !important;
+            }
+            .mini-player-barrel {
+                width: 3px !important;
+                height: 4px !important;
+                top: -4px !important;
+                left: 2px !important;
+            }
+            .mini-zombie {
+                width: 8px !important;
+                height: 8px !important;
+            }
+            .zombie-eyes {
+                width: 1px !important;
+                height: 1px !important;
+            }
+
+            /* --- RESPONSIVE GAME OVER CARD ADJUSTMENTS FOR LANDSCAPES --- */
+            #game-over > div {
+                padding: 12px !important;
+                max-height: 95vh !important;
+            }
+            #over-title {
+                font-size: 26px !important;
+                margin-bottom: 2px !important;
+            }
+            #over-round-box {
+                font-size: 14px !important;
+                margin-bottom: 8px !important;
+            }
+            #over-round-val {
+                font-size: 20px !important;
+            }
+            #card-stats {
+                padding: 6px !important;
+                margin-bottom: 10px !important;
+            }
+            #card-stats div div:first-child {
+                font-size: 8px !important;
+            }
+            #card-stats div div:last-child {
+                font-size: 18px !important;
+            }
+            #perf-msg {
+                font-size: 11px !important;
+                margin-bottom: 8px !important;
+            }
+            #card-xp {
+                padding: 8px !important;
+                margin-bottom: 8px !important;
+            }
+            #card-boss {
+                padding: 8px !important;
+                margin-bottom: 8px !important;
+            }
+            #over-bosses-row canvas {
+                width: 36px !important;
+                height: 36px !important;
+            }
+            #over-bosses-row span {
+                font-size: 7px !important;
+            }
+            #card-cosmetic {
+                padding: 8px !important;
+                margin-bottom: 10px !important;
+            }
+            #card-cosmetic canvas {
+                width: 36px !important;
+                height: 36px !important;
+            }
+            #over-cos-action button {
+                font-size: 9px !important;
+                padding: 2px 6px !important;
+            }
+            #over-controls button {
+                height: 32px !important;
+                font-size: 11px !important;
+                padding: 4px !important;
+            }
+        }
+
         @media (max-width: 768px) {
-            h1 { font-size: 32px; }
-            button { font-size: 14px; padding: 10px; }
             #round-box { font-size: 36px; top: 15px; }
-            
-            /* Raise P1 and P2 to prevent overlap with virtual joysticks */
             #hud-p1 { bottom: 160px; left: 15px; }
             #hud-p2 { bottom: 160px; right: 15px; }
-            
-            /* Position P3 and P4 on top */
             #hud-p3 { top: 80px; left: 15px; }
             #hud-p4 { top: 80px; right: 15px; }
-            
             .perk { width: 24px; height: 24px; }
-
             #tutorial-hud {
                 width: 90%;
                 bottom: auto;
@@ -767,7 +950,7 @@
         <!-- LEFT PANEL: INTEGRATED LIVE LEADERBOARD -->
         <div class="menu-column left-panel">
             <span class="menu-label">🏆 Global Competitors</span>
-            <div style="overflow-y: auto; flex: 1; min-height: 240px; border: 1px solid #222; background: rgba(0,0,0,0.3); border-radius: 4px; padding: 5px; box-sizing: border-box;">
+            <div id="menu-leaderboard-body-container" style="overflow-y: auto; flex: 1; min-height: 120px; max-height: 280px; border: 1px solid #222; background: rgba(0,0,0,0.3); border-radius: 4px; padding: 5px; box-sizing: border-box;">
                 <table style="width: 100%; border-collapse: collapse; color: #fff; font-size: 11px; text-align: left;">
                     <thead>
                         <tr style="border-bottom: 1.5px solid #444; color: #a83232;">
@@ -793,7 +976,7 @@
             </div>
 
             <div class="menu-section" style="display: flex; flex-direction: column; gap: 4px;">
-                <button onclick="openSoloDeploymentConsole()" style="border-color: #ffd700; color: #fff; background: rgba(255, 215, 0, 0.08); font-size: 14px; padding: 12px 10px;">PLAY SOLO WAVES</button>
+                <button onclick="openSoloDeploymentConsole()" style="border-color: #ffd700; color: #fff; background: rgba(255, 215, 0, 0.08); font-size: 14px; padding: 12px 10px;">PLAY SOLO</button>
                 <button onclick="startTutorial()" style="border-color: #555;">BOOT CAMP (TUTORIAL)</button>
                 <button onclick="openMenu('coop-modal')">LOCAL CO-OP Split Screen</button>
                 <button onclick="enterLobbyHost()">HOST ONLINE LOBBY</button>
@@ -845,7 +1028,7 @@
 </div>
 
 <!-- SOLO DEPLOYMENT -->
-<div id="solo-deployment-modal" class="modal" style="width: 740px; max-width: 95%; height: 580px; max-height: 90vh; padding: 20px;">
+<div id="solo-deployment-modal" class="modal" style="width: 740px; max-width: 95%; height: auto; max-height: 95vh; padding: 20px;">
     <h2 style="color:white; text-align:center; margin-top:0; margin-bottom:15px;">SELECT DEPLOYMENT ZONE</h2>
     
     <!-- CARD LIST (MAPS) -->
@@ -1153,7 +1336,7 @@
 
 <!-- DYNAMIC COGNITIVE GAME OVER LAYOUT -->
 <div id="game-over" class="screen" style="display: none; justify-content: center; align-items: center; z-index: 2500;">
-    <div style="width: 620px; max-width: 95%; background: rgba(5,5,5,0.96); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border: 2px solid #a83232; border-top: 6px solid #a83232; border-radius: 8px; padding: 25px; box-shadow: 0 20px 60px rgba(0,0,0,0.95); text-align: center; box-sizing: border-box; overflow: hidden; max-height: 90vh; position: relative;">
+    <div style="width: 620px; max-width: 95%; background: rgba(5,5,5,0.96); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border: 2px solid #a83232; border-top: 6px solid #a83232; border-radius: 8px; padding: 25px; box-shadow: 0 20px 60px rgba(0,0,0,0.95); text-align: center; box-sizing: border-box; overflow-y: auto; max-height: 95vh; position: relative;">
         
         <h1 id="over-title" class="smash-item" style="color: #ff4757; font-size: 40px; margin: 0 0 5px 0; letter-spacing: 4px; text-transform: uppercase; text-shadow: 0 0 10px rgba(255, 71, 87, 0.4);">GAME OVER</h1>
         
@@ -1252,7 +1435,7 @@
         <div id="p1-hp-bar-container" style="width: 140px; height: 8px; background: #222; border: 1px solid #444; border-radius: 4px; margin-top: 5px; overflow: hidden; box-sizing: border-box;">
             <div id="p1-hp-bar" style="width: 100%; height: 100%; background: #2ecc71; transition: width 0.2s ease;"></div>
         </div>
-        <div id="p1-score" style="color: #ffd700; font-size: 28px; font-weight: bold; margin-top: 5px;">500 ⛃</div>
+        <div id="p1-score" style="color: #ffd700; font-size: 28px; font-weight: bold; margin-top: 5px;">500 🪙</div>
         <div id="p1-gun-name" style="color: #fff; font-size: 24px; font-weight: bold;">Model 1911</div>
         <div id="p1-ammo-text" style="color: #ccc; font-size: 20px;">8 / 32</div>
         <div id="p1-perks" class="perk-area"><div id="p1-icon-vig" class="perk" style="background: #c0392b;"></div></div>
@@ -1264,7 +1447,7 @@
         <div id="p2-hp-bar-container" style="width: 140px; height: 8px; background: #222; border: 1px solid #444; border-radius: 4px; margin-top: 5px; margin-left: auto; overflow: hidden; box-sizing: border-box;">
             <div id="p2-hp-bar" style="width: 100%; height: 100%; background: #2ecc71; transition: width 0.2s ease;"></div>
         </div>
-        <div id="p2-score" style="color: #ffd700; font-size: 28px; font-weight: bold; margin-top: 5px;">500 ⛃</div>
+        <div id="p2-score" style="color: #ffd700; font-size: 28px; font-weight: bold; margin-top: 5px;">500 🪙</div>
         <div id="p2-gun-name" style="color: #fff; font-size: 24px; font-weight: bold;">Model 1911</div>
         <div id="p2-ammo-text" style="color: #ccc; font-size: 20px;">8 / 32</div>
         <div id="p2-perks" class="perk-area"><div id="p2-icon-vig" class="perk" style="background: #c0392b;"></div></div>
@@ -1275,7 +1458,7 @@
         <div id="hud-p3-hp-bar-container" style="width: 140px; height: 8px; background: #222; border: 1px solid #444; border-radius: 4px; margin-top: 5px; overflow: hidden; box-sizing: border-box;">
             <div id="p3-hp-bar" style="width: 100%; height: 100%; background: #2ecc71; transition: width 0.2s ease;"></div>
         </div>
-        <div id="p3-score" style="color: #ffd700; font-size: 28px; font-weight: bold; margin-top: 5px;">500 ⛃</div>
+        <div id="p3-score" style="color: #ffd700; font-size: 28px; font-weight: bold; margin-top: 5px;">500 🪙</div>
         <div id="p3-gun-name" style="color: #fff; font-size: 24px; font-weight: bold;">Model 1911</div>
         <div id="p3-ammo-text" style="color: #ccc; font-size: 20px;">8 / 32</div>
         <div id="p3-perks" class="perk-area"><div id="p3-icon-vig" class="perk" style="background: #c0392b;"></div></div>
@@ -1287,7 +1470,7 @@
         <div id="p4-hp-bar-container" style="width: 140px; height: 8px; background: #222; border: 1px solid #444; border-radius: 4px; margin-top: 5px; margin-left: auto; overflow: hidden; box-sizing: border-box;">
             <div id="p4-hp-bar" style="width: 100%; height: 100%; background: #2ecc71; transition: width 0.2s ease;"></div>
         </div>
-        <div id="p4-score" style="color: #ffd700; font-size: 28px; font-weight: bold; margin-top: 5px;">500 ⛃</div>
+        <div id="p4-score" style="color: #ffd700; font-size: 28px; font-weight: bold; margin-top: 5px;">500 🪙</div>
         <div id="p4-gun-name" style="color: #fff; font-size: 24px; font-weight: bold;">Model 1911</div>
         <div id="p4-ammo-text" style="color: #ccc; font-size: 20px;">8 / 32</div>
         <div id="p4-perks" class="perk-area"><div id="p4-icon-vig" class="perk" style="background: #c0392b;"></div></div>
