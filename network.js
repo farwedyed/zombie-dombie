@@ -241,7 +241,13 @@ const Network = {
             p2: getPrunedPlayer(players['p2']), 
             p3: getPrunedPlayer(players['p3']), 
             p4: getPrunedPlayer(players['p4']), 
-            zombies: zombies.map(z => ({ id: z.id, x: z.x, y: z.y, hp: z.hp, maxHp: z.maxHp, hitTimer: z.hitTimer, color: z.color, r: z.r, isBoss: z.isBoss, name: z.name })), 
+            // Broadcasters updated to include zombie types, charge variables, and environmental hazards
+            zombies: zombies.map(z => ({ 
+                id: z.id, x: z.x, y: z.y, hp: z.hp, maxHp: z.maxHp, 
+                hitTimer: z.hitTimer, color: z.color, r: z.r, 
+                isBoss: z.isBoss, name: z.name, type: z.type,
+                chargeState: z.chargeState, chargeAngle: z.chargeAngle
+            })), 
             bullets: bullets.map(b => ({ id: b.id, x: b.x, y: b.y, vx: b.vx, vy: b.vy, color: b.color, type: b.type })),
             zombieArrows: window.zombieArrows.map(a => ({ x: a.x, y: a.y, vx: a.vx, vy: a.vy, life: a.life })), 
             stats: stats,
@@ -249,7 +255,12 @@ const Network = {
             doors: activeMap.rooms.map(r => ({ unlocked: r.unlocked })),
             drops: window.drops || [],
             doublePointsTimer: window.doublePointsTimer || 0,
-            instaKillTimer: window.instaKillTimer || 0
+            instaKillTimer: window.instaKillTimer || 0,
+            acidPools: window.acidPools || [],
+            toxicClouds: window.toxicClouds || [],
+            fireZones: window.fireZones || [],
+            mortarTargets: window.mortarTargets || [],
+            groundSmashes: window.groundSmashes || []
         };
 
         this.conns.forEach(c => {
@@ -373,6 +384,9 @@ const Network = {
                         local.r = sz.r;
                         local.isBoss = sz.isBoss;
                         local.name = sz.name;
+                        local.type = sz.type;
+                        local.chargeState = sz.chargeState;
+                        local.chargeAngle = sz.chargeAngle;
 
                         if (local.isBoss) {
                             window.activeBoss = local;
@@ -390,7 +404,10 @@ const Network = {
                             hitTimer: sz.hitTimer || 0,
                             color: sz.color || '#3a4a38',
                             isBoss: sz.isBoss || false,
-                            name: sz.name || "Zombie"
+                            name: sz.name || "Zombie",
+                            type: sz.type,
+                            chargeState: sz.chargeState,
+                            chargeAngle: sz.chargeAngle
                         };
                         zombies.push(newZ);
                         if (newZ.isBoss) {
@@ -451,6 +468,13 @@ const Network = {
                 window.drops = data.drops || [];
                 window.doublePointsTimer = data.doublePointsTimer || 0;
                 window.instaKillTimer = data.instaKillTimer || 0;
+                
+                // Parses down environmental hazard frames for guests
+                window.acidPools = data.acidPools || [];
+                window.toxicClouds = data.toxicClouds || [];
+                window.fireZones = data.fireZones || [];
+                window.mortarTargets = data.mortarTargets || [];
+                window.groundSmashes = data.groundSmashes || [];
 
                 if (data.stats && stats) {
                     if (data.stats.score > stats.score) {

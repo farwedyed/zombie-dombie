@@ -458,6 +458,52 @@
             #tutorial-title { font-size: 16px; }
             #tutorial-text { font-size: 13px; }
         }
+
+        /* --- STAGGERED GAME OVER ANIMATIONS & WIDGET STYLES --- */
+        .smash-item {
+            opacity: 0;
+            transform: scale(3.5);
+            filter: blur(12px);
+            transition: none;
+        }
+        .smash-active {
+            opacity: 1 !important;
+            transform: scale(1) !important;
+            filter: blur(0) !important;
+            transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.4) !important;
+            animation: impactFlash 0.3s ease-out;
+        }
+        @keyframes impactFlash {
+            0% { background: rgba(255, 255, 255, 0.15); box-shadow: 0 0 35px rgba(255,255,255,0.4); }
+            100% { background: rgba(255, 255, 255, 0.02); box-shadow: none; }
+        }
+        @keyframes flashGlow {
+            0% { opacity: 0; transform: scale(0.96); }
+            30% { opacity: 1; transform: scale(1.03); }
+            100% { opacity: 0; transform: scale(1.0); }
+        }
+        @keyframes shake {
+            0%, 100% { transform: translate(0, 0); }
+            20%, 60% { transform: translate(-2px, 1px); }
+            40%, 80% { transform: translate(2px, -1px); }
+        }
+        @keyframes lvlUpRotate {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+        .level-up-glow {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 250px;
+            height: 250px;
+            background: conic-gradient(from 0deg, transparent, rgba(255,215,0,0.45), transparent, rgba(255,215,0,0.45), transparent);
+            animation: lvlUpRotate 4s linear infinite;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 0;
+            display: none;
+        }
     </style>
 </head>
 <body oncontextmenu="return false;">
@@ -481,8 +527,8 @@
         </div>
         
         <!-- XP PROGRESS BAR -->
-        <div id="menu-xp-bar-container">
-            <div id="menu-xp-bar" style="width: 0%;"></div>
+        <div id="menu-xp-bar-container" style="width: 100%; height: 8px; background: #000; border: 1px solid #333; border-radius: 4px; overflow: hidden; margin-bottom: 5px;">
+            <div id="menu-xp-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #ff9f43, #ff5252);"></div>
         </div>
         <div id="menu-xp-text" style="font-size: 9px; color:#666; margin-bottom: 12px; font-weight: bold; text-transform: uppercase;">0 / 1000 XP</div>
 
@@ -836,12 +882,205 @@
     <button onclick="closeMenu('coop-modal')" style="background:#333; margin-top:5px;">BACK TO MENU</button>
 </div>
 
-<div id="game-over" class="screen" style="display: none;">
+<!-- DYNAMIC COGNITIVE GAME OVER LAYOUT -->
+<div id="game-over" class="screen" style="display: none; justify-content: center; align-items: center; z-index: 2500;">
+    <div style="width: 620px; max-width: 95%; background: rgba(5,5,5,0.96); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border: 2px solid #a83232; border-top: 6px solid #a83232; border-radius: 8px; padding: 25px; box-shadow: 0 20px 60px rgba(0,0,0,0.95); text-align: center; box-sizing: border-box; overflow: hidden; max-height: 90vh; position: relative;">
+        
+        <h1 id="over-title" class="smash-item" style="color: #ff4757; font-size: 40px; margin: 0 0 5px 0; letter-spacing: 4px; text-transform: uppercase; text-shadow: 0 0 10px rgba(255, 71, 87, 0.4);">GAME OVER</h1>
+        
+        <h2 id="over-round-box" class="smash-item" style="color: #fff; font-size: 22px; margin: 0 0 15px 0; text-transform: uppercase;">
+            Survived to <span id="over-round-val" style="color:#ff4757; font-size: 28px; font-weight: 900;">Round 1</span>
+        </h2>
+        
+        <!-- COMBAT STATS CARD -->
+        <div id="card-stats" class="smash-item" style="background: rgba(255,255,255,0.02); border: 1px solid #222; border-radius: 6px; padding: 12px; display: flex; justify-content: space-around; align-items: center; gap: 15px; margin-bottom: 15px;">
+            <div>
+                <div style="font-size: 10px; color: #888; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px;">KILLS</div>
+                <div style="font-size: 26px; color: #ff4757; font-weight: 900;" id="stat-kills-val">0</div>
+            </div>
+            <div style="width: 1px; height: 35px; background: #222;"></div>
+            <div>
+                <div style="font-size: 10px; color: #888; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px;">COINS</div>
+                <div style="font-size: 26px; color: #ffd700; font-weight: 900;" id="stat-coins-val">0 🪙</div>
+            </div>
+        </div>
+
+        <div id="perf-msg" class="smash-item" style="color: #ffd700; margin-bottom: 18px; font-size: 13px; font-style: italic;"></div>
+        
+        <!-- PROGRESS CARDS LIST -->
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; text-align: left;">
+            
+            <!-- XP PROGRESS CARD -->
+            <div id="card-xp" class="smash-item" style="background: rgba(255,255,255,0.02); border: 1px solid #222; border-radius: 6px; padding: 12px; position: relative; overflow: hidden;">
+                <div id="lvl-up-rays" class="level-up-glow"></div>
+                <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 12px; color: #ffd700; text-transform: uppercase; margin-bottom: 5px; position: relative; z-index: 1;">
+                    <span>XP Progress</span><span id="xp-percentage-text">0%</span>
+                </div>
+                <div style="width: 100%; height: 12px; background: #000; border: 1px solid #333; border-radius: 6px; overflow: hidden; position: relative; z-index: 1;">
+                    <div id="xp-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #ff9f43, #ff5252); border-radius: 6px;"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px; position: relative; z-index: 1;">
+                    <span id="level-badge" style="background: #e74c3c; color: white; font-size: 9px; font-weight: bold; padding: 2px 6px; border-radius: 4px;">Lv. 1</span>
+                    <span id="xp-details-text" style="color: #888; font-size: 10px; font-weight: bold;">0 / 1000 XP</span>
+                </div>
+                <div id="lvl-up-flash" style="display: none; position: absolute; inset: 0; background: rgba(255, 215, 0, 0.2); border-radius: 6px; border: 2px solid #ffd700; justify-content: center; align-items: center; z-index: 2;">
+                    <span style="color: #ffd700; font-size: 16px; font-weight: 900; letter-spacing: 2px; animation: shake 0.3s infinite;">LEVEL UP! 🎉</span>
+                </div>
+            </div>
+
+            <!-- BOSS INFO CARD -->
+            <div id="card-boss" class="smash-item" style="background: rgba(255,255,255,0.02); border: 1px solid #222; border-radius: 6px; padding: 12px; position: relative;">
+                <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 12px; color: #ff4757; text-transform: uppercase; margin-bottom: 5px;">
+                    <span id="over-boss-title">BOSS INFO: Loading...</span><span id="boss-percentage-text">0%</span>
+                </div>
+                <div style="width: 100%; height: 10px; background: #000; border: 1px solid #333; border-radius: 5px; overflow: hidden;">
+                    <div id="boss-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #ff4d4d, #ff7675);"></div>
+                </div>
+            </div>
+
+            <!-- NEXT UNLOCK CARD -->
+            <div id="card-cosmetic" class="smash-item" style="background: rgba(255,255,255,0.02); border: 1px solid #222; border-radius: 6px; padding: 12px; position: relative; display: flex; align-items: center; gap: 15px;">
+                <div style="position: relative; width: 60px; height: 60px; border-radius: 50%; overflow: hidden; border: 1px solid #333; background: #080808; display: flex; align-items: center; justify-content: center;">
+                    <canvas id="over-cos-preview" width="80" height="80" style="width: 60px; height: 60px; pointer-events: none;"></canvas>
+                </div>
+                <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
+                    <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 12px; color: #3498db; text-transform: uppercase; width: 100%;">
+                        <span id="over-cosmetic-title">NEXT UNLOCK: Loading...</span><span id="cosmetic-percentage-text">0%</span>
+                    </div>
+                    <div style="width: 100%; height: 10px; background: #000; border: 1px solid #333; border-radius: 5px; overflow: hidden;">
+                        <div id="cosmetic-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #54a0ff, #10ac84);"></div>
+                    </div>
+                    <div id="over-cos-action" style="margin-top: 5px;">
+                        <!-- Dynamically populated by JS -->
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- CONTROLS -->
+        <div id="over-controls" class="smash-item" style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button id="return-lobby-btn" onclick="returnToLobby()" style="display: none; background: #2e86de; border-color: #2e86de; color: #fff; flex: 1; min-width: 150px; height: 40px; margin: 0; font-size: 12px;">RETURN TO LOBBY</button>
+            <button onclick="requestRestart()" style="background: #a83232; border-color: #a83232; color: #fff; flex: 1; min-width: 150px; height: 40px; margin: 0; font-size: 12px;">PLAY AGAIN</button>
+            <button onclick="location.reload()" style="background: #111; border-color: #333; color: #aaa; flex: 1; min-width: 150px; height: 40px; margin: 0; font-size: 12px;">MAIN MENU</button>
+        </div>
+    </div>
+</div>
+
+<!-- TAB SCOREBOARD -->
+<div id="scoreboard">
+    <table>
+        <thead><tr><th>PLAYER</th><th>KILLS</th><th>SCORE</th><th>STATUS</th><th>PING</th></tr></thead>
+        <tbody id="score-body"></tbody>
+    </table>
+</div>
+
+<!-- POPUPS -->
+<div id="ach-modal" class="modal">
+    <h2 style="color:white;text-align:center">ACHIEVEMENTS</h2><div id="ach-list"></div>
+    <button class="close-btn" onclick="closeMenu('ach-modal')">CLOSE</button>
+</div>
+<div id="gun-modal" class="modal"><h2 style="color:white;text-align:center">LIBRARY</h2><div id="gun-list"></div><button class="close-btn" onclick="closeMenu('gun-modal')">CLOSE</button></div>
+
+<!-- COSMETICS SHOP MODAL -->
+<div id="cosmetics-modal" class="modal" style="width: 700px; max-width: 95%; height: 500px; max-height: 85vh; padding: 20px;">
+    <h2 style="color:white;text-align:center;margin-top:0;margin-bottom:15px;">COSMETICS SHOP</h2>
+    
+    <div style="display: flex; gap: 15px; height: calc(100% - 100px); box-sizing: border-box; flex-wrap: wrap;">
+        <!-- Preview -->
+        <div id="cosmetics-preview-container" style="flex: 1; min-width: 180px; background: #000; border: 1px solid #333; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 15px; box-sizing: border-box; position: relative; height: 100%;">
+            <span style="color: #666; font-size: 11px; margin-bottom: 12px; text-transform: uppercase; font-weight: bold; letter-spacing: 1px;">Fitting Room</span>
+            <canvas id="cosmeticPreviewCanvas" width="140" height="140" style="background: #111; border: 1px solid #222; border-radius: 50%; box-shadow: 0 0 10px rgba(0,0,0,0.5);"></canvas>
+            <div id="cosmetic-preview-name" style="color: #666; font-size: 13px; margin-top: 15px; font-weight: bold; text-align: center; text-transform: uppercase; letter-spacing: 0.5px;">Unequipped</div>
+        </div>
+        
+        <div id="cosmetics-list-scroll" style="flex: 1.5; min-width: 240px; overflow-y: auto; height: 100%; border: 1px solid #222; background: rgba(0,0,0,0.2); padding: 5px; box-sizing: border-box; border-radius: 4px;">
+            <div id="cosmetics-list"></div>
+        </div>
+    </div>
+    <button class="close-btn" onclick="closeMenu('cosmetics-modal')" style="margin-top: 15px;">CLOSE</button>
+</div>
+
+<!-- LOBBY BROWSER SERVER MODAL -->
+<div id="lobby-browser-modal" class="modal" style="width: 700px; max-width: 95%; height: 500px; max-height: 85vh; padding: 20px;">
+    <h2 style="color:white; text-align:center; margin-top:0; margin-bottom:15px;">ONLINE SERVER BROWSER</h2>
+    
+    <div style="display: flex; justify-content: space-between; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+        <button onclick="refreshServerBrowser()" style="width:auto; margin:0; padding: 10px 15px; font-size:14px; background:#0e0e0e; border-color:#333;">🔄 Refresh List</button>
+        <div style="display:flex; gap: 5px;">
+            <input type="text" id="manual-join-input" placeholder="Manual Host ID" style="width:160px; font-size:13px; padding:8px; margin:0;">
+            <button onclick="manualJoinLobby()" style="width:auto; margin:0; padding:8px 12px; font-size:13px; background:#222;">Join Code</button>
+        </div>
+    </div>
+
+    <div style="overflow-y: auto; height: calc(100% - 130px); border: 1px solid #222; background: rgba(0,0,0,0.2); border-radius: 4px; padding: 10px; box-sizing: border-box;">
+        <table style="width:100%; border-collapse:collapse; color:#fff; font-size:13px; text-align:left;">
+            <thead>
+                <tr style="border-bottom: 1px solid #444; color:#a83232;">
+                    <th style="padding:8px;">HOST</th>
+                    <th style="padding:8px;">MAP</th>
+                    <th style="padding:8px;">DIFFICULTY</th>
+                    <th style="padding:8px;">PLAYERS</th>
+                    <th style="padding:8px; text-align:right;">ACTION</th>
+                </tr>
+            </thead>
+            <tbody id="lobby-browser-list"></tbody>
+        </table>
+        <div id="no-lobbies-msg" style="color:#666; text-align:center; margin-top:40px; display:none;">No active public lobbies found. Start one!</div>
+    </div>
+    <button class="close-btn" onclick="closeMenu('lobby-browser-modal')" style="margin-top: 15px;">CLOSE</button>
+</div>
+
+<!-- BOSSES PORTFOLIO MODAL -->
+<div id="bosses-modal" class="modal">
+    <h2 style="color:white;text-align:center">BOSS PORTFOLIO</h2>
+    <div id="bosses-list"></div>
+    <button class="close-btn" onclick="closeMenu('bosses-modal')">CLOSE</button>
+</div>
+
+<!-- LOCAL CO-OP CONFIG MODAL -->
+<div id="coop-modal" class="modal">
+    <h2 style="color:white;text-align:center">LOCAL CO-OP CONFIG</h2>
+    
+    <div style="background:#222; padding:15px; border-radius:4px; margin-bottom:15px; border-left: 5px solid #3498db;">
+        <div style="color:#3498db; font-weight:bold; margin-bottom:5px;">PLAYER 1 (Blue)</div>
+        <div style="color:#ccc; font-size:14px;">Input: Keyboard + Mouse</div>
+        <div style="color:#888; font-size:12px; margin-top:5px;">WASD: Move | Mouse: Aim & Shoot | R: Reload | F: Interact</div>
+    </div>
+
+    <div style="background:#222; padding:15px; border-radius:4px; margin-bottom:15px; border-left: 5px solid #e67e22;">
+        <div style="color:#e67e22; font-weight:bold; margin-bottom:10px;">PLAYER 2 (Orange)</div>
+        
+        <label for="p2-input-select" style="color:#aaa; display:block; margin-bottom: 5px; font-size:14px;">Select Input Device:</label>
+        <select id="p2-input-select" onchange="toggleCoopHelp()" style="background:#000; border:1px solid #444; color:#fff; padding:10px; width:100%; font-family:inherit; font-size:16px; margin-bottom:15px; outline:none;">
+            <option value="keyboard">Keyboard Split (Arrows)</option>
+            <option value="gamepad0">Controller 1 (Double Controller Slot A)</option>
+            <option value="gamepad1">Controller 2 (Double Controller Slot B)</option>
+        </select>
+
+        <div id="p2-keyboard-help" style="color:#ccc; font-size:12px; line-height: 1.4;">
+            <span style="color:#e67e22; font-weight:bold;">Keyboard Controls:</span><br>
+            Arrows: Move | Comma (,): Interact | Period (.): Reload | Slash (/): Shoot<br>
+            <span style="color:#ffd700;">Aiming:</span> Auto-points to nearest zombie or movement direction.
+        </div>
+        
+        <div id="p2-gamepad-help" style="color:#ccc; font-size:12px; line-height: 1.4; display:none;">
+            <span style="color:#e67e22; font-weight:bold;">Controller Controls:</span><br>
+            Left Stick: Move | Right Stick: Aim | RT / Button A: Shoot | Button X: Reload | Button Y: Interact<br>
+            <span style="color:#ffd700;">Aiming Fallback:</span> Auto-aims if right stick is idle.
+        </div>
+    </div>
+
+    <button onclick="startLocalCoop()" style="background:#a83232; margin-top:10px;">START GAME</button>
+    <button onclick="closeMenu('coop-modal')" style="background:#333; margin-top:5px;">BACK TO MENU</button>
+</div>
+
+<div id="game-over-legacy" class="screen" style="display: none;">
     <h1>GAME OVER</h1>
     <h2 id="death-msg" style="color:#fff;">Survived to Round 1</h2>
-    <div id="perf-msg" style="color: #ffd700; margin-top:10px; font-size: 18px; font-style: italic;"></div>
+    <div id="perf-msg-legacy" style="color: #ffd700; margin-top:10px; font-size: 18px; font-style: italic;"></div>
     
-    <button id="return-lobby-btn" onclick="returnToLobby()" style="display: none; background: #a83232; color: #fff; border-color: #a83232;">RETURN TO LOBBY</button>
+    <button id="return-lobby-btn-legacy" onclick="returnToLobby()" style="display: none; background: #a83232; color: #fff; border-color: #a83232;">RETURN TO LOBBY</button>
     <button onclick="requestRestart()">PLAY AGAIN</button>
     <button onclick="location.reload()">MAIN MENU</button>
 </div>

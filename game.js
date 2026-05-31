@@ -99,6 +99,10 @@ window.previewCosmeticId = 'none';
 
 let selectedSoloMapIdx = 0, selectedSoloDifficulty = 'medium';
 
+// Captures starting levels before a match begins to fuel animated progressions
+window.matchStartingXP = 0;
+window.matchStartingCoins = 0;
+
 function init() {
     refreshMainMenuStats();
     window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
@@ -142,6 +146,44 @@ function init() {
         console.log("Welcome! Automatically launching Boot Camp...");
         setTimeout(() => { startTutorial(); }, 800);
     }
+
+    // Dynamic modal restructuring: Converts scrolling modals into rigid panels with scrolling interior lists
+    document.querySelectorAll('.modal').forEach(modal => {
+        modal.style.overflow = 'hidden';
+        modal.style.display = 'none';
+        modal.style.flexDirection = 'column';
+        
+        let closeBtn = modal.querySelector('button[onclick^="closeMenu"]');
+        let title = modal.querySelector('h2');
+        let listContainer = modal.querySelector('#ach-list, #gun-list, #bosses-list, #cosmetics-list-scroll, #lobby-browser-list, #player-list');
+        
+        if (!listContainer) {
+            let scrollWrapper = document.createElement('div');
+            scrollWrapper.style.cssText = 'overflow-y:auto; flex:1; width:100%; box-sizing:border-box; padding-right:5px; margin-top:10px; margin-bottom:10px;';
+            Array.from(modal.childNodes).forEach(child => {
+                if (child !== title && child !== closeBtn && !child.classList?.contains('close-btn-top') && child.tagName !== 'STYLE') {
+                    scrollWrapper.appendChild(child);
+                }
+            });
+            modal.appendChild(scrollWrapper);
+        } else {
+            listContainer.style.overflowY = 'auto';
+            listContainer.style.flex = '1';
+            listContainer.style.width = '100%';
+            listContainer.style.boxSizing = 'border-box';
+            listContainer.style.marginTop = '10px';
+            listContainer.style.marginBottom = '10px';
+        }
+        
+        if (closeBtn) {
+            closeBtn.className = 'close-btn-top';
+            closeBtn.innerHTML = '✕';
+            closeBtn.style.cssText = 'position:absolute; top:15px; right:15px; width:30px; height:30px; border-radius:50%; background:#222; border:1px solid #444; color:#aaa; font-size:14px; display:flex; align-items:center; justify-content:center; cursor:pointer; margin:0; padding:0; line-height:1; z-index:1000; font-weight:bold; transition:all 0.15s;';
+            closeBtn.onmouseover = () => { closeBtn.style.background = '#a83232'; closeBtn.style.color = '#fff'; closeBtn.style.borderColor = '#a83232'; };
+            closeBtn.onmouseout = () => { closeBtn.style.background = '#222'; closeBtn.style.color = '#aaa'; closeBtn.style.borderColor = '#444'; };
+            modal.appendChild(closeBtn); // Push to highest hierarchical layer of parent container
+        }
+    });
 }
 
 function refreshMainMenuStats() {
@@ -394,7 +436,51 @@ const LobbyManager = {
         catch(e) { console.warn("Visibility sync fail:", e); }
     },
     stopHeartbeat: function() { if (this.heartbeatInterval) { clearInterval(this.heartbeatInterval); this.heartbeatInterval = null; } },
-    unregisterLobby: async function(peerId) { this.stopHeartbeat(); if (typeof db === 'undefined' || !db || !peerId) return; try { await db.collection("lobbies").doc(peerId).delete(); } catch(e){} }
+    unregisterLobby: async function(peerId) { this.stopHeartbeat(); if (typeof db === 'undefined' || !db || !peerId) return; try { await db.collection("lobbies").doc(peerId).delete(); } catch(e){} },
+    
+    // Safely reads active public lobbies from Firebase Firestore
+    fetchLobbies: async function(callback) {
+        if (typeof db === 'undefined' || !db) {
+            if (callback) callback([]);
+            return;
+        }
+        try {
+            const now = new Date();
+            const threshold = new Date(now.getTime() - 45000); // 45 seconds timeout threshold
+            
+            const snap = await db.collection("lobbies")
+                .where("visibility", "==", "public")
+                .get();
+            
+            let lobbies = [];
+            snap.forEach(doc => {
+                const data = doc.data();
+                if (data.lastActive) {
+                    let ms = 0;
+                    if (typeof data.lastActive.toMillis === 'function') {
+                        ms = data.lastActive.toMillis();
+                    } else if (data.lastActive instanceof Date) {
+                        ms = data.lastActive.getTime();
+                    } else if (typeof data.lastActive === 'number') {
+                        ms = data.lastActive;
+                    } else if (data.lastActive.seconds) {
+                        ms = data.lastActive.seconds * 1000;
+                    }
+                    
+                    if (ms >= threshold.getTime()) {
+                        lobbies.push(data);
+                    }
+                }
+            });
+            
+            // Client-side sort to prevent database composite index building blockages [1]
+            lobbies.sort((a, b) => (b.playerCount || 0) - (a.playerCount || 0));
+            if (callback) callback(lobbies);
+        } catch(e) {
+            console.warn("Failed to fetch lobbies from Firestore:", e);
+            if (callback) callback([]);
+        }
+    }
 };
 
 window.lobbyChangeVisibility = () => {
