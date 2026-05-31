@@ -166,6 +166,9 @@ window.startingDefeatedBosses = [];
 function init() {
     refreshMainMenuStats();
     
+    // Safety check: prioritize touch verification before first layout scaling calculation runs [1]
+    checkTouchDevice();
+    
     // Swaps width/height if vertical screen aspect is detected [1]
     function resizeCanvas() {
         const isPortrait = window.innerHeight > window.innerWidth;
@@ -244,7 +247,6 @@ function init() {
             nameInput.value = savedName;
         }
     }
-    checkTouchDevice();
 
     if (!localStorage.getItem('zombieSaveModular') && !localStorage.getItem('zombieTutorialSkippedOrCompleted')) {
         console.log("Welcome! Automatically launching Boot Camp...");
