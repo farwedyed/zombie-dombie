@@ -17,25 +17,48 @@ const startData = {
 let saveData = JSON.parse(localStorage.getItem('zombieSaveModular')) || startData;
 
 // Safety Checks
-if(!saveData.unlockedAch) saveData.unlockedAch = [];
-if(!saveData.unlockedGuns) saveData.unlockedGuns = ['Model 1911'];
-if(saveData.xp === undefined) saveData.xp = 0;
-if(saveData.lobbyCoins === undefined) saveData.lobbyCoins = 0;
-if(!saveData.ownedCosmetics) saveData.ownedCosmetics = ['none'];
-if(!saveData.equippedCosmetic) saveData.equippedCosmetic = 'none';
-if(!saveData.unlockedBosses) saveData.unlockedBosses = [];
-if(!saveData.defeatedBosses) saveData.defeatedBosses = [];
+if (!saveData.unlockedAch) {
+    saveData.unlockedAch = [];
+}
+if (!saveData.unlockedGuns) {
+    saveData.unlockedGuns = ['Model 1911'];
+}
+if (saveData.xp === undefined) {
+    saveData.xp = 0;
+}
+if (saveData.lobbyCoins === undefined) {
+    saveData.lobbyCoins = 0;
+}
+if (!saveData.ownedCosmetics) {
+    saveData.ownedCosmetics = ['none'];
+}
+if (!saveData.equippedCosmetic) {
+    saveData.equippedCosmetic = 'none';
+}
+if (!saveData.unlockedBosses) {
+    saveData.unlockedBosses = [];
+}
+if (!saveData.defeatedBosses) {
+    saveData.defeatedBosses = [];
+}
 
 function saveGame(round, kills, score) {
-    if(round > saveData.highestRound) saveData.highestRound = round;
+    if (round > saveData.highestRound) {
+        saveData.highestRound = round;
+    }
     
     let msg = "";
-    if(saveData.prevScore === 0) msg = "First run logged! ";
-    else {
+    if (saveData.prevScore === 0) {
+        msg = "First run logged! ";
+    } else {
         let diff = score - saveData.prevScore;
-        if(diff > 0) msg = `You did ${((diff/saveData.prevScore)*100).toFixed(0)}% better than last match!`;
-        else if(diff < 0) msg = `You did ${((Math.abs(diff)/saveData.prevScore)*100).toFixed(0)}% worse than last match.`;
-        else msg = "Same score as last match.";
+        if (diff > 0) {
+            msg = `You did ${((diff / saveData.prevScore) * 100).toFixed(0)}% better than last match!`;
+        } else if (diff < 0) {
+            msg = `You did ${((Math.abs(diff) / saveData.prevScore) * 100).toFixed(0)}% worse than last match.`;
+        } else {
+            msg = "Same score as last match.";
+        }
     }
     
     saveData.prevScore = score;
@@ -49,7 +72,7 @@ function saveGame(round, kills, score) {
 }
 
 function unlockGun(gunName) {
-    if(!saveData.unlockedGuns.includes(gunName)) {
+    if (!saveData.unlockedGuns.includes(gunName)) {
         saveData.unlockedGuns.push(gunName);
         localStorage.setItem('zombieSaveModular', JSON.stringify(saveData));
         
@@ -61,8 +84,10 @@ function unlockGun(gunName) {
 }
 
 function unlockAch(id) {
-    if(!saveData.unlockedAch) saveData.unlockedAch = [];
-    if(!saveData.unlockedAch.includes(id)) {
+    if (!saveData.unlockedAch) {
+        saveData.unlockedAch = [];
+    }
+    if (!saveData.unlockedAch.includes(id)) {
         saveData.unlockedAch.push(id);
         localStorage.setItem('zombieSaveModular', JSON.stringify(saveData));
         
@@ -76,8 +101,10 @@ function unlockAch(id) {
 }
 
 function discoverBoss(bossId) {
-    if(!saveData.unlockedBosses) saveData.unlockedBosses = [];
-    if(!saveData.unlockedBosses.includes(bossId)) {
+    if (!saveData.unlockedBosses) {
+        saveData.unlockedBosses = [];
+    }
+    if (!saveData.unlockedBosses.includes(bossId)) {
         saveData.unlockedBosses.push(bossId);
         localStorage.setItem('zombieSaveModular', JSON.stringify(saveData));
         
@@ -90,8 +117,10 @@ function discoverBoss(bossId) {
 }
 
 function defeatBoss(bossId) {
-    if(!saveData.defeatedBosses) saveData.defeatedBosses = [];
-    if(!saveData.defeatedBosses.includes(bossId)) {
+    if (!saveData.defeatedBosses) {
+        saveData.defeatedBosses = [];
+    }
+    if (!saveData.defeatedBosses.includes(bossId)) {
         saveData.defeatedBosses.push(bossId);
         localStorage.setItem('zombieSaveModular', JSON.stringify(saveData));
         
@@ -104,13 +133,13 @@ function defeatBoss(bossId) {
 }
 
 function resetData() {
-    if(confirm("Delete all progress? This will also wipe your cloud saves!")) {
+    if (confirm("Delete all progress? This will also wipe your cloud saves!")) {
         localStorage.removeItem('zombieSaveModular');
-        localStorage.removeItem('zombieTutorialSkippedOrCompleted'); // Erases persistent skip flag on complete wipes
+        localStorage.removeItem('zombieTutorialSkippedOrCompleted'); // Erases persistent skip flag
         saveData = { ...startData };
 
         if (typeof AccountSystem !== 'undefined' && AccountSystem.currentUser) {
-            AccountSystem.pushProfileData().then(() => {
+            AccountSystem.pushProfileData().then(function () {
                 location.reload();
             });
         } else {
@@ -164,7 +193,7 @@ const cosmeticDB = [
     { id: 'wings_carbon', name: "Cyber Wings (Black/Cyan)", price: 2000, color: "#00ffff", type: "wings" }
 ];
 
-/* --- BOSSES DATABASE (EXPANDED TO 6 BOSSES) --- */
+/* --- BOSSES DATABASE --- */
 const bossesDB = [
     { id: 'boss_logbreaker', name: "The Golem Smasher", round: 5, desc: "A colossal, alabaster stone brute. He pounds the ground, sending a traveling sequence of devastating seismic fractures along the floor toward survivors.", color: '#ffffff', icon: "🗿" },
     { id: 'boss_blink', name: "The Warp Phantom", round: 5, desc: "An elusive teleporter with three glowing cyan eyes that warps directly near players' positions to initiate ambush attacks.", color: '#9b59b6', icon: "👁️" },
@@ -187,13 +216,30 @@ const SoundSystem = {
         round_start: 'sounds/round_start.mp3',
         purchase: 'sounds/purchase.mp3'
     },
+    
+    // Safety playback timestamps to restrict sound spikes [1]
+    lastPlayed: {},
+    cooldowns: {
+        zombie_hurt: 150, // Fix: Restricts multiple shotgun pellet hit sounds on a single frame
+        dry_fire: 400,     // Fix: Restricts machine-gun speed dry fire audio spikes
+        purchase: 100
+    },
 
     init: function() {
-        // Direct instantiation on-play ensures robust performance on all browsers
+        // Direct instantiation on-play ensures robust performance
     },
 
     play: function(key) {
         if (!this.enabled || !this.audioFiles[key]) return;
+        
+        const now = Date.now();
+        const cooldown = this.cooldowns[key] || 0;
+        
+        // Gate overlapping duplicate playback triggers
+        if (cooldown > 0 && this.lastPlayed[key] && (now - this.lastPlayed[key] < cooldown)) {
+            return;
+        }
+        this.lastPlayed[key] = now;
         
         try {
             let audio = new Audio(this.audioFiles[key]);
@@ -201,7 +247,7 @@ const SoundSystem = {
             
             let playPromise = audio.play();
             if (playPromise !== undefined) {
-                playPromise.catch(error => {
+                playPromise.catch(function (error) {
                     // Suppress autoplay blockers gracefully
                 });
             }

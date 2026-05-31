@@ -21,27 +21,91 @@
             user-select: none; 
             touch-action: manipulation; /* Prevent double-tap delay on mobile */
         }
-        canvas { display: block; }
+        canvas { 
+            display: block; 
+        }
         
         /* --- UI OVERLAY --- */
-        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
-        .hud-text { font-weight: bold; text-shadow: 2px 2px 0 #000; position: absolute; }
+        #ui-layer { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            pointer-events: none; 
+        }
+        .hud-text { 
+            font-weight: bold; 
+            text-shadow: 2px 2px 0 #000; 
+            position: absolute; 
+        }
         
-        #round-box { top: 20px; left: 50%; transform: translateX(-50%); color: #a83232; font-size: 50px; font-weight: 900; }
+        #round-box { 
+            top: 20px; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            color: #a83232; 
+            font-size: 50px; 
+            font-weight: 900; 
+        }
         
-        .hud-cluster { position: absolute; pointer-events: none; text-shadow: 2px 2px 0 #000; z-index: 1000; display: none; }
-        #hud-p1 { bottom: 20px; left: 20px; text-align: left; }
-        #hud-p2 { bottom: 20px; right: 20px; text-align: right; }
-        #hud-p3 { top: 20px; left: 20px; text-align: left; }
-        #hud-p4 { top: 20px; right: 20px; text-align: right; }
+        .hud-cluster { 
+            position: absolute; 
+            pointer-events: none; 
+            text-shadow: 2px 2px 0 #000; 
+            z-index: 1000; 
+            display: none; 
+        }
+        #hud-p1 { 
+            bottom: 20px; 
+            left: 20px; 
+            text-align: left; 
+        }
+        #hud-p2 { 
+            bottom: 20px; 
+            right: 20px; 
+            text-align: right; 
+        }
+        #hud-p3 { 
+            top: 20px; 
+            left: 20px; 
+            text-align: left; 
+        }
+        #hud-p4 { 
+            top: 20px; 
+            right: 20px; 
+            text-align: right; 
+        }
         
-        .perk-area { display: flex; gap: 10px; margin-top: 10px; }
-        #hud-p1 .perk-area, #hud-p3 .perk-area { justify-content: flex-start; }
-        #hud-p2 .perk-area, #hud-p4 .perk-area { justify-content: flex-end; }
+        .perk-area { 
+            display: flex; 
+            gap: 10px; 
+            margin-top: 10px; 
+        }
+        #hud-p1 .perk-area, #hud-p3 .perk-area { 
+            justify-content: flex-start; 
+        }
+        #hud-p2 .perk-area, #hud-p4 .perk-area { 
+            justify-content: flex-end; 
+        }
         
-        .perk { width: 30px; height: 30px; border-radius: 50%; border: 2px solid white; display: none; box-shadow: 0 0 5px red; }
+        .perk { 
+            width: 30px; 
+            height: 30px; 
+            border-radius: 50%; 
+            border: 2px solid white; 
+            display: none; 
+            box-shadow: 0 0 5px red; 
+        }
 
-        #controls-hint { position: absolute; bottom: 10px; left: 10px; color: rgba(255,255,255,0.4); font-size: 14px; display: none; }
+        #controls-hint { 
+            position: absolute; 
+            bottom: 10px; 
+            left: 10px; 
+            color: rgba(255,255,255,0.4); 
+            font-size: 14px; 
+            display: none; 
+        }
         
         /* Repositions notifications on mobile to prevent overlapping touch joysticks */
         #ach-toast-container { 
@@ -77,11 +141,36 @@
             }
         }
         
-        @keyframes slideIn { 0% {transform:translateX(-100%);opacity:0;} 100% {transform:translateX(0);opacity:1;} }
-        @keyframes fadeOut { 0% {opacity:1;} 100% {opacity:0;} }
+        @keyframes slideIn { 
+            0% { transform: translateX(-100%); opacity: 0; } 
+            100% { transform: translateX(0); opacity: 1; } 
+        }
+        @keyframes fadeOut { 
+            0% { opacity: 1; } 
+            100% { opacity: 0; } 
+        }
 
-        #interact-msg { top: 60%; left: 50%; transform: translate(-50%, -50%); position: absolute; color: #fff; background: rgba(0,0,0,0.8); padding: 8px 15px; border: 1px solid #444; display: none; z-index: 900; }
-        #damage-flash { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; transition: background 0.1s; }
+        #interact-msg { 
+            top: 60%; 
+            left: 50%; 
+            transform: translate(-50%, -50%); 
+            position: absolute; 
+            color: #fff; 
+            background: rgba(0,0,0,0.8); 
+            padding: 8px 15px; 
+            border: 1px solid #444; 
+            display: none; 
+            z-index: 900; 
+        }
+        #damage-flash { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            pointer-events: none; 
+            transition: background 0.1s; 
+        }
 
         /* Bouncing help arrow pointing to Score */
         @keyframes arrowBounce {
@@ -103,12 +192,20 @@
 
         /* --- MENUS --- */
         .screen { 
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
             background: radial-gradient(circle, rgba(15,0,0,0.3) 0%, rgba(5,5,5,1) 100%), 
                         url('https://www.transparenttextures.com/patterns/black-thread.png');
             background-color: #050505;
-            display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            pointer-events: auto; z-index: 2000; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            pointer-events: auto; 
+            z-index: 2000; 
             box-shadow: inset 0 0 100px rgba(0,0,0,0.8);
         }
 
@@ -157,7 +254,9 @@
             text-transform: uppercase;
             font-weight: bold;
         }
-        .stats-text span { color: #fff; }
+        .stats-text span { 
+            color: #fff; 
+        }
 
         .menu-label {
             font-size: 10px;
@@ -194,7 +293,12 @@
             background: #000;
         }
         
-        #username-input { margin-bottom: 12px; border-color: #a83232; color: #ffd700; font-weight: bold; }
+        #username-input { 
+            margin-bottom: 12px; 
+            border-color: #a83232; 
+            color: #ffd700; 
+            font-weight: bold; 
+        }
 
         /* BUTTONS */
         button { 
@@ -275,7 +379,6 @@
             box-shadow: 0 20px 50px rgba(0,0,0,0.9), 0 0 20px rgba(168, 50, 50, 0.15);
             z-index: 2100; 
             padding: 25px; 
-            overflow-y: auto; 
             box-sizing: border-box;
         }
         .modal h2 {
@@ -426,12 +529,39 @@
         .eye-right { right: 3px; }
         
         /* TAB SCOREBOARD & LEADERBOARD */
-        #scoreboard { display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 700px; max-width: 95%; background: rgba(0,0,0,0.95); border: 2px solid #a83232; z-index: 1500; padding: 20px; color: white; box-sizing: border-box; }
-        table { width: 100%; border-collapse: collapse; }
-        th { text-align: left; border-bottom: 2px solid #666; padding: 10px; color: #a83232; }
-        td { padding: 10px; border-bottom: 1px solid #333; }
+        #scoreboard { 
+            display: none; 
+            position: absolute; 
+            top: 50%; 
+            left: 50%; 
+            transform: translate(-50%, -50%); 
+            width: 700px; 
+            max-width: 95%; 
+            background: rgba(0,0,0,0.95); 
+            border: 2px solid #a83232; 
+            z-index: 1500; 
+            padding: 20px; 
+            color: white; 
+            box-sizing: border-box; 
+        }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+        }
+        th { 
+            text-align: left; 
+            border-bottom: 2px solid #666; 
+            padding: 10px; 
+            color: #a83232; 
+        }
+        td { 
+            padding: 10px; 
+            border-bottom: 1px solid #333; 
+        }
         
-        #game-ui { display: none; }
+        #game-ui { 
+            display: none; 
+        }
 
         /* --- MOBILE ADAPTATIONS --- */
         @media (max-width: 768px) {
@@ -504,9 +634,42 @@
             z-index: 0;
             display: none;
         }
+
+        /* --- PORTRAIT ORIENTATION BLOCKER PANEL --- */
+        #orientation-warning {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #050505;
+            color: #fff;
+            z-index: 99999;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-family: 'Courier New', monospace;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        /* Activates only on mobile touch screens in landscape (horizontal) orientation */
+        @media (max-width: 900px) and (orientation: landscape) {
+            #orientation-warning {
+                display: flex !important;
+            }
+        }
     </style>
 </head>
 <body oncontextmenu="return false;">
+
+<!-- PORTRAIT ORIENTATION WARNING FOR MOBILE -->
+<div id="orientation-warning">
+    <div style="font-size: 50px; margin-bottom: 20px; animation: arrowBounce 0.5s infinite alternate;">📱🔄</div>
+    <div style="color: #a83232; font-size: 24px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px;">Rotate Your Device</div>
+    <p style="color: #888; font-size: 14px; max-width: 300px; line-height: 1.5; margin: 0;">Please rotate your mobile device to Portrait (Vertical) mode to play Zombie Dombie.</p>
+</div>
 
 <!-- MAIN MENU -->
 <div id="main-menu" class="screen">
@@ -590,7 +753,7 @@
 </div>
 
 <!-- SOLO DEPLOYMENT -->
-<div id="solo-deployment-modal" class="modal" style="width: 740px; max-width: 95%; height: 580px; max-height: 90vh; padding: 20px; overflow-y: auto;">
+<div id="solo-deployment-modal" class="modal" style="width: 740px; max-width: 95%; height: 580px; max-height: 90vh; padding: 20px;">
     <h2 style="color:white; text-align:center; margin-top:0; margin-bottom:15px;">SELECT DEPLOYMENT ZONE</h2>
     
     <!-- CARD LIST (MAPS) -->
@@ -694,41 +857,6 @@
     </div>
 </div>
 
-<!-- SETTINGS PANEL -->
-<div id="settings-modal" class="modal" style="width: 440px; max-width: 95%; height: 380px; max-height: 85vh; padding: 25px;">
-    <h2 style="color:white; text-align:center; margin-top:0; margin-bottom:20px;">SYSTEM SETTINGS</h2>
-    
-    <!-- VOLUME SLIDER -->
-    <div class="menu-section" style="margin-bottom: 25px;">
-        <label for="settings-volume" style="color: #ffd700; font-size: 12px; font-weight: bold; display: block; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Master Volume:</label>
-        <div style="display: flex; align-items: center; gap: 10px;">
-            <span style="font-size:14px; color:#666;">🔈</span>
-            <input type="range" id="settings-volume" min="0" max="1" step="0.05" value="0.5" oninput="updateSystemVolume(this.value)" style="flex: 1; cursor: pointer;">
-            <span id="settings-volume-percent" style="font-size:12px; color:#aaa; font-weight:bold; min-width: 40px;">50%</span>
-        </div>
-    </div>
-
-    <!-- AUDIO TOGGLE -->
-    <div class="menu-section" style="margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); padding: 10px; border: 1px solid #222; border-radius: 4px;">
-        <span style="color:#aaa; font-size:12px; font-weight:bold; text-transform:uppercase; letter-spacing:0.5px;">Enable Sound Effects:</span>
-        <label style="position: relative; display: inline-block; width: 45px; height: 24px;">
-            <input type="checkbox" id="settings-audio-toggle" checked onchange="toggleSystemAudio(this.checked)" style="opacity: 0; width: 0; height: 0;">
-            <span style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; border-radius: 24px; transition: .3s; display: flex; align-items: center; padding: 0 4px; box-sizing: border-box;">
-                <span id="toggle-knob" style="width: 16px; height: 16px; background-color: #fff; border-radius: 50%; transition: .3s; transform: translateX(21px);"></span>
-            </span>
-        </label>
-    </div>
-
-    <div class="menu-section" style="margin-bottom: 20px; font-size: 10px; color: #666; text-align: left; line-height: 1.4; border-top: 1px dashed #333; padding-top: 15px;">
-        <strong>INPUT SCHEMES:</strong><br>
-        • PC: WASD to Move, Mouse to Aim/Shoot, R to Reload, F to Interact.<br>
-        • MOBILE: Use joysticks to move/aim, HUD buttons to reload, swap weapons, and interact.<br>
-        • LOCAL CO-OP: Configure keyboard arrows or Controller inputs.
-    </div>
-
-    <button onclick="closeMenu('settings-modal')" style="background: #333; margin-top: 10px;">BACK TO MENU</button>
-</div>
-
 <!-- LOBBY SCREEN -->
 <div id="lobby-screen" class="screen" style="display: none;">
     <h1>LOBBY</h1>
@@ -777,21 +905,35 @@
 <!-- TAB SCOREBOARD -->
 <div id="scoreboard">
     <table>
-        <thead><tr><th>PLAYER</th><th>KILLS</th><th>SCORE</th><th>STATUS</th><th>PING</th></tr></thead>
+        <thead>
+            <tr>
+                <th>PLAYER</th>
+                <th>KILLS</th>
+                <th>SCORE</th>
+                <th>STATUS</th>
+                <th>PING</th>
+            </tr>
+        </thead>
         <tbody id="score-body"></tbody>
     </table>
 </div>
 
 <!-- POPUPS -->
 <div id="ach-modal" class="modal">
-    <h2 style="color:white;text-align:center">ACHIEVEMENTS</h2><div id="ach-list"></div>
+    <h2 style="color:white; text-align:center;">ACHIEVEMENTS</h2>
+    <div id="ach-list"></div>
     <button class="close-btn" onclick="closeMenu('ach-modal')">CLOSE</button>
 </div>
-<div id="gun-modal" class="modal"><h2 style="color:white;text-align:center">LIBRARY</h2><div id="gun-list"></div><button class="close-btn" onclick="closeMenu('gun-modal')">CLOSE</button></div>
+
+<div id="gun-modal" class="modal">
+    <h2 style="color:white; text-align:center;">LIBRARY</h2>
+    <div id="gun-list"></div>
+    <button class="close-btn" onclick="closeMenu('gun-modal')">CLOSE</button>
+</div>
 
 <!-- COSMETICS SHOP MODAL -->
 <div id="cosmetics-modal" class="modal" style="width: 700px; max-width: 95%; height: 500px; max-height: 85vh; padding: 20px;">
-    <h2 style="color:white;text-align:center;margin-top:0;margin-bottom:15px;">COSMETICS SHOP</h2>
+    <h2 style="color:white; text-align:center; margin-top:0; margin-bottom:15px;">COSMETICS SHOP</h2>
     
     <div style="display: flex; gap: 15px; height: calc(100% - 100px); box-sizing: border-box; flex-wrap: wrap;">
         <!-- Preview -->
@@ -810,7 +952,7 @@
 
 <!-- LOBBY BROWSER SERVER MODAL -->
 <div id="lobby-browser-modal" class="modal" style="width: 700px; max-width: 95%; height: 500px; max-height: 85vh; padding: 20px;">
-    <h2 style="color:white;text-align:center;margin-top:0;margin-bottom:15px;">ONLINE SERVER BROWSER</h2>
+    <h2 style="color:white; text-align:center; margin-top:0; margin-bottom:15px;">ONLINE SERVER BROWSER</h2>
     
     <div style="display: flex; justify-content: space-between; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
         <button onclick="refreshServerBrowser()" style="width:auto; margin:0; padding: 10px 15px; font-size:14px; background:#0e0e0e; border-color:#333;">🔄 Refresh List</button>
@@ -840,14 +982,14 @@
 
 <!-- BOSSES PORTFOLIO MODAL -->
 <div id="bosses-modal" class="modal">
-    <h2 style="color:white;text-align:center">BOSS PORTFOLIO</h2>
+    <h2 style="color:white; text-align:center;">BOSS PORTFOLIO</h2>
     <div id="bosses-list"></div>
     <button class="close-btn" onclick="closeMenu('bosses-modal')">CLOSE</button>
 </div>
 
 <!-- LOCAL CO-OP CONFIG MODAL -->
 <div id="coop-modal" class="modal">
-    <h2 style="color:white;text-align:center">LOCAL CO-OP CONFIG</h2>
+    <h2 style="color:white; text-align:center;">LOCAL CO-OP CONFIG</h2>
     
     <div style="background:#222; padding:15px; border-radius:4px; margin-bottom:15px; border-left: 5px solid #3498db;">
         <div style="color:#3498db; font-weight:bold; margin-bottom:5px;">PLAYER 1 (Blue)</div>
@@ -928,13 +1070,13 @@
                 </div>
             </div>
 
-            <!-- BOSS INFO CARD -->
-            <div id="card-boss" class="smash-item" style="background: rgba(255,255,255,0.02); border: 1px solid #222; border-radius: 6px; padding: 12px; position: relative;">
-                <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 12px; color: #ff4757; text-transform: uppercase; margin-bottom: 5px;">
-                    <span id="over-boss-title">BOSS INFO: Loading...</span><span id="boss-percentage-text">0%</span>
+            <!-- BOSS DISCOVERY CARD (Restructured to render horizontally like your sketch) -->
+            <div id="card-boss" class="smash-item" style="background: rgba(255,255,255,0.02); border: 1px solid #222; border-radius: 6px; padding: 12px 14px; position: relative; text-align: left;">
+                <div style="font-weight: bold; font-size: 11px; color: #ff4757; text-transform: uppercase; margin-bottom: 12px; letter-spacing: 1px;">
+                    Bosses Encountered:
                 </div>
-                <div style="width: 100%; height: 10px; background: #000; border: 1px solid #333; border-radius: 5px; overflow: hidden;">
-                    <div id="boss-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #ff4d4d, #ff7675);"></div>
+                <div id="over-bosses-row" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; width: 100%; box-sizing: border-box; flex-wrap: wrap;">
+                    <!-- Rendered dynamically and staggered via animateBoss() -->
                 </div>
             </div>
 
@@ -948,7 +1090,7 @@
                         <span id="over-cosmetic-title">NEXT UNLOCK: Loading...</span><span id="cosmetic-percentage-text">0%</span>
                     </div>
                     <div style="width: 100%; height: 10px; background: #000; border: 1px solid #333; border-radius: 5px; overflow: hidden;">
-                        <div id="cosmetic-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #54a0ff, #10ac84);"></div>
+                        <div id="cosmetic-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #54a0ff, #10ac84); border-radius: 5px;"></div>
                     </div>
                     <div id="over-cos-action" style="margin-top: 5px;">
                         <!-- Dynamically populated by JS -->
@@ -967,124 +1109,7 @@
     </div>
 </div>
 
-<!-- TAB SCOREBOARD -->
-<div id="scoreboard">
-    <table>
-        <thead><tr><th>PLAYER</th><th>KILLS</th><th>SCORE</th><th>STATUS</th><th>PING</th></tr></thead>
-        <tbody id="score-body"></tbody>
-    </table>
-</div>
-
-<!-- POPUPS -->
-<div id="ach-modal" class="modal">
-    <h2 style="color:white;text-align:center">ACHIEVEMENTS</h2><div id="ach-list"></div>
-    <button class="close-btn" onclick="closeMenu('ach-modal')">CLOSE</button>
-</div>
-<div id="gun-modal" class="modal"><h2 style="color:white;text-align:center">LIBRARY</h2><div id="gun-list"></div><button class="close-btn" onclick="closeMenu('gun-modal')">CLOSE</button></div>
-
-<!-- COSMETICS SHOP MODAL -->
-<div id="cosmetics-modal" class="modal" style="width: 700px; max-width: 95%; height: 500px; max-height: 85vh; padding: 20px;">
-    <h2 style="color:white;text-align:center;margin-top:0;margin-bottom:15px;">COSMETICS SHOP</h2>
-    
-    <div style="display: flex; gap: 15px; height: calc(100% - 100px); box-sizing: border-box; flex-wrap: wrap;">
-        <!-- Preview -->
-        <div id="cosmetics-preview-container" style="flex: 1; min-width: 180px; background: #000; border: 1px solid #333; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 15px; box-sizing: border-box; position: relative; height: 100%;">
-            <span style="color: #666; font-size: 11px; margin-bottom: 12px; text-transform: uppercase; font-weight: bold; letter-spacing: 1px;">Fitting Room</span>
-            <canvas id="cosmeticPreviewCanvas" width="140" height="140" style="background: #111; border: 1px solid #222; border-radius: 50%; box-shadow: 0 0 10px rgba(0,0,0,0.5);"></canvas>
-            <div id="cosmetic-preview-name" style="color: #666; font-size: 13px; margin-top: 15px; font-weight: bold; text-align: center; text-transform: uppercase; letter-spacing: 0.5px;">Unequipped</div>
-        </div>
-        
-        <div id="cosmetics-list-scroll" style="flex: 1.5; min-width: 240px; overflow-y: auto; height: 100%; border: 1px solid #222; background: rgba(0,0,0,0.2); padding: 5px; box-sizing: border-box; border-radius: 4px;">
-            <div id="cosmetics-list"></div>
-        </div>
-    </div>
-    <button class="close-btn" onclick="closeMenu('cosmetics-modal')" style="margin-top: 15px;">CLOSE</button>
-</div>
-
-<!-- LOBBY BROWSER SERVER MODAL -->
-<div id="lobby-browser-modal" class="modal" style="width: 700px; max-width: 95%; height: 500px; max-height: 85vh; padding: 20px;">
-    <h2 style="color:white; text-align:center; margin-top:0; margin-bottom:15px;">ONLINE SERVER BROWSER</h2>
-    
-    <div style="display: flex; justify-content: space-between; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
-        <button onclick="refreshServerBrowser()" style="width:auto; margin:0; padding: 10px 15px; font-size:14px; background:#0e0e0e; border-color:#333;">🔄 Refresh List</button>
-        <div style="display:flex; gap: 5px;">
-            <input type="text" id="manual-join-input" placeholder="Manual Host ID" style="width:160px; font-size:13px; padding:8px; margin:0;">
-            <button onclick="manualJoinLobby()" style="width:auto; margin:0; padding:8px 12px; font-size:13px; background:#222;">Join Code</button>
-        </div>
-    </div>
-
-    <div style="overflow-y: auto; height: calc(100% - 130px); border: 1px solid #222; background: rgba(0,0,0,0.2); border-radius: 4px; padding: 10px; box-sizing: border-box;">
-        <table style="width:100%; border-collapse:collapse; color:#fff; font-size:13px; text-align:left;">
-            <thead>
-                <tr style="border-bottom: 1px solid #444; color:#a83232;">
-                    <th style="padding:8px;">HOST</th>
-                    <th style="padding:8px;">MAP</th>
-                    <th style="padding:8px;">DIFFICULTY</th>
-                    <th style="padding:8px;">PLAYERS</th>
-                    <th style="padding:8px; text-align:right;">ACTION</th>
-                </tr>
-            </thead>
-            <tbody id="lobby-browser-list"></tbody>
-        </table>
-        <div id="no-lobbies-msg" style="color:#666; text-align:center; margin-top:40px; display:none;">No active public lobbies found. Start one!</div>
-    </div>
-    <button class="close-btn" onclick="closeMenu('lobby-browser-modal')" style="margin-top: 15px;">CLOSE</button>
-</div>
-
-<!-- BOSSES PORTFOLIO MODAL -->
-<div id="bosses-modal" class="modal">
-    <h2 style="color:white;text-align:center">BOSS PORTFOLIO</h2>
-    <div id="bosses-list"></div>
-    <button class="close-btn" onclick="closeMenu('bosses-modal')">CLOSE</button>
-</div>
-
-<!-- LOCAL CO-OP CONFIG MODAL -->
-<div id="coop-modal" class="modal">
-    <h2 style="color:white;text-align:center">LOCAL CO-OP CONFIG</h2>
-    
-    <div style="background:#222; padding:15px; border-radius:4px; margin-bottom:15px; border-left: 5px solid #3498db;">
-        <div style="color:#3498db; font-weight:bold; margin-bottom:5px;">PLAYER 1 (Blue)</div>
-        <div style="color:#ccc; font-size:14px;">Input: Keyboard + Mouse</div>
-        <div style="color:#888; font-size:12px; margin-top:5px;">WASD: Move | Mouse: Aim & Shoot | R: Reload | F: Interact</div>
-    </div>
-
-    <div style="background:#222; padding:15px; border-radius:4px; margin-bottom:15px; border-left: 5px solid #e67e22;">
-        <div style="color:#e67e22; font-weight:bold; margin-bottom:10px;">PLAYER 2 (Orange)</div>
-        
-        <label for="p2-input-select" style="color:#aaa; display:block; margin-bottom: 5px; font-size:14px;">Select Input Device:</label>
-        <select id="p2-input-select" onchange="toggleCoopHelp()" style="background:#000; border:1px solid #444; color:#fff; padding:10px; width:100%; font-family:inherit; font-size:16px; margin-bottom:15px; outline:none;">
-            <option value="keyboard">Keyboard Split (Arrows)</option>
-            <option value="gamepad0">Controller 1 (Double Controller Slot A)</option>
-            <option value="gamepad1">Controller 2 (Double Controller Slot B)</option>
-        </select>
-
-        <div id="p2-keyboard-help" style="color:#ccc; font-size:12px; line-height: 1.4;">
-            <span style="color:#e67e22; font-weight:bold;">Keyboard Controls:</span><br>
-            Arrows: Move | Comma (,): Interact | Period (.): Reload | Slash (/): Shoot<br>
-            <span style="color:#ffd700;">Aiming:</span> Auto-points to nearest zombie or movement direction.
-        </div>
-        
-        <div id="p2-gamepad-help" style="color:#ccc; font-size:12px; line-height: 1.4; display:none;">
-            <span style="color:#e67e22; font-weight:bold;">Controller Controls:</span><br>
-            Left Stick: Move | Right Stick: Aim | RT / Button A: Shoot | Button X: Reload | Button Y: Interact<br>
-            <span style="color:#ffd700;">Aiming Fallback:</span> Auto-aims if right stick is idle.
-        </div>
-    </div>
-
-    <button onclick="startLocalCoop()" style="background:#a83232; margin-top:10px;">START GAME</button>
-    <button onclick="closeMenu('coop-modal')" style="background:#333; margin-top:5px;">BACK TO MENU</button>
-</div>
-
-<div id="game-over-legacy" class="screen" style="display: none;">
-    <h1>GAME OVER</h1>
-    <h2 id="death-msg" style="color:#fff;">Survived to Round 1</h2>
-    <div id="perf-msg-legacy" style="color: #ffd700; margin-top:10px; font-size: 18px; font-style: italic;"></div>
-    
-    <button id="return-lobby-btn-legacy" onclick="returnToLobby()" style="display: none; background: #a83232; color: #fff; border-color: #a83232;">RETURN TO LOBBY</button>
-    <button onclick="requestRestart()">PLAY AGAIN</button>
-    <button onclick="location.reload()">MAIN MENU</button>
-</div>
-
+<!-- GAME UI GAMEPLAY LAYER -->
 <div id="game-ui">
     <div id="damage-flash"></div>
     <div id="round-box" class="hud-text">1</div>
@@ -1156,7 +1181,7 @@
     <div id="interact-msg">Press F</div>
 </div>
 
-<!-- JOYSTICKS -->
+<!-- JOYSTICKS AND MOBILE OVERLAYS -->
 <div id="mobile-overlay" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; user-select: none; z-index: 1005;">
     <div id="touch-stick-left" style="position: absolute; bottom: 30px; left: 30px; width: 120px; height: 120px; background: rgba(255, 255, 255, 0.08); border: 2px solid rgba(255, 255, 255, 0.25); border-radius: 50%; pointer-events: auto;">
         <div id="touch-knob-left" style="position: absolute; top: 35px; left: 35px; width: 50px; height: 50px; background: rgba(255, 255, 255, 0.45); border-radius: 50%; pointer-events: none; box-shadow: 0 0 10px rgba(0,0,0,0.5);"></div>
