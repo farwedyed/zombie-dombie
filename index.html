@@ -654,8 +654,8 @@
             padding: 20px;
             box-sizing: border-box;
         }
-        /* Activates only on mobile touch screens in landscape (horizontal) orientation */
-        @media (max-width: 900px) and (orientation: landscape) {
+        /* Activates only on mobile touch screens in portrait (vertical) orientation */
+        @media (max-width: 1024px) and (orientation: portrait) {
             #orientation-warning {
                 display: flex !important;
             }
@@ -668,7 +668,7 @@
 <div id="orientation-warning">
     <div style="font-size: 50px; margin-bottom: 20px; animation: arrowBounce 0.5s infinite alternate;">📱🔄</div>
     <div style="color: #a83232; font-size: 24px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px;">Rotate Your Device</div>
-    <p style="color: #888; font-size: 14px; max-width: 300px; line-height: 1.5; margin: 0;">Please rotate your mobile device to Portrait (Vertical) mode to play Zombie Dombie.</p>
+    <p style="color: #888; font-size: 14px; max-width: 300px; line-height: 1.5; margin: 0;">Please rotate your mobile device to Landscape (Horizontal) mode to play Zombie Dombie.</p>
 </div>
 
 <!-- MAIN MENU -->
