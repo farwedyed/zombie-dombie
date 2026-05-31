@@ -165,10 +165,21 @@ window.startingDefeatedBosses = [];
 
 function init() {
     refreshMainMenuStats();
-    window.addEventListener('resize', function () { 
-        canvas.width = window.innerWidth; 
-        canvas.height = window.innerHeight; 
-    });
+    
+    // Swaps width/height if vertical screen aspect is detected [1]
+    function resizeCanvas() {
+        const isPortrait = window.innerHeight > window.innerWidth;
+        if (isPortrait && isTouchDevice) {
+            canvas.width = window.innerHeight;
+            canvas.height = window.innerWidth;
+        } else {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+    }
+    
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
 
     window.addEventListener('keydown', function (e) { 
         if (e.code === 'Tab') { 
@@ -998,7 +1009,7 @@ function renderBossesMenu() {
 
                 c.fillStyle = '#f00'; 
                 c.strokeStyle = '#000'; 
-                c.lineWidth = 1;
+                c.lineWidth = 0.8;
                 c.beginPath(); 
                 c.arc(30 - 5, 30 - 5, 2.5, 0, Math.PI*2); 
                 c.fill(); 
@@ -1018,7 +1029,7 @@ function renderBossesMenu() {
 
                 c.fillStyle = '#00ffff'; 
                 c.strokeStyle = '#000'; 
-                c.lineWidth = 1;
+                c.lineWidth = 0.8;
                 c.beginPath(); 
                 c.arc(30 - 5, 30 - 2, 2.5, 0, Math.PI*2); 
                 c.fill(); 
