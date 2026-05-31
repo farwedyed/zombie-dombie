@@ -25,14 +25,49 @@
             display: block; 
         }
         
-        #app-container {
-            width: 100%;
-            height: 100%;
-            position: absolute;
-            top: 0;
-            left: 0;
+        /* --- MOBILE LANDSCAPE ROTATION WARNING --- */
+        #orientation-warning {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; 
+            width: 100%; height: 100%;
+            background: #050505;
+            color: #fff;
+            z-index: 999999;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
         }
-        
+        #orientation-warning .icon {
+            font-size: 50px;
+            margin-bottom: 15px;
+            animation: phoneRotate 2s infinite ease-in-out;
+        }
+        #orientation-warning h3 {
+            color: #a83232;
+            margin: 0 0 10px 0;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+        #orientation-warning p {
+            color: #888;
+            font-size: 13px;
+            margin: 0;
+        }
+        @keyframes phoneRotate {
+            0% { transform: rotate(0deg); }
+            50% { transform: rotate(-90deg); }
+            100% { transform: rotate(0deg); }
+        }
+        @media (max-width: 1024px) and (orientation: portrait) {
+            #orientation-warning {
+                display: flex !important;
+            }
+        }
+
         /* --- UI OVERLAY --- */
         #ui-layer { 
             position: absolute; 
@@ -136,6 +171,19 @@
             pointer-events: auto; 
         }
         
+        @media (max-width: 768px) {
+            #ach-toast-container {
+                bottom: auto !important;
+                top: 150px !important;
+                left: 10px !important;
+                flex-direction: column !important;
+                pointer-events: none !important;
+            }
+            .ach-toast {
+                pointer-events: none !important; /* Force complete click-through/touch-through */
+            }
+        }
+        
         @keyframes slideIn { 
             0% { transform: translateX(-100%); opacity: 0; } 
             100% { transform: translateX(0); opacity: 1; } 
@@ -198,35 +246,81 @@
             display: flex; 
             flex-direction: column; 
             align-items: center; 
-            justify-content: center; 
+            justify-content: flex-start; /* Modified to scroll nicely on short landscapes */
             pointer-events: auto; 
             z-index: 2000; 
             box-shadow: inset 0 0 100px rgba(0,0,0,0.8);
+            overflow-y: auto;
+            padding: 20px;
+            box-sizing: border-box;
         }
 
-        /* CONTAINER FOR MAIN MENU */
-        .menu-container {
-            width: 480px;
-            max-width: 95%;
-            padding: 25px 25px;
+        /* NEW UNIFIED 3-COLUMN LAYOUT */
+        .main-menu-grid {
+            display: flex;
+            gap: 20px;
+            width: 98%;
+            max-width: 1280px;
+            margin-top: 15px;
+            box-sizing: border-box;
+            align-items: stretch;
+            justify-content: center;
+        }
+        
+        .menu-column {
             background: rgba(10, 10, 10, 0.9);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
             border: 1px solid rgba(168, 50, 50, 0.25);
             border-top: 4px solid #a83232;
             box-shadow: 0 15px 35px rgba(0, 0, 0, 0.9), 0 0 15px rgba(168, 50, 50, 0.1);
-            text-align: center;
+            padding: 20px;
             box-sizing: border-box;
             border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+        }
+
+        /* Specific Width Constraints */
+        .left-panel {
+            flex: 1.1;
+            min-width: 300px;
+            max-width: 360px;
+        }
+        .center-panel {
+            flex: 1.3;
+            min-width: 320px;
+            max-width: 440px;
+        }
+        .right-panel {
+            flex: 1.1;
+            min-width: 300px;
+            max-width: 360px;
+        }
+
+        @media (max-width: 1024px) {
+            .main-menu-grid {
+                flex-direction: column;
+                align-items: center;
+                gap: 15px;
+                padding-bottom: 30px;
+            }
+            .menu-column {
+                width: 100%;
+                max-width: 480px;
+                flex: none !important;
+            }
         }
 
         h1 { 
             color: #a83232; 
-            font-size: 46px; 
-            margin: 0 0 15px 0; 
+            font-size: 38px; 
+            margin: 0 0 10px 0; 
             letter-spacing: 5px; 
             text-shadow: 0 0 10px rgba(168, 50, 50, 0.6), 2px 2px 0 #000; 
             animation: pulseGlow 3s infinite alternate;
+            text-align: center;
         }
         @keyframes pulseGlow {
             0% { text-shadow: 0 0 8px rgba(168, 50, 50, 0.4), 2px 2px 0 #000; }
@@ -254,16 +348,16 @@
         }
 
         .menu-label {
-            font-size: 10px;
-            color: #666;
+            font-size: 11px;
+            color: #888;
             display: block;
             text-align: left;
-            margin-bottom: 4px;
+            margin-bottom: 8px;
             text-transform: uppercase;
             font-weight: bold;
             letter-spacing: 1px;
             border-bottom: 1px solid #222;
-            padding-bottom: 3px;
+            padding-bottom: 5px;
         }
 
         /* INPUTS & SELECT DROPDOWNS */
@@ -289,7 +383,7 @@
         }
         
         #username-input { 
-            margin-bottom: 12px; 
+            margin-bottom: 0px; 
             border-color: #a83232; 
             color: #ffd700; 
             font-weight: bold; 
@@ -306,7 +400,7 @@
             margin: 4px 0; 
             cursor: pointer; 
             font-family: inherit; 
-            font-size: 14px; 
+            font-size: 13px; 
             font-weight: bold;
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -334,25 +428,25 @@
             color: #555 !important;
         }
 
-        /* SECTIONS & GRID FOR ARMORY */
+        /* SECTIONS */
         .menu-section {
-            margin-bottom: 15px;
+            margin-bottom: 12px;
             text-align: left;
         }
         
-        /* HORIZONTAL PANELS WRAPPER FOR MOBILE COMPACT */
-        .menu-row-wrapper {
-            display: flex;
-            flex-direction: column;
-            width: 100%;
-            gap: 15px;
-            box-sizing: border-box;
+        /* UP-TOP VISIBILITY GRID */
+        .priority-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px;
+            margin-top: 2px;
         }
-        .menu-col {
-            display: flex;
-            flex-direction: column;
-            width: 100%;
-            box-sizing: border-box;
+        .priority-grid button {
+            margin: 0;
+            font-size: 10px;
+            padding: 8px 4px;
+            border-color: #333;
+            background: linear-gradient(180deg, #222, #181818);
         }
 
         /* MODALS */
@@ -409,15 +503,14 @@
         /* DEPLOYMENT CARD STYLES */
         .deployment-cards-container {
             display: flex;
-            gap: 12px;
+            gap: 10px;
             flex-wrap: wrap;
             justify-content: center;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
         .deployment-card {
             flex: 1;
-            min-width: 180px;
-            max-width: 200px;
+            min-width: 110px;
             background: rgba(20, 20, 20, 0.85);
             border: 2px solid #2d2d2d;
             border-radius: 6px;
@@ -428,7 +521,7 @@
             transition: all 0.2s ease;
         }
         .deployment-card:hover {
-            transform: translateY(-4px);
+            transform: translateY(-2px);
             border-color: #a83232;
             box-shadow: 0 5px 15px rgba(168, 50, 50, 0.2);
         }
@@ -438,11 +531,11 @@
             background: rgba(255, 215, 0, 0.02);
         }
         .card-banner {
-            height: 55px;
+            height: 35px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: bold;
             color: #fff;
             text-transform: uppercase;
@@ -454,14 +547,14 @@
         .banner-sector9 { background: linear-gradient(135deg, #3d155f, #10ac84); }
         
         .card-content {
-            padding: 10px;
+            padding: 8px;
             display: flex;
             flex-grow: 1;
             flex-direction: column;
             justify-content: space-between;
         }
         .card-title {
-            font-size: 12px;
+            font-size: 11px;
             font-weight: bold;
             color: #ffd700;
             margin-bottom: 4px;
@@ -477,51 +570,51 @@
         /* DRAWN MINI ILLUSTRATIONS STYLES */
         .card-illustration-box {
             width: 100%;
-            height: 80px;
+            height: 50px;
             background: #080808;
             border: 1px dashed #222;
             border-radius: 4px;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             position: relative;
             overflow: hidden;
         }
         .mini-player {
-            width: 18px;
-            height: 18px;
+            width: 14px;
+            height: 14px;
             border-radius: 50%;
             background: #3498db;
             border: 1.5px solid #000;
             position: absolute;
-            bottom: 10px;
+            bottom: 5px;
             left: 50%;
             transform: translateX(-50%);
         }
         .mini-player-barrel {
-            width: 5px;
-            height: 8px;
+            width: 4px;
+            height: 6px;
             background: #999;
             border: 1px solid #000;
             position: absolute;
-            top: -7px;
-            left: 5px;
+            top: -5px;
+            left: 4px;
         }
         .mini-zombie {
-            width: 15px;
-            height: 15px;
+            width: 12px;
+            height: 12px;
             border-radius: 50%;
             border: 1.5px solid #000;
             position: absolute;
         }
         .zombie-eyes {
-            width: 2.5px;
-            height: 2.5px;
+            width: 2px;
+            height: 2px;
             background: #f00;
             border-radius: 50%;
             position: absolute;
-            top: 3px;
+            top: 2px;
         }
-        .eye-left { left: 3px; }
-        .eye-right { right: 3px; }
+        .eye-left { left: 2px; }
+        .eye-right { right: 2px; }
         
         /* TAB SCOREBOARD & LEADERBOARD */
         #scoreboard { 
@@ -558,10 +651,10 @@
             display: none; 
         }
 
-        /* --- MOBILE LANDSCAPE ADJUSTMENTS --- */
+        /* --- MOBILE ADAPTATIONS --- */
         @media (max-width: 768px) {
-            h1 { font-size: 36px; }
-            button { font-size: 16px; padding: 10px; }
+            h1 { font-size: 32px; }
+            button { font-size: 14px; padding: 10px; }
             #round-box { font-size: 36px; top: 15px; }
             
             /* Raise P1 and P2 to prevent overlap with virtual joysticks */
@@ -582,130 +675,6 @@
             }
             #tutorial-title { font-size: 16px; }
             #tutorial-text { font-size: 13px; }
-        }
-
-        /* Short-height Mobile Sizing (Landscape Optimization) */
-        @media (max-height: 550px) {
-            .modal {
-                padding: 12px !important;
-                height: 95vh !important;
-                max-height: 95vh !important;
-            }
-            .modal h2 {
-                font-size: 16px !important;
-                margin-bottom: 8px !important;
-            }
-            
-            /* Layout transformation: Horizontal row container for mobile landscape */
-            .menu-container {
-                padding: 12px !important;
-                width: 95% !important;
-                max-width: 780px !important;
-            }
-            .menu-row-wrapper {
-                flex-direction: row !important;
-                justify-content: space-between;
-                align-items: stretch;
-                gap: 12px !important;
-            }
-            .menu-col {
-                flex: 1;
-                width: 31% !important;
-                background: rgba(0, 0, 0, 0.45);
-                border: 1px solid rgba(255, 255, 255, 0.05);
-                border-radius: 4px;
-                padding: 10px !important;
-                justify-content: space-between;
-            }
-
-            h1 {
-                font-size: 24px !important;
-                margin-bottom: 5px !important;
-                letter-spacing: 3px !important;
-            }
-            .stats-text {
-                font-size: 9px !important;
-                margin-bottom: 6px !important;
-                padding: 4px 8px !important;
-            }
-            #menu-xp-bar-container {
-                margin-bottom: 3px !important;
-                height: 6px !important;
-            }
-            #username-input {
-                margin-bottom: 6px !important;
-                padding: 6px !important;
-                font-size: 11px !important;
-            }
-            .priority-grid button {
-                padding: 6px 3px !important;
-                font-size: 9px !important;
-            }
-            button {
-                padding: 6px !important;
-                font-size: 11px !important;
-                margin: 2px 0 !important;
-            }
-            .menu-section {
-                margin-bottom: 8px !important;
-            }
-            
-            /* Short Screen Game-Over layout scaling */
-            #game-over > div {
-                padding: 10px !important;
-                max-height: 98vh !important;
-                overflow-y: auto !important;
-            }
-            #over-title {
-                font-size: 24px !important;
-                margin-bottom: 2px !important;
-            }
-            #over-round-box {
-                font-size: 14px !important;
-                margin-bottom: 5px !important;
-            }
-            #over-round-val {
-                font-size: 18px !important;
-            }
-            #card-stats {
-                padding: 4px !important;
-                margin-bottom: 5px !important;
-            }
-            #stat-kills-val, #stat-coins-val {
-                font-size: 16px !important;
-            }
-            #card-xp, #card-boss, #card-cosmetic {
-                padding: 6px !important;
-                margin-bottom: 5px !important;
-            }
-            #over-bosses-row canvas {
-                width: 36px !important;
-                height: 36px !important;
-            }
-            #over-bosses-row > div {
-                min-width: 40px !important;
-            }
-            #over-boss-status-boss_logbreaker, 
-            #over-boss-status-boss_blink, 
-            #over-boss-status-boss_miasma, 
-            #over-boss-status-boss_rampager, 
-            #over-boss-status-boss_decayer, 
-            #over-boss-status-boss_pyromaniac {
-                font-size: 6px !important;
-            }
-            #over-cos-preview {
-                width: 40px !important;
-                height: 40px !important;
-            }
-            #card-cosmetic > div:first-child {
-                width: 40px !important;
-                height: 40px !important;
-            }
-            #over-controls button {
-                height: 30px !important;
-                font-size: 10px !important;
-                margin: 0 !important;
-            }
         }
 
         /* --- STAGGERED GAME OVER ANIMATIONS & WIDGET STYLES --- */
@@ -753,543 +722,610 @@
             z-index: 0;
             display: none;
         }
-
-        /* --- PORTRAIT ORIENTATION BLOCKER PANEL (RESTORED) --- */
-        #orientation-warning {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #050505;
-            color: #fff;
-            z-index: 99999;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            font-family: 'Courier New', monospace;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-        /* Activates only on mobile touch screens in portrait (vertical) orientation */
-        @media (max-width: 1024px) and (orientation: portrait) {
-            #orientation-warning {
-                display: flex !important;
-            }
-        }
     </style>
 </head>
 <body oncontextmenu="return false;">
 
-<div id="app-container">
+<!-- LANDSCAPE DEVICE MONITOR OVERLAY -->
+<div id="orientation-warning">
+    <div class="icon">🔄</div>
+    <h3>Rotate Your Device</h3>
+    <p>Please flip your device to horizontal (Landscape) mode for comfortable combat controls.</p>
+</div>
 
-    <!-- PORTRAIT ORIENTATION WARNING FOR MOBILE -->
-    <div id="orientation-warning">
-        <div style="font-size: 60px; margin-bottom: 20px; animation: arrowBounce 0.5s infinite alternate;">📱🔄</div>
-        <div style="color: #a83232; font-size: 24px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px;">Landscape Only</div>
-        <p style="color: #888; font-size: 14px; max-width: 320px; line-height: 1.5; margin: 0;">Please rotate your mobile device to Landscape (Horizontal) mode to play Zombie Dombie.</p>
+<!-- MAIN MENU -->
+<div id="main-menu" class="screen">
+    <!-- TOP HEADER ROW -->
+    <div style="width: 100%; max-width: 1280px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin-bottom: 5px;">
+        <h1>ZOMBIE DOMBIE</h1>
+        
+        <!-- DYNAMIC SYSTEM MESSAGE BANNER -->
+        <div id="main-menu-msg" style="display:none; width: 100%; color:#e74c3c; background:rgba(231,76,60,0.12); border:1px solid rgba(231,76,60,0.3); padding:10px; margin-bottom:15px; border-radius:4px; font-weight:bold; font-size:11px; text-transform:uppercase; letter-spacing:1px; line-height:1.4; text-align: center;"></div>
+
+        <!-- DYNAMIC ACCOUNT STATUS CONTAINER -->
+        <div id="auth-status-container" style="width: 100%; max-width: 440px;"></div>
+
+        <!-- STATS & LEVEL ROW -->
+        <div style="width: 100%; max-width: 580px; display: flex; flex-direction: column; gap: 4px;">
+            <div class="stats-text" style="margin-bottom: 4px;">
+                <div>LVL: <span id="menu-level">1</span></div>
+                <div>COINS: <span id="menu-coins">0 🪙</span></div>
+                <div>KILLS: <span id="menu-kills">0</span></div>
+                <div>BEST: <span id="menu-round">1</span></div>
+            </div>
+            <!-- XP PROGRESS BAR -->
+            <div id="menu-xp-bar-container" style="width: 100%; height: 8px; background: #000; border: 1px solid #333; border-radius: 4px; overflow: hidden; margin-bottom: 2px;">
+                <div id="menu-xp-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #ff9f43, #ff5252);"></div>
+            </div>
+            <div id="menu-xp-text" style="font-size: 9px; color:#666; margin-bottom: 8px; font-weight: bold; text-transform: uppercase; text-align: center;">0 / 1000 XP</div>
+        </div>
     </div>
 
-    <!-- MAIN MENU -->
-    <div id="main-menu" class="screen">
-        <div class="menu-container">
-            <h1>ZOMBIE DOMBIE</h1>
+    <!-- NEW 3-COLUMN LAYOUT SYSTEM -->
+    <div class="main-menu-grid">
+        
+        <!-- LEFT PANEL: INTEGRATED LIVE LEADERBOARD -->
+        <div class="menu-column left-panel">
+            <span class="menu-label">🏆 Global Competitors</span>
+            <div style="overflow-y: auto; flex: 1; min-height: 240px; border: 1px solid #222; background: rgba(0,0,0,0.3); border-radius: 4px; padding: 5px; box-sizing: border-box;">
+                <table style="width: 100%; border-collapse: collapse; color: #fff; font-size: 11px; text-align: left;">
+                    <thead>
+                        <tr style="border-bottom: 1.5px solid #444; color: #a83232;">
+                            <th style="padding: 6px; text-align: center; width: 45px;">Rank</th>
+                            <th style="padding: 6px;">Survivor</th>
+                            <th style="padding: 6px; text-align: center;">Best</th>
+                            <th style="padding: 6px; text-align: center;">Kills</th>
+                        </tr>
+                    </thead>
+                    <tbody id="menu-leaderboard-body">
+                        <tr><td colspan="4" style="text-align: center; padding: 25px; color: #666; font-size: 10px;">Synchronizing Combat Logs...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- CENTER PANEL: DEPLOYMENT CENTER -->
+        <div class="menu-column center-panel">
+            <span class="menu-label">🎖️ Combat Deployment</span>
             
-            <!-- DYNAMIC SYSTEM MESSAGE BANNER -->
-            <div id="main-menu-msg" style="display:none; color:#e74c3c; background:rgba(231,76,60,0.12); border:1px solid rgba(231,76,60,0.3); padding:10px; margin-bottom:15px; border-radius:4px; font-weight:bold; font-size:11px; text-transform:uppercase; letter-spacing:1px; line-height:1.4;"></div>
+            <div class="menu-section" style="margin-bottom: 8px;">
+                <input type="text" id="username-input" placeholder="ENTER CODENAME" maxlength="12">
+            </div>
 
-            <!-- THREE COLUMN HORIZONTAL PANEL ON MOBILE LANDSCAPE VIEWPORTS -->
-            <div class="menu-row-wrapper">
-                
-                <!-- COLUMN 1: Profile Progress & Setup Utilities -->
-                <div class="menu-col">
-                    <!-- DYNAMIC ACCOUNT STATUS CONTAINER -->
-                    <div id="auth-status-container" style="margin-bottom:8px;"></div>
-
-                    <div class="stats-text" style="margin-bottom:5px;">
-                        <div>LVL:<span id="menu-level">1</span></div>
-                        <div>🪙:<span id="menu-coins">0</span></div>
-                        <div>💀:<span id="menu-kills">0</span></div>
-                        <div>🏆:<span id="menu-round">1</span></div>
-                    </div>
-                    
-                    <!-- XP PROGRESS BAR -->
-                    <div id="menu-xp-bar-container" style="width: 100%; height: 6px; background: #000; border: 1px solid #333; border-radius: 3px; overflow: hidden; margin-bottom: 4px;">
-                        <div id="menu-xp-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #ff9f43, #ff5252);"></div>
-                    </div>
-                    <div id="menu-xp-text" style="font-size: 8px; color:#666; margin-bottom: 8px; font-weight: bold; text-transform: uppercase;">0 / 1000 XP</div>
-
-                    <!-- SYSTEM DIAGNOSTICS & SETUP -->
-                    <div style="display: flex; gap: 4px; margin-top: auto; border-top: 1px dashed #222; padding-top: 6px;">
-                        <button onclick="openMenu('settings-modal')" style="font-size: 10px; padding: 6px; background: #0e0e0e; flex: 2; margin: 0;">⚙️ Setup</button>
-                        <button onclick="resetData()" style="font-size: 10px; padding: 6px; background: #0e0e0e; color: #c0392b; flex: 1; margin: 0;">Wipe</button>
-                    </div>
-                </div>
-                
-                <!-- COLUMN 2: Identity & Weapons Armory -->
-                <div class="menu-col" style="justify-content: flex-start; gap: 10px;">
-                    <!-- IDENTITY SECTION -->
-                    <div class="menu-section" style="margin-bottom: 0;">
-                        <span class="menu-label">Survivor Credentials:</span>
-                        <input type="text" id="username-input" placeholder="ENTER CODENAME" maxlength="12" style="margin-bottom: 0; padding: 6px; font-size: 12px;">
-                    </div>
-
-                    <!-- ARMORY & TACTICAL INTEL -->
-                    <div class="menu-section" style="margin-bottom: 0;">
-                        <span class="menu-label">Armory & Intel:</span>
-                        <div class="priority-grid">
-                            <button onclick="openMenu('gun-modal')">🔫 Gun Lib</button>
-                            <button onclick="openMenu('cosmetics-modal')">👕 Cosmetics</button>
-                            <button onclick="openMenu('bosses-modal')">💀 Bosses</button>
-                            <button onclick="openMenu('ach-modal')">🏆 Achievs</button>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- COLUMN 3: Active Deployments -->
-                <div class="menu-col" style="justify-content: space-between;">
-                    <div class="menu-section" style="margin-bottom: 0; height: 100%; display: flex; flex-direction: column; justify-content: space-between; gap: 2px;">
-                        <span class="menu-label">Deployment Center:</span>
-                        <button onclick="openSoloDeploymentConsole()" style="border-color: #a83232; margin: 0; color:#fff; background: rgba(168,50,50,0.15); padding: 5px;">PLAY SOLO</button>
-                        <button onclick="startTutorial()" style="border-color: #555; margin: 0; padding: 5px;">BOOT CAMP</button>
-                        <button onclick="openMenu('coop-modal')" style="margin: 0; padding: 5px;">LOCAL CO-OP</button>
-                        <button onclick="enterLobbyHost()" style="margin: 0; padding: 5px;">HOST ONLINE</button>
-                        <button onclick="openMenu('lobby-browser-modal')" style="border-color: #3498db; background: rgba(52, 152, 219, 0.08); margin: 0; padding: 5px;">SERVER BROWSER</button>
-                        <button onclick="openGlobalLeaderboardConsole()" style="border-color: #ffd700; background: rgba(255, 215, 0, 0.04); margin: 0; padding: 5px;">🏆 LEADERBOARD</button>
-                    </div>
-                </div>
-
+            <div class="menu-section" style="display: flex; flex-direction: column; gap: 4px;">
+                <button onclick="openSoloDeploymentConsole()" style="border-color: #ffd700; color: #fff; background: rgba(255, 215, 0, 0.08); font-size: 14px; padding: 12px 10px;">PLAY SOLO WAVES</button>
+                <button onclick="startTutorial()" style="border-color: #555;">BOOT CAMP (TUTORIAL)</button>
+                <button onclick="openMenu('coop-modal')">LOCAL CO-OP Split Screen</button>
+                <button onclick="enterLobbyHost()">HOST ONLINE LOBBY</button>
+                <button onclick="openMenu('lobby-browser-modal')" style="border-color: #3498db; background: rgba(52, 152, 219, 0.08);">BROWSE ONLINE SERVERS</button>
             </div>
         </div>
+
+        <!-- RIGHT PANEL: ARMORY & TACTICAL INTEL -->
+        <div class="menu-column right-panel">
+            <span class="menu-label">🔫 Armory & Tactical Intel</span>
+            
+            <div class="menu-section">
+                <div class="priority-grid">
+                    <button onclick="openMenu('gun-modal')">🔫 Gun Library</button>
+                    <button onclick="openMenu('cosmetics-modal')">👕 Cosmetics Shop</button>
+                    <button onclick="openMenu('bosses-modal')">💀 Boss Portfolio</button>
+                    <button onclick="openMenu('ach-modal')">🏆 Achievements</button>
+                </div>
+            </div>
+
+            <div style="margin-top: auto; display: flex; flex-direction: column; gap: 5px; border-top: 1px solid #222; padding-top: 10px;">
+                <button onclick="openMenu('settings-modal')" style="font-size: 11px; padding: 8px; background: #0e0e0e;">⚙️ System Settings</button>
+                <button onclick="resetData()" style="font-size: 11px; padding: 8px; background: #0e0e0e; color: #c0392b;">Wipe All Data</button>
+            </div>
+        </div>
+
     </div>
+</div>
 
-    <!-- GLOBAL LEADERBOARDS MODAL -->
-    <div id="leaderboard-modal" class="modal" style="width: 580px; max-width: 95%; height: 490px; max-height: 85vh; padding: 20px;">
-        <h2 style="color:white; text-align:center; margin-top:0; margin-bottom:15px;">GLOBAL LEADERBOARDS</h2>
-        
-        <div style="overflow-y: auto; height: calc(100% - 90px); border: 1px solid #222; background: rgba(0,0,0,0.25); border-radius: 4px; padding: 10px; box-sizing: border-box; margin-bottom: 15px;">
-            <table style="width:100%; border-collapse:collapse; color:#fff; font-size:12px; text-align:left;">
-                <thead>
-                    <tr style="border-bottom: 2px solid #444; color:#a83232;">
-                        <th style="padding:10px; text-align:center; width: 60px;">RANK</th>
-                        <th style="padding:10px;">SURVIVOR</th>
-                        <th style="padding:10px; text-align:center;">BEST ROUND</th>
-                        <th style="padding:10px; text-align:center;">ZOMBIE KILLS</th>
-                    </tr>
-                </thead>
-                <tbody id="leaderboard-body"></tbody>
-            </table>
-        </div>
-
-        <button onclick="closeMenu('leaderboard-modal')" style="background: #333;">CLOSE</button>
-    </div>
-
-    <!-- SOLO DEPLOYMENT -->
-    <div id="solo-deployment-modal" class="modal" style="width: 740px; max-width: 95%; height: 580px; max-height: 90vh; padding: 20px;">
-        <h2 style="color:white; text-align:center; margin-top:0; margin-bottom:15px;">SELECT DEPLOYMENT ZONE</h2>
-        
-        <!-- CARD LIST (MAPS) -->
-        <div class="deployment-cards-container">
-            <!-- Card 1: Facility -->
-            <div class="deployment-card selected" id="solo-card-0" onclick="selectSoloMap(0)">
-                <div class="card-banner banner-facility">Lab Area</div>
-                <div class="card-content">
-                    <div class="card-title">The Facility</div>
-                    <div class="card-desc">An abandoned underground laboratory featuring scientific corridors, supply areas, and isolated power rooms.</div>
-                </div>
-            </div>
-
-            <!-- Card 2: Bunker -->
-            <div class="deployment-card" id="solo-card-1" onclick="selectSoloMap(1)">
-                <div class="card-banner banner-bunker">Outpost</div>
-                <div class="card-content">
-                    <div class="card-title">Bunker Outpost</div>
-                    <div class="card-desc">A deep-level concrete military bunker containing narrow access wings, tactical storage, and vault compartments.</div>
-                </div>
-            </div>
-
-            <!-- Card 3: Sector 9 -->
-            <div class="deployment-card" id="solo-card-2" onclick="selectSoloMap(2)">
-                <div class="card-banner banner-sector9">Quarantine</div>
-                <div class="card-content">
-                    <div class="card-title">Sector-9 Lab</div>
-                    <div class="card-desc">A hazardous bio-research quarantine grid designed as an airtight containment area with complex structural lanes.</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- TACTICAL DIFFICULTY SELECTOR CARDS -->
-        <div style="color: #666; font-size: 10px; font-weight: bold; margin-bottom: 8px; text-transform: uppercase; text-align: left; letter-spacing: 0.5px; border-bottom: 1px solid #222; padding-bottom: 3px;">TACTICAL DIFFICULTY:</div>
-        <div class="deployment-cards-container">
-            <!-- Card: Easy -->
-            <div class="deployment-card" id="solo-diff-card-easy" onclick="selectSoloDifficulty('easy')">
-                <div class="card-banner" style="background: #555;">Easy</div>
-                <div class="card-content">
-                    <div class="card-illustration-box">
-                        <div class="mini-zombie" style="background:#3a4a38; top: 12px; left: 50%; transform: translateX(-50%);">
-                            <span class="zombie-eyes eye-left"></span><span class="zombie-eyes eye-right"></span>
-                        </div>
-                        <div class="mini-player"><span class="mini-player-barrel"></span></div>
-                    </div>
-                    <div class="card-title" style="color:#aaa; font-size:11px;">EASY MODE</div>
-                    <div class="card-desc" style="text-align:center; font-weight:bold; color:#888;">SLOW AND LESS ZOMBIES</div>
-                </div>
-            </div>
-
-            <!-- Card: Medium -->
-            <div class="deployment-card selected" id="solo-diff-card-medium" onclick="selectSoloDifficulty('medium')">
-                <div class="card-banner" style="background: #e67e22;">Medium</div>
-                <div class="card-content">
-                    <div class="card-illustration-box">
-                        <div class="mini-zombie" style="background:#3a4a38; top: 12px; left: 25%;">
-                            <span class="zombie-eyes eye-left"></span><span class="zombie-eyes eye-right"></span>
-                        </div>
-                        <div class="mini-zombie" style="background:#3a4a38; top: 12px; right: 25%;">
-                            <span class="zombie-eyes eye-left"></span><span class="zombie-eyes eye-right"></span>
-                        </div>
-                        <div class="mini-player"><span class="mini-player-barrel"></span></div>
-                    </div>
-                    <div class="card-title" style="color:#e67e22; font-size:11px;">MEDIUM MODE</div>
-                    <div class="card-desc" style="text-align:center; font-weight:bold; color:#d67c27;">NORMAL SPEED AND SPAWN COUNT</div>
-                </div>
-            </div>
-
-            <!-- Card: Hard -->
-            <div class="deployment-card" id="solo-diff-card-hard" onclick="selectSoloDifficulty('hard')">
-                <div class="card-banner" style="background: #c0392b;">Hard</div>
-                <div class="card-content">
-                    <div class="card-illustration-box">
-                        <div class="mini-zombie" style="background:#3a4a38; top: 8px; left: 15%; width:12px; height:12px;">
-                            <span class="zombie-eyes eye-left" style="width:1.5px; height:1.5px;"></span><span class="zombie-eyes eye-right" style="width:1.5px; height:1.5px;"></span>
-                        </div>
-                        <div class="mini-zombie" style="background:#3a4a38; top: 8px; left: 50%; transform: translateX(-50%); width:12px; height:12px;">
-                            <span class="zombie-eyes eye-left" style="width:1.5px; height:1.5px;"></span><span class="zombie-eyes eye-right" style="width:1.5px; height:1.5px;"></span>
-                        </div>
-                        <div class="mini-zombie" style="background:#3a4a38; top: 8px; right: 15%; width:12px; height:12px;">
-                            <span class="zombie-eyes eye-left" style="width:1.5px; height:1.5px;"></span><span class="zombie-eyes eye-right" style="width:1.5px; height:1.5px;"></span>
-                        </div>
-                        <div class="mini-zombie" style="background:#f1c40f; top: 28px; left: 22%; width:12px; height:12px;">
-                            <span class="zombie-eyes eye-left" style="width:1.5px; height:1.5px;"></span><span class="zombie-eyes eye-right" style="width:1.5px; height:1.5px;"></span>
-                        </div>
-                        <div class="mini-zombie" style="background:#2980b9; top: 28px; right: 22%; width:15px; height:15px; border-width:2px;">
-                            <span class="zombie-eyes eye-left" style="top:2px;"></span><span class="zombie-eyes eye-right" style="top:2px;"></span>
-                        </div>
-                        <div class="mini-player"><span class="mini-player-barrel"></span></div>
-                    </div>
-                    <div class="card-title" style="color:#c0392b; font-size:11px;">HARD MODE</div>
-                    <div class="card-desc" style="text-align:center; font-weight:bold; color:#c0392b;">FAST ZOMBIES AND MORE FREQUENT SPAWNS</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ACTIONS -->
-        <div style="display: flex; gap: 8px;">
-            <button onclick="deploySoloOffline()" style="background: #a83232; color: #fff; border-color: #a83232; padding: 12px; font-size: 14px; flex: 2;">DEPLOY TO ZONE</button>
-            <button onclick="closeMenu('solo-deployment-modal')" style="background: #333; padding: 12px; font-size: 14px; flex: 1;">CANCEL</button>
-        </div>
-    </div>
-
-    <!-- TAB SCOREBOARD -->
-    <div id="scoreboard">
-        <table>
+<!-- GLOBAL LEADERBOARDS MODAL (Leftover backup structure compatible with references) -->
+<div id="leaderboard-modal" class="modal" style="width: 580px; max-width: 95%; height: 490px; max-height: 85vh; padding: 20px;">
+    <h2 style="color:white; text-align:center; margin-top:0; margin-bottom:15px;">GLOBAL LEADERBOARDS</h2>
+    
+    <div style="overflow-y: auto; height: calc(100% - 90px); border: 1px solid #222; background: rgba(0,0,0,0.25); border-radius: 4px; padding: 10px; box-sizing: border-box; margin-bottom: 15px;">
+        <table style="width:100%; border-collapse:collapse; color:#fff; font-size:12px; text-align:left;">
             <thead>
-                <tr>
-                    <th>PLAYER</th>
-                    <th>KILLS</th>
-                    <th>SCORE</th>
-                    <th>STATUS</th>
-                    <th>PING</th>
+                <tr style="border-bottom: 2px solid #444; color:#a83232;">
+                    <th style="padding:10px; text-align:center; width: 60px;">RANK</th>
+                    <th style="padding:10px;">SURVIVOR</th>
+                    <th style="padding:10px; text-align:center;">BEST ROUND</th>
+                    <th style="padding:10px; text-align:center;">ZOMBIE KILLS</th>
                 </tr>
             </thead>
-            <tbody id="score-body"></tbody>
+            <tbody id="leaderboard-body"></tbody>
         </table>
     </div>
 
-    <!-- POPUPS -->
-    <div id="ach-modal" class="modal">
-        <h2 style="color:white; text-align:center;">ACHIEVEMENTS</h2>
-        <div id="ach-list"></div>
-        <button class="close-btn" onclick="closeMenu('ach-modal')">CLOSE</button>
-    </div>
-
-    <div id="gun-modal" class="modal">
-        <h2 style="color:white; text-align:center;">LIBRARY</h2>
-        <div id="gun-list"></div>
-        <button class="close-btn" onclick="closeMenu('gun-modal')">CLOSE</button>
-    </div>
-
-    <!-- COSMETICS SHOP MODAL -->
-    <div id="cosmetics-modal" class="modal" style="width: 700px; max-width: 95%; height: 500px; max-height: 85vh; padding: 20px;">
-        <h2 style="color:white; text-align:center; margin-top:0; margin-bottom:15px;">COSMETICS SHOP</h2>
-        
-        <div style="display: flex; gap: 15px; height: calc(100% - 100px); box-sizing: border-box; flex-wrap: wrap;">
-            <!-- Preview -->
-            <div id="cosmetics-preview-container" style="flex: 1; min-width: 180px; background: #000; border: 1px solid #333; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 15px; box-sizing: border-box; position: relative; height: 100%;">
-                <span style="color: #666; font-size: 11px; margin-bottom: 12px; text-transform: uppercase; font-weight: bold; letter-spacing: 1px;">Fitting Room</span>
-                <canvas id="cosmeticPreviewCanvas" width="140" height="140" style="background: #111; border: 1px solid #222; border-radius: 50%; box-shadow: 0 0 10px rgba(0,0,0,0.5);"></canvas>
-                <div id="cosmetic-preview-name" style="color: #666; font-size: 13px; margin-top: 15px; font-weight: bold; text-align: center; text-transform: uppercase; letter-spacing: 0.5px;">Unequipped</div>
-            </div>
-            
-            <div id="cosmetics-list-scroll" style="flex: 1.5; min-width: 240px; overflow-y: auto; height: 100%; border: 1px solid #222; background: rgba(0,0,0,0.2); padding: 5px; box-sizing: border-box; border-radius: 4px;">
-                <div id="cosmetics-list"></div>
-            </div>
-        </div>
-        <button class="close-btn" onclick="closeMenu('cosmetics-modal')" style="margin-top: 15px;">CLOSE</button>
-    </div>
-
-    <!-- LOBBY BROWSER SERVER MODAL -->
-    <div id="lobby-browser-modal" class="modal" style="width: 700px; max-width: 95%; height: 500px; max-height: 85vh; padding: 20px;">
-        <h2 style="color:white; text-align:center; margin-top:0; margin-bottom:15px;">ONLINE SERVER BROWSER</h2>
-        
-        <div style="display: flex; justify-content: space-between; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
-            <button onclick="refreshServerBrowser()" style="width:auto; margin:0; padding: 10px 15px; font-size:14px; background:#0e0e0e; border-color:#333;">🔄 Refresh List</button>
-            <div style="display:flex; gap: 5px;">
-                <input type="text" id="manual-join-input" placeholder="Manual Host ID" style="width:160px; font-size:13px; padding:8px; margin:0;">
-                <button onclick="manualJoinLobby()" style="width:auto; margin:0; padding:8px 12px; font-size:13px; background:#222;">Join Code</button>
-            </div>
-        </div>
-
-        <div style="overflow-y: auto; height: calc(100% - 130px); border: 1px solid #222; background: rgba(0,0,0,0.2); border-radius: 4px; padding: 10px; box-sizing: border-box;">
-            <table style="width:100%; border-collapse:collapse; color:#fff; font-size:13px; text-align:left;">
-                <thead>
-                    <tr style="border-bottom: 1px solid #444; color:#a83232;">
-                        <th style="padding:8px;">HOST</th>
-                        <th style="padding:8px;">MAP</th>
-                        <th style="padding:8px;">DIFFICULTY</th>
-                        <th style="padding:8px;">PLAYERS</th>
-                        <th style="padding:8px; text-align:right;">ACTION</th>
-                </tr>
-                </thead>
-                <tbody id="lobby-browser-list"></tbody>
-            </table>
-            <div id="no-lobbies-msg" style="color:#666; text-align:center; margin-top:40px; display:none;">No active public lobbies found. Start one!</div>
-        </div>
-        <button class="close-btn" onclick="closeMenu('lobby-browser-modal')" style="margin-top: 15px;">CLOSE</button>
-    </div>
-
-    <!-- BOSSES PORTFOLIO MODAL -->
-    <div id="bosses-modal" class="modal">
-        <h2 style="color:white; text-align:center;">BOSS PORTFOLIO</h2>
-        <div id="bosses-list"></div>
-        <button class="close-btn" onclick="closeMenu('bosses-modal')">CLOSE</button>
-    </div>
-
-    <!-- LOCAL CO-OP CONFIG MODAL -->
-    <div id="coop-modal" class="modal">
-        <h2 style="color:white; text-align:center;">LOCAL CO-OP CONFIG</h2>
-        
-        <div style="background:#222; padding:15px; border-radius:4px; margin-bottom:15px; border-left: 5px solid #3498db;">
-            <div style="color:#3498db; font-weight:bold; margin-bottom:5px;">PLAYER 1 (Blue)</div>
-            <div style="color:#ccc; font-size:14px;">Input: Keyboard + Mouse</div>
-            <div style="color:#888; font-size:12px; margin-top:5px;">WASD: Move | Mouse: Aim & Shoot | R: Reload | F: Interact</div>
-        </div>
-
-        <div style="background:#222; padding:15px; border-radius:4px; margin-bottom:15px; border-left: 5px solid #e67e22;">
-            <div style="color:#e67e22; font-weight:bold; margin-bottom:10px;">PLAYER 2 (Orange)</div>
-            
-            <label for="p2-input-select" style="color:#aaa; display:block; margin-bottom: 5px; font-size:14px;">Select Input Device:</label>
-            <select id="p2-input-select" onchange="toggleCoopHelp()" style="background:#000; border:1px solid #444; color:#fff; padding:10px; width:100%; font-family:inherit; font-size:16px; margin-bottom:15px; outline:none;">
-                <option value="keyboard">Keyboard Split (Arrows)</option>
-                <option value="gamepad0">Controller 1 (Double Controller Slot A)</option>
-                <option value="gamepad1">Controller 2 (Double Controller Slot B)</option>
-            </select>
-
-            <div id="p2-keyboard-help" style="color:#ccc; font-size:12px; line-height: 1.4;">
-                <span style="color:#e67e22; font-weight:bold;">Keyboard Controls:</span><br>
-                Arrows: Move | Comma (,): Interact | Period (.): Reload | Slash (/): Shoot<br>
-                <span style="color:#ffd700;">Aiming:</span> Auto-points to nearest zombie or movement direction.
-            </div>
-            
-            <div id="p2-gamepad-help" style="color:#ccc; font-size:12px; line-height: 1.4; display:none;">
-                <span style="color:#e67e22; font-weight:bold;">Controller Controls:</span><br>
-                Left Stick: Move | Right Stick: Aim | RT / Button A: Shoot | Button X: Reload | Button Y: Interact<br>
-                <span style="color:#ffd700;">Aiming Fallback:</span> Auto-aims if right stick is idle.
-            </div>
-        </div>
-
-        <button onclick="startLocalCoop()" style="background:#a83232; margin-top:10px;">START GAME</button>
-        <button onclick="closeMenu('coop-modal')" style="background:#333; margin-top:5px;">BACK TO MENU</button>
-    </div>
-
-    <!-- DYNAMIC COGNITIVE GAME OVER LAYOUT -->
-    <div id="game-over" class="screen" style="display: none; justify-content: center; align-items: center; z-index: 2500;">
-        <div style="width: 620px; max-width: 95%; background: rgba(5,5,5,0.96); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border: 2px solid #a83232; border-top: 6px solid #a83232; border-radius: 8px; padding: 25px; box-shadow: 0 20px 60px rgba(0,0,0,0.95); text-align: center; box-sizing: border-box; overflow: hidden; max-height: 90vh; position: relative;">
-            
-            <h1 id="over-title" class="smash-item" style="color: #ff4757; font-size: 40px; margin: 0 0 5px 0; letter-spacing: 4px; text-transform: uppercase; text-shadow: 0 0 10px rgba(255, 71, 87, 0.4);">GAME OVER</h1>
-            
-            <h2 id="over-round-box" class="smash-item" style="color: #fff; font-size: 22px; margin: 0 0 15px 0; text-transform: uppercase;">
-                Survived to <span id="over-round-val" style="color:#ff4757; font-size: 28px; font-weight: 900;">Round 1</span>
-            </h2>
-            
-            <!-- COMBAT STATS CARD -->
-            <div id="card-stats" class="smash-item" style="background: rgba(255,255,255,0.02); border: 1px solid #222; border-radius: 6px; padding: 12px; display: flex; justify-content: space-around; align-items: center; gap: 15px; margin-bottom: 15px;">
-                <div>
-                    <div style="font-size: 10px; color: #888; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px;">KILLS</div>
-                    <div style="font-size: 26px; color: #ff4757; font-weight: 900;" id="stat-kills-val">0</div>
-                </div>
-                <div style="width: 1px; height: 35px; background: #222;"></div>
-                <div>
-                    <div style="font-size: 10px; color: #888; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px;">COINS</div>
-                    <div style="font-size: 26px; color: #ffd700; font-weight: 900;" id="stat-coins-val">0 🪙</div>
-                </div>
-            </div>
-
-            <div id="perf-msg" class="smash-item" style="color: #ffd700; margin-bottom: 18px; font-size: 13px; font-style: italic;"></div>
-            
-            <!-- PROGRESS CARDS LIST -->
-            <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; text-align: left;">
-                
-                <!-- XP PROGRESS CARD -->
-                <div id="card-xp" class="smash-item" style="background: rgba(255,255,255,0.02); border: 1px solid #222; border-radius: 6px; padding: 12px; position: relative; overflow: hidden;">
-                    <div id="lvl-up-rays" class="level-up-glow"></div>
-                    <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 12px; color: #ffd700; text-transform: uppercase; margin-bottom: 5px; position: relative; z-index: 1;">
-                        <span>XP Progress</span><span id="xp-percentage-text">0%</span>
-                    </div>
-                    <div style="width: 100%; height: 12px; background: #000; border: 1px solid #333; border-radius: 6px; overflow: hidden; position: relative; z-index: 1;">
-                        <div id="xp-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #ff9f43, #ff5252); border-radius: 6px;"></div>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px; position: relative; z-index: 1;">
-                        <span id="level-badge" style="background: #e74c3c; color: white; font-size: 9px; font-weight: bold; padding: 2px 6px; border-radius: 4px;">Lv. 1</span>
-                        <span id="xp-details-text" style="color: #888; font-size: 10px; font-weight: bold;">0 / 1000 XP</span>
-                    </div>
-                    <div id="lvl-up-flash" style="display: none; position: absolute; inset: 0; background: rgba(255, 215, 0, 0.2); border-radius: 6px; border: 2px solid #ffd700; justify-content: center; align-items: center; z-index: 2;">
-                        <span style="color: #ffd700; font-size: 16px; font-weight: 900; letter-spacing: 2px; animation: shake 0.3s infinite;">LEVEL UP! 🎉</span>
-                    </div>
-                </div>
-
-                <!-- BOSS DISCOVERY CARD -->
-                <div id="card-boss" class="smash-item" style="background: rgba(255,255,255,0.02); border: 1px solid #222; border-radius: 6px; padding: 12px 14px; position: relative; text-align: left;">
-                    <div style="font-weight: bold; font-size: 11px; color: #ff4757; text-transform: uppercase; margin-bottom: 12px; letter-spacing: 1px;">
-                        Bosses Encountered:
-                    </div>
-                    <div id="over-bosses-row" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; width: 100%; box-sizing: border-box; flex-wrap: wrap;">
-                        <!-- Rendered dynamically and staggered via animateBoss() -->
-                    </div>
-                </div>
-
-                <!-- NEXT UNLOCK CARD -->
-                <div id="card-cosmetic" class="smash-item" style="background: rgba(255,255,255,0.02); border: 1px solid #222; border-radius: 6px; padding: 12px; position: relative; display: flex; align-items: center; gap: 15px;">
-                    <div style="position: relative; width: 60px; height: 60px; border-radius: 50%; overflow: hidden; border: 1px solid #333; background: #080808; display: flex; align-items: center; justify-content: center;">
-                        <canvas id="over-cos-preview" width="80" height="80" style="width: 60px; height: 60px; pointer-events: none;"></canvas>
-                    </div>
-                    <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
-                        <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 12px; color: #3498db; text-transform: uppercase; width: 100%;">
-                            <span id="over-cosmetic-title">NEXT UNLOCK: Loading...</span><span id="cosmetic-percentage-text">0%</span>
-                        </div>
-                        <div style="width: 100%; height: 10px; background: #000; border: 1px solid #333; border-radius: 5px; overflow: hidden;">
-                            <div id="cosmetic-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #54a0ff, #10ac84); border-radius: 5px;"></div>
-                        </div>
-                        <div id="over-cos-action" style="margin-top: 5px;">
-                            <!-- Dynamically populated by JS -->
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-
-            <!-- CONTROLS -->
-            <div id="over-controls" class="smash-item" style="display: flex; gap: 10px; flex-wrap: wrap;">
-                <button id="return-lobby-btn" onclick="returnToLobby()" style="display: none; background: #2e86de; border-color: #2e86de; color: #fff; flex: 1; min-width: 150px; height: 40px; margin: 0; font-size: 12px;">RETURN TO LOBBY</button>
-                <button onclick="requestRestart()" style="background: #a83232; border-color: #a83232; color: #fff; flex: 1; min-width: 150px; height: 40px; margin: 0; font-size: 12px;">PLAY AGAIN</button>
-                <button onclick="location.reload()" style="background: #111; border-color: #333; color: #aaa; flex: 1; min-width: 150px; height: 40px; margin: 0; font-size: 12px;">MAIN MENU</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- GAME UI GAMEPLAY LAYER -->
-    <div id="game-ui">
-        <div id="damage-flash"></div>
-        <div id="round-box" class="hud-text">1</div>
-        
-        <!-- Next Boss Countdown Indicator -->
-        <div id="boss-timer-box" style="position: absolute; top: 80px; left: 50%; transform: translateX(-50%); color: #ffd700; font-size: 14px; font-weight: bold; text-shadow: 2px 2px 0 #000; text-align: center; z-index: 1000; pointer-events: none;">
-            Next Boss in: 4 Round(s)
-        </div>
-
-        <!-- Player 1 HUD -->
-        <div id="hud-p1" class="hud-cluster">
-            <div id="p1-name" style="color: #3498db; font-size: 18px; font-weight: bold;">Survivor</div>
-            <div id="p1-hp-bar-container" style="width: 140px; height: 8px; background: #222; border: 1px solid #444; border-radius: 4px; margin-top: 5px; overflow: hidden; box-sizing: border-box;">
-                <div id="p1-hp-bar" style="width: 100%; height: 100%; background: #2ecc71; transition: width 0.2s ease;"></div>
-            </div>
-            <div id="p1-score" style="color: #ffd700; font-size: 28px; font-weight: bold; margin-top: 5px;">500 ⛃</div>
-            <div id="p1-gun-name" style="color: #fff; font-size: 24px; font-weight: bold;">Model 1911</div>
-            <div id="p1-ammo-text" style="color: #ccc; font-size: 20px;">8 / 32</div>
-            <div id="p1-perks" class="perk-area"><div id="p1-icon-vig" class="perk" style="background: #c0392b;"></div></div>
-        </div>
-
-        <!-- Player 2 HUD -->
-        <div id="hud-p2" class="hud-cluster">
-            <div id="p2-name" style="color: #e67e22; font-size: 18px; font-weight: bold;">Player 2</div>
-            <div id="p2-hp-bar-container" style="width: 140px; height: 8px; background: #222; border: 1px solid #444; border-radius: 4px; margin-top: 5px; margin-left: auto; overflow: hidden; box-sizing: border-box;">
-                <div id="p2-hp-bar" style="width: 100%; height: 100%; background: #2ecc71; transition: width 0.2s ease;"></div>
-            </div>
-            <div id="p2-score" style="color: #ffd700; font-size: 28px; font-weight: bold; margin-top: 5px;">500 ⛃</div>
-            <div id="p2-gun-name" style="color: #fff; font-size: 24px; font-weight: bold;">Model 1911</div>
-            <div id="p2-ammo-text" style="color: #ccc; font-size: 20px;">8 / 32</div>
-            <div id="p2-perks" class="perk-area"><div id="p2-icon-vig" class="perk" style="background: #c0392b;"></div></div>
-        </div>
-
-        <!-- Player 3 HUD -->
-        <div id="hud-p3" class="hud-cluster">
-            <div id="hud-p3-hp-bar-container" style="width: 140px; height: 8px; background: #222; border: 1px solid #444; border-radius: 4px; margin-top: 5px; overflow: hidden; box-sizing: border-box;">
-                <div id="p3-hp-bar" style="width: 100%; height: 100%; background: #2ecc71; transition: width 0.2s ease;"></div>
-            </div>
-            <div id="p3-score" style="color: #ffd700; font-size: 28px; font-weight: bold; margin-top: 5px;">500 ⛃</div>
-            <div id="p3-gun-name" style="color: #fff; font-size: 24px; font-weight: bold;">Model 1911</div>
-            <div id="p3-ammo-text" style="color: #ccc; font-size: 20px;">8 / 32</div>
-            <div id="p3-perks" class="perk-area"><div id="p3-icon-vig" class="perk" style="background: #c0392b;"></div></div>
-        </div>
-
-        <!-- Player 4 HUD -->
-        <div id="hud-p4" class="hud-cluster">
-            <div id="p4-name" style="color: #9b59b6; font-size: 18px; font-weight: bold;">Player 4</div>
-            <div id="p4-hp-bar-container" style="width: 140px; height: 8px; background: #222; border: 1px solid #444; border-radius: 4px; margin-top: 5px; margin-left: auto; overflow: hidden; box-sizing: border-box;">
-                <div id="p4-hp-bar" style="width: 100%; height: 100%; background: #2ecc71; transition: width 0.2s ease;"></div>
-            </div>
-            <div id="p4-score" style="color: #ffd700; font-size: 28px; font-weight: bold; margin-top: 5px;">500 ⛃</div>
-            <div id="p4-gun-name" style="color: #fff; font-size: 24px; font-weight: bold;">Model 1911</div>
-            <div id="p4-ammo-text" style="color: #ccc; font-size: 20px;">8 / 32</div>
-            <div id="p4-perks" class="perk-area"><div id="p4-icon-vig" class="perk" style="background: #c0392b;"></div></div>
-        </div>
-
-        <!-- TUTORIAL HUD -->
-        <div id="tutorial-hud" style="display:none; position:absolute; bottom:20px; left:50%; transform:translateX(-50%); width:460px; max-width:90%; background:rgba(10,10,10,0.92); border:1px solid #ffd700; border-top:3px solid #ffd700; border-radius:4px; padding:15px; color:white; z-index:1500; font-family:inherit; box-sizing:border-box; text-align:center; pointer-events:auto; box-shadow:0 10px 25px rgba(0,0,0,0.8);">
-            <div id="tutorial-title" style="font-weight:bold; color:#ffd700; font-size:18px; margin-bottom:5px; text-transform:uppercase; letter-spacing:1px;">Boot Camp</div>
-            <div id="tutorial-text" style="font-size:14px; color:#ddd; line-height:1.4; margin-bottom:10px;">Tutorial text loading...</div>
-            <div id="tutorial-progress" style="font-size:11px; color:#888; font-weight:bold; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">Step 1 / 10</div>
-            
-            <button onclick="Tutorial.skip()" style="width: auto; padding: 6px 15px; font-size: 11px; background: rgba(168, 50, 50, 0.15); border: 1px solid #a83232; color: #fff; margin: 0 auto; display: block; border-radius: 4px; cursor: pointer;">Skip Tutorial</button>
-            <div id="tutorial-coin-arrow" style="display:none; position:absolute; bottom:100%; left:20px; font-size:24px; animation:arrowBounce 0.4s infinite alternate;">⬇️</div>
-        </div>
-
-        <div id="ach-toast-container"></div>
-        <div id="controls-hint">WASD: Move | MOUSE: Shoot | R: Reload | F: Interact | TAB: Scoreboard</div>
-        <div id="interact-msg">Press F</div>
-    </div>
-
-    <!-- JOYSTICKS AND MOBILE OVERLAYS -->
-    <div id="mobile-overlay" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; user-select: none; z-index: 1005;">
-        <div id="touch-stick-left" style="position: absolute; bottom: 30px; left: 30px; width: 120px; height: 120px; background: rgba(255, 255, 255, 0.08); border: 2px solid rgba(255, 255, 255, 0.25); border-radius: 50%; pointer-events: auto;">
-            <div id="touch-knob-left" style="position: absolute; top: 35px; left: 35px; width: 50px; height: 50px; background: rgba(255, 255, 255, 0.45); border-radius: 50%; pointer-events: none; box-shadow: 0 0 10px rgba(0,0,0,0.5);"></div>
-        </div>
-        
-        <div id="touch-stick-right" style="position: absolute; bottom: 30px; right: 30px; width: 120px; height: 120px; background: rgba(255, 255, 255, 0.08); border: 2px solid rgba(255, 255, 255, 0.25); border-radius: 50%; pointer-events: auto;">
-            <div id="touch-knob-right" style="position: absolute; top: 35px; left: 35px; width: 50px; height: 50px; background: rgba(168, 50, 50, 0.6); border: 2px solid rgba(255, 255, 255, 0.2); border-radius: 50%; pointer-events: none; box-shadow: 0 0 10px rgba(0,0,0,0.5);"></div>
-        </div>
-
-        <div style="position: absolute; bottom: 170px; right: 30px; display: flex; gap: 15px; pointer-events: auto;">
-            <button id="btn-touch-interact" style="width: 55px; height: 55px; border-radius: 50%; background: rgba(30, 30, 30, 0.85); border: 2px solid #a83232; color: #fff; font-size: 13px; font-weight: bold; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center;">INT</button>
-            <button id="btn-touch-reload" style="width: 55px; height: 55px; border-radius: 50%; background: rgba(30, 30, 30, 0.85); border: 2px solid #fff; color: #fff; font-size: 13px; font-weight: bold; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center;">REL</button>
-            <button id="btn-touch-switch" style="width: 55px; height: 55px; border-radius: 50%; background: rgba(30, 30, 30, 0.85); border: 2px solid #3498db; color: #fff; font-size: 13px; font-weight: bold; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center;">GUN</button>
-        </div>
-    </div>
-
-    <canvas id="gameCanvas"></canvas>
-
+    <button onclick="closeMenu('leaderboard-modal')" style="background: #333;">CLOSE</button>
 </div>
+
+<!-- SOLO DEPLOYMENT -->
+<div id="solo-deployment-modal" class="modal" style="width: 740px; max-width: 95%; height: 580px; max-height: 90vh; padding: 20px;">
+    <h2 style="color:white; text-align:center; margin-top:0; margin-bottom:15px;">SELECT DEPLOYMENT ZONE</h2>
+    
+    <!-- CARD LIST (MAPS) -->
+    <div class="deployment-cards-container">
+        <!-- Card 1: Facility -->
+        <div class="deployment-card selected" id="solo-card-0" onclick="selectSoloMap(0)">
+            <div class="card-banner banner-facility">Lab Area</div>
+            <div class="card-content">
+                <div class="card-title">The Facility</div>
+                <div class="card-desc">An abandoned underground laboratory featuring scientific corridors, supply areas, and isolated power rooms.</div>
+            </div>
+        </div>
+
+        <!-- Card 2: Bunker -->
+        <div class="deployment-card" id="solo-card-1" onclick="selectSoloMap(1)">
+            <div class="card-banner banner-bunker">Outpost</div>
+            <div class="card-content">
+                <div class="card-title">Bunker Outpost</div>
+                <div class="card-desc">A deep-level concrete military bunker containing narrow access wings, tactical storage, and vault compartments.</div>
+            </div>
+        </div>
+
+        <!-- Card 3: Sector 9 -->
+        <div class="deployment-card" id="solo-card-2" onclick="selectSoloMap(2)">
+            <div class="card-banner banner-sector9">Quarantine</div>
+            <div class="card-content">
+                <div class="card-title">Sector-9 Lab</div>
+                <div class="card-desc">A hazardous bio-research quarantine grid designed as an airtight containment area with complex structural lanes.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TACTICAL DIFFICULTY SELECTOR CARDS -->
+    <div style="color: #666; font-size: 10px; font-weight: bold; margin-bottom: 8px; text-transform: uppercase; text-align: left; letter-spacing: 0.5px; border-bottom: 1px solid #222; padding-bottom: 3px;">TACTICAL DIFFICULTY:</div>
+    <div class="deployment-cards-container">
+        <!-- Card: Easy -->
+        <div class="deployment-card" id="solo-diff-card-easy" onclick="selectSoloDifficulty('easy')">
+            <div class="card-banner" style="background: #555;">Easy</div>
+            <div class="card-content">
+                <div class="card-illustration-box">
+                    <div class="mini-zombie" style="background:#3a4a38; top: 12px; left: 50%; transform: translateX(-50%);">
+                        <span class="zombie-eyes eye-left"></span><span class="zombie-eyes eye-right"></span>
+                    </div>
+                    <div class="mini-player"><span class="mini-player-barrel"></span></div>
+                </div>
+                <div class="card-title" style="color:#aaa; font-size:11px;">EASY MODE</div>
+                <div class="card-desc" style="text-align:center; font-weight:bold; color:#888;">SLOW AND LESS ZOMBIES</div>
+            </div>
+        </div>
+
+        <!-- Card: Medium -->
+        <div class="deployment-card selected" id="solo-diff-card-medium" onclick="selectSoloDifficulty('medium')">
+            <div class="card-banner" style="background: #e67e22;">Medium</div>
+            <div class="card-content">
+                <div class="card-illustration-box">
+                    <div class="mini-zombie" style="background:#3a4a38; top: 12px; left: 25%;">
+                        <span class="zombie-eyes eye-left"></span><span class="zombie-eyes eye-right"></span>
+                    </div>
+                    <div class="mini-zombie" style="background:#3a4a38; top: 12px; right: 25%;">
+                        <span class="zombie-eyes eye-left"></span><span class="zombie-eyes eye-right"></span>
+                    </div>
+                    <div class="mini-player"><span class="mini-player-barrel"></span></div>
+                </div>
+                <div class="card-title" style="color:#e67e22; font-size:11px;">MEDIUM MODE</div>
+                <div class="card-desc" style="text-align:center; font-weight:bold; color:#d67c27;">NORMAL SPEED AND SPAWN COUNT</div>
+            </div>
+        </div>
+
+        <!-- Card: Hard -->
+        <div class="deployment-card" id="solo-diff-card-hard" onclick="selectSoloDifficulty('hard')">
+            <div class="card-banner" style="background: #c0392b;">Hard</div>
+            <div class="card-content">
+                <div class="card-illustration-box">
+                    <div class="mini-zombie" style="background:#3a4a38; top: 8px; left: 15%; width:12px; height:12px;">
+                        <span class="zombie-eyes eye-left" style="width:1.5px; height:1.5px;"></span><span class="zombie-eyes eye-right" style="width:1.5px; height:1.5px;"></span>
+                    </div>
+                    <div class="mini-zombie" style="background:#3a4a38; top: 8px; left: 50%; transform: translateX(-50%); width:12px; height:12px;">
+                        <span class="zombie-eyes eye-left" style="width:1.5px; height:1.5px;"></span><span class="zombie-eyes eye-right" style="width:1.5px; height:1.5px;"></span>
+                    </div>
+                    <div class="mini-zombie" style="background:#3a4a38; top: 8px; right: 15%; width:12px; height:12px;">
+                        <span class="zombie-eyes eye-left" style="width:1.5px; height:1.5px;"></span><span class="zombie-eyes eye-right" style="width:1.5px; height:1.5px;"></span>
+                    </div>
+                    <div class="mini-zombie" style="background:#f1c40f; top: 28px; left: 22%; width:12px; height:12px;">
+                        <span class="zombie-eyes eye-left" style="width:1.5px; height:1.5px;"></span><span class="zombie-eyes eye-right" style="width:1.5px; height:1.5px;"></span>
+                    </div>
+                    <div class="mini-zombie" style="background:#2980b9; top: 28px; right: 22%; width:15px; height:15px; border-width:2px;">
+                        <span class="zombie-eyes eye-left" style="top:2px;"></span><span class="zombie-eyes eye-right" style="top:2px;"></span>
+                    </div>
+                    <div class="mini-player"><span class="mini-player-barrel"></span></div>
+                </div>
+                <div class="card-title" style="color:#c0392b; font-size:11px;">HARD MODE</div>
+                <div class="card-desc" style="text-align:center; font-weight:bold; color:#c0392b;">FAST ZOMBIES AND MORE FREQUENT SPAWNS</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ACTIONS -->
+    <div style="display: flex; gap: 8px;">
+        <button onclick="deploySoloOffline()" style="background: #a83232; color: #fff; border-color: #a83232; padding: 12px; font-size: 14px; flex: 2;">DEPLOY TO ZONE</button>
+        <button onclick="closeMenu('solo-deployment-modal')" style="background: #333; padding: 12px; font-size: 14px; flex: 1;">CANCEL</button>
+    </div>
+</div>
+
+<!-- SETTINGS PANEL -->
+<div id="settings-modal" class="modal" style="width: 440px; max-width: 95%; height: 380px; max-height: 85vh; padding: 25px;">
+    <h2 style="color:white; text-align:center; margin-top:0; margin-bottom:20px;">SYSTEM SETTINGS</h2>
+    
+    <!-- VOLUME SLIDER -->
+    <div class="menu-section" style="margin-bottom: 25px;">
+        <label for="settings-volume" style="color: #ffd700; font-size: 12px; font-weight: bold; display: block; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Master Volume:</label>
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size:14px; color:#666;">🔈</span>
+            <input type="range" id="settings-volume" min="0" max="1" step="0.05" value="0.5" oninput="updateSystemVolume(this.value)" style="flex: 1; cursor: pointer;">
+            <span id="settings-volume-percent" style="font-size:12px; color:#aaa; font-weight:bold; min-width: 40px;">50%</span>
+        </div>
+    </div>
+
+    <!-- AUDIO TOGGLE -->
+    <div class="menu-section" style="margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); padding: 10px; border: 1px solid #222; border-radius: 4px;">
+        <span style="color:#aaa; font-size:12px; font-weight:bold; text-transform:uppercase; letter-spacing:0.5px;">Enable Sound Effects:</span>
+        <label style="position: relative; display: inline-block; width: 45px; height: 24px;">
+            <input type="checkbox" id="settings-audio-toggle" checked onchange="toggleSystemAudio(this.checked)" style="opacity: 0; width: 0; height: 0;">
+            <span style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; border-radius: 24px; transition: .3s; display: flex; align-items: center; padding: 0 4px; box-sizing: border-box;">
+                <span id="toggle-knob" style="width: 16px; height: 16px; background-color: #fff; border-radius: 50%; transition: .3s; transform: translateX(21px);"></span>
+            </span>
+        </label>
+    </div>
+
+    <div class="menu-section" style="margin-bottom: 20px; font-size: 10px; color: #666; text-align: left; line-height: 1.4; border-top: 1px dashed #333; padding-top: 15px;">
+        <strong>INPUT SCHEMES:</strong><br>
+        • PC: WASD to Move, Mouse to Aim/Shoot, R to Reload, F to Interact.<br>
+        • MOBILE: Use joysticks to move/aim, HUD buttons to reload, swap weapons, and interact.<br>
+        • LOCAL CO-OP: Configure keyboard arrows or Controller inputs.
+    </div>
+
+    <button onclick="closeMenu('settings-modal')" style="background: #333; margin-top: 10px;">BACK TO MENU</button>
+</div>
+
+<!-- LOBBY SCREEN -->
+<div id="lobby-screen" class="screen" style="display: none;">
+    <h1>LOBBY</h1>
+    <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 10px; flex-wrap: wrap;">
+        <div id="host-id-display" style="background:#222; padding:10px; border:1px dashed #666; color:#0ff; user-select:text; cursor:text; font-family: monospace;">ID: Generating...</div>
+        <button id="copy-id-btn" onclick="copyHostId()" style="width: auto; padding: 10px 15px; margin: 0; font-size: 14px; background: #333; border-color: #555; display: flex; align-items: center; gap: 5px;">
+            📋 Copy
+        </button>
+    </div>
+    <div id="lobby-status">Waiting for players...</div>
+    
+    <div id="lobby-map-container" style="margin-top: 15px; margin-bottom: 5px; width: 100%; max-width: 320px; text-align: center; background: rgba(0,0,0,0.4); padding: 15px; border: 1px solid #333; box-sizing: border-box;">
+        <label for="lobby-map-select" style="color: #666; display: block; font-size: 12px; margin-bottom: 8px; text-transform: uppercase; font-weight: bold; letter-spacing: 1px;">DEPLOYMENT ZONE:</label>
+        <select id="lobby-map-select" onchange="lobbyChangeMap()">
+            <option value="0">The Facility (Classic)</option>
+            <option value="1">Bunker Outpost (Tactical)</option>
+            <option value="2">Sector-9 Lab Maze (Survival)</option>
+        </select>
+        <div id="lobby-map-display-client" style="color: #ffd700; font-weight: bold; font-size: 16px; margin-top: 5px; display: none;">Retrieving map...</div>
+    </div>
+
+    <div id="lobby-diff-container" style="margin-top: 5px; margin-bottom: 5px; width: 100%; max-width: 320px; text-align: center; background: rgba(0,0,0,0.4); padding: 15px; border: 1px solid #333; box-sizing: border-box;">
+        <label for="lobby-diff-select" style="color: #666; display: block; font-size: 12px; margin-bottom: 8px; text-transform: uppercase; font-weight: bold; letter-spacing: 1px;">DIFFICULTY:</label>
+        <select id="lobby-diff-select" onchange="lobbyChangeDifficulty()">
+            <option value="easy">Easy (More Player Health, Slower Zombies)</option>
+            <option value="medium" selected>Medium (Standard Mode)</option>
+            <option value="hard">Hard (Faster and Stronger Zombies)</option>
+        </select>
+        <div id="lobby-diff-display-client" style="color: #ffd700; font-weight: bold; font-size: 16px; margin-top: 5px; display: none;">Retrieving difficulty...</div>
+    </div>
+
+    <div id="lobby-visibility-container" style="margin-top: 5px; margin-bottom: 15px; width: 100%; max-width: 320px; text-align: center; background: rgba(0,0,0,0.4); padding: 15px; border: 1px solid #333; box-sizing: border-box;">
+        <label for="lobby-visibility-select" style="color: #666; display: block; font-size: 12px; margin-bottom: 8px; text-transform: uppercase; font-weight: bold; letter-spacing: 1px;">LOBBY TYPE:</label>
+        <select id="lobby-visibility-select" onchange="lobbyChangeVisibility()">
+            <option value="public" selected>🌍 Public (Listed in Server Browser)</option>
+            <option value="private">🔒 Private (Joinable by Code Only)</option>
+        </select>
+        <div id="lobby-visibility-display-client" style="color: #ffd700; font-weight: bold; font-size: 16px; margin-top: 5px; display: none;">Public</div>
+    </div>
+
+    <div id="player-list" style="margin-top:20px; color:#aaa; font-family: inherit;"></div>
+    <button id="start-btn" onclick="hostStartGame()" disabled style="margin-top:30px;">START MATCH</button>
+    <button onclick="location.reload()" style="background:#444">CANCEL</button>
+</div>
+
+<!-- TAB SCOREBOARD -->
+<div id="scoreboard">
+    <table>
+        <thead>
+            <tr>
+                <th>PLAYER</th>
+                <th>KILLS</th>
+                <th>SCORE</th>
+                <th>STATUS</th>
+                <th>PING</th>
+            </tr>
+        </thead>
+        <tbody id="score-body"></tbody>
+    </table>
+</div>
+
+<!-- POPUPS -->
+<div id="ach-modal" class="modal">
+    <h2 style="color:white; text-align:center;">ACHIEVEMENTS</h2>
+    <div id="ach-list"></div>
+    <button class="close-btn" onclick="closeMenu('ach-modal')">CLOSE</button>
+</div>
+
+<div id="gun-modal" class="modal">
+    <h2 style="color:white; text-align:center;">LIBRARY</h2>
+    <div id="gun-list"></div>
+    <button class="close-btn" onclick="closeMenu('gun-modal')">CLOSE</button>
+</div>
+
+<!-- COSMETICS SHOP MODAL -->
+<div id="cosmetics-modal" class="modal" style="width: 700px; max-width: 95%; height: 500px; max-height: 85vh; padding: 20px;">
+    <h2 style="color:white; text-align:center; margin-top:0; margin-bottom:15px;">COSMETICS SHOP</h2>
+    
+    <div style="display: flex; gap: 15px; height: calc(100% - 100px); box-sizing: border-box; flex-wrap: wrap;">
+        <!-- Preview -->
+        <div id="cosmetics-preview-container" style="flex: 1; min-width: 180px; background: #000; border: 1px solid #333; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 15px; box-sizing: border-box; position: relative; height: 100%;">
+            <span style="color: #666; font-size: 11px; margin-bottom: 12px; text-transform: uppercase; font-weight: bold; letter-spacing: 1px;">Fitting Room</span>
+            <canvas id="cosmeticPreviewCanvas" width="140" height="140" style="background: #111; border: 1px solid #222; border-radius: 50%; box-shadow: 0 0 10px rgba(0,0,0,0.5);"></canvas>
+            <div id="cosmetic-preview-name" style="color: #666; font-size: 13px; margin-top: 15px; font-weight: bold; text-align: center; text-transform: uppercase; letter-spacing: 0.5px;">Unequipped</div>
+        </div>
+        
+        <div id="cosmetics-list-scroll" style="flex: 1.5; min-width: 240px; overflow-y: auto; height: 100%; border: 1px solid #222; background: rgba(0,0,0,0.2); padding: 5px; box-sizing: border-box; border-radius: 4px;">
+            <div id="cosmetics-list"></div>
+        </div>
+    </div>
+    <button class="close-btn" onclick="closeMenu('cosmetics-modal')" style="margin-top: 15px;">CLOSE</button>
+</div>
+
+<!-- LOBBY BROWSER SERVER MODAL -->
+<div id="lobby-browser-modal" class="modal" style="width: 700px; max-width: 95%; height: 500px; max-height: 85vh; padding: 20px;">
+    <h2 style="color:white; text-align:center; margin-top:0; margin-bottom:15px;">ONLINE SERVER BROWSER</h2>
+    
+    <div style="display: flex; justify-content: space-between; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+        <button onclick="refreshServerBrowser()" style="width:auto; margin:0; padding: 10px 15px; font-size:14px; background:#0e0e0e; border-color:#333;">🔄 Refresh List</button>
+        <div style="display:flex; gap: 5px;">
+            <input type="text" id="manual-join-input" placeholder="Manual Host ID" style="width:160px; font-size:13px; padding:8px; margin:0;">
+            <button onclick="manualJoinLobby()" style="width:auto; margin:0; padding:8px 12px; font-size:13px; background:#222;">Join Code</button>
+        </div>
+    </div>
+
+    <div style="overflow-y: auto; height: calc(100% - 130px); border: 1px solid #222; background: rgba(0,0,0,0.2); border-radius: 4px; padding: 10px; box-sizing: border-box;">
+        <table style="width:100%; border-collapse:collapse; color:#fff; font-size:13px; text-align:left;">
+            <thead>
+                <tr style="border-bottom: 1px solid #444; color:#a83232;">
+                    <th style="padding:8px;">HOST</th>
+                    <th style="padding:8px;">MAP</th>
+                    <th style="padding:8px;">DIFFICULTY</th>
+                    <th style="padding:8px;">PLAYERS</th>
+                    <th style="padding:8px; text-align:right;">ACTION</th>
+                </tr>
+            </thead>
+            <tbody id="lobby-browser-list"></tbody>
+        </table>
+        <div id="no-lobbies-msg" style="color:#666; text-align:center; margin-top:40px; display:none;">No active public lobbies found. Start one!</div>
+    </div>
+    <button class="close-btn" onclick="closeMenu('lobby-browser-modal')" style="margin-top: 15px;">CLOSE</button>
+</div>
+
+<!-- BOSSES PORTFOLIO MODAL -->
+<div id="bosses-modal" class="modal">
+    <h2 style="color:white; text-align:center;">BOSS PORTFOLIO</h2>
+    <div id="bosses-list"></div>
+    <button class="close-btn" onclick="closeMenu('bosses-modal')">CLOSE</button>
+</div>
+
+<!-- LOCAL CO-OP CONFIG MODAL -->
+<div id="coop-modal" class="modal">
+    <h2 style="color:white; text-align:center;">LOCAL CO-OP CONFIG</h2>
+    
+    <div style="background:#222; padding:15px; border-radius:4px; margin-bottom:15px; border-left: 5px solid #3498db;">
+        <div style="color:#3498db; font-weight:bold; margin-bottom:5px;">PLAYER 1 (Blue)</div>
+        <div style="color:#ccc; font-size:14px;">Input: Keyboard + Mouse</div>
+        <div style="color:#888; font-size:12px; margin-top:5px;">WASD: Move | Mouse: Aim & Shoot | R: Reload | F: Interact</div>
+    </div>
+
+    <div style="background:#222; padding:15px; border-radius:4px; margin-bottom:15px; border-left: 5px solid #e67e22;">
+        <div style="color:#e67e22; font-weight:bold; margin-bottom:10px;">PLAYER 2 (Orange)</div>
+        
+        <label for="p2-input-select" style="color:#aaa; display:block; margin-bottom: 5px; font-size:14px;">Select Input Device:</label>
+        <select id="p2-input-select" onchange="toggleCoopHelp()" style="background:#000; border:1px solid #444; color:#fff; padding:10px; width:100%; font-family:inherit; font-size:16px; margin-bottom:15px; outline:none;">
+            <option value="keyboard">Keyboard Split (Arrows)</option>
+            <option value="gamepad0">Controller 1 (Double Controller Slot A)</option>
+            <option value="gamepad1">Controller 2 (Double Controller Slot B)</option>
+        </select>
+
+        <div id="p2-keyboard-help" style="color:#ccc; font-size:12px; line-height: 1.4;">
+            <span style="color:#e67e22; font-weight:bold;">Keyboard Controls:</span><br>
+            Arrows: Move | Comma (,): Interact | Period (.): Reload | Slash (/): Shoot<br>
+            <span style="color:#ffd700;">Aiming:</span> Auto-points to nearest zombie or movement direction.
+        </div>
+        
+        <div id="p2-gamepad-help" style="color:#ccc; font-size:12px; line-height: 1.4; display:none;">
+            <span style="color:#e67e22; font-weight:bold;">Controller Controls:</span><br>
+            Left Stick: Move | Right Stick: Aim | RT / Button A: Shoot | Button X: Reload | Button Y: Interact<br>
+            <span style="color:#ffd700;">Aiming Fallback:</span> Auto-aims if right stick is idle.
+        </div>
+    </div>
+
+    <button onclick="startLocalCoop()" style="background:#a83232; margin-top:10px;">START GAME</button>
+    <button onclick="closeMenu('coop-modal')" style="background:#333; margin-top:5px;">BACK TO MENU</button>
+</div>
+
+<!-- DYNAMIC COGNITIVE GAME OVER LAYOUT -->
+<div id="game-over" class="screen" style="display: none; justify-content: center; align-items: center; z-index: 2500;">
+    <div style="width: 620px; max-width: 95%; background: rgba(5,5,5,0.96); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border: 2px solid #a83232; border-top: 6px solid #a83232; border-radius: 8px; padding: 25px; box-shadow: 0 20px 60px rgba(0,0,0,0.95); text-align: center; box-sizing: border-box; overflow: hidden; max-height: 90vh; position: relative;">
+        
+        <h1 id="over-title" class="smash-item" style="color: #ff4757; font-size: 40px; margin: 0 0 5px 0; letter-spacing: 4px; text-transform: uppercase; text-shadow: 0 0 10px rgba(255, 71, 87, 0.4);">GAME OVER</h1>
+        
+        <h2 id="over-round-box" class="smash-item" style="color: #fff; font-size: 22px; margin: 0 0 15px 0; text-transform: uppercase;">
+            Survived to <span id="over-round-val" style="color:#ff4757; font-size: 28px; font-weight: 900;">Round 1</span>
+        </h2>
+        
+        <!-- COMBAT STATS CARD -->
+        <div id="card-stats" class="smash-item" style="background: rgba(255,255,255,0.02); border: 1px solid #222; border-radius: 6px; padding: 12px; display: flex; justify-content: space-around; align-items: center; gap: 15px; margin-bottom: 15px;">
+            <div>
+                <div style="font-size: 10px; color: #888; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px;">KILLS</div>
+                <div style="font-size: 26px; color: #ff4757; font-weight: 900;" id="stat-kills-val">0</div>
+            </div>
+            <div style="width: 1px; height: 35px; background: #222;"></div>
+            <div>
+                <div style="font-size: 10px; color: #888; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px;">COINS</div>
+                <div style="font-size: 26px; color: #ffd700; font-weight: 900;" id="stat-coins-val">0 🪙</div>
+            </div>
+        </div>
+
+        <div id="perf-msg" class="smash-item" style="color: #ffd700; margin-bottom: 18px; font-size: 13px; font-style: italic;"></div>
+        
+        <!-- PROGRESS CARDS LIST -->
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; text-align: left;">
+            
+            <!-- XP PROGRESS CARD -->
+            <div id="card-xp" class="smash-item" style="background: rgba(255,255,255,0.02); border: 1px solid #222; border-radius: 6px; padding: 12px; position: relative; overflow: hidden;">
+                <div id="lvl-up-rays" class="level-up-glow"></div>
+                <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 12px; color: #ffd700; text-transform: uppercase; margin-bottom: 5px; position: relative; z-index: 1;">
+                    <span>XP Progress</span><span id="xp-percentage-text">0%</span>
+                </div>
+                <div style="width: 100%; height: 12px; background: #000; border: 1px solid #333; border-radius: 6px; overflow: hidden; position: relative; z-index: 1;">
+                    <div id="xp-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #ff9f43, #ff5252); border-radius: 6px;"></div>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 6px; position: relative; z-index: 1;">
+                    <span id="level-badge" style="background: #e74c3c; color: white; font-size: 9px; font-weight: bold; padding: 2px 6px; border-radius: 4px;">Lv. 1</span>
+                    <span id="xp-details-text" style="color: #888; font-size: 10px; font-weight: bold;">0 / 1000 XP</span>
+                </div>
+                <div id="lvl-up-flash" style="display: none; position: absolute; inset: 0; background: rgba(255, 215, 0, 0.2); border-radius: 6px; border: 2px solid #ffd700; justify-content: center; align-items: center; z-index: 2;">
+                    <span style="color: #ffd700; font-size: 16px; font-weight: 900; letter-spacing: 2px; animation: shake 0.3s infinite;">LEVEL UP! 🎉</span>
+                </div>
+            </div>
+
+            <!-- BOSS DISCOVERY CARD (Restructured to render horizontally like your sketch) -->
+            <div id="card-boss" class="smash-item" style="background: rgba(255,255,255,0.02); border: 1px solid #222; border-radius: 6px; padding: 12px 14px; position: relative; text-align: left;">
+                <div style="font-weight: bold; font-size: 11px; color: #ff4757; text-transform: uppercase; margin-bottom: 12px; letter-spacing: 1px;">
+                    Bosses Encountered:
+                </div>
+                <div id="over-bosses-row" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; width: 100%; box-sizing: border-box; flex-wrap: wrap;">
+                    <!-- Rendered dynamically and staggered via animateBoss() -->
+                </div>
+            </div>
+
+            <!-- NEXT UNLOCK CARD -->
+            <div id="card-cosmetic" class="smash-item" style="background: rgba(255,255,255,0.02); border: 1px solid #222; border-radius: 6px; padding: 12px; position: relative; display: flex; align-items: center; gap: 15px;">
+                <div style="position: relative; width: 60px; height: 60px; border-radius: 50%; overflow: hidden; border: 1px solid #333; background: #080808; display: flex; align-items: center; justify-content: center;">
+                    <canvas id="over-cos-preview" width="80" height="80" style="width: 60px; height: 60px; pointer-events: none;"></canvas>
+                </div>
+                <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
+                    <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 12px; color: #3498db; text-transform: uppercase; width: 100%;">
+                        <span id="over-cosmetic-title">NEXT UNLOCK: Loading...</span><span id="cosmetic-percentage-text">0%</span>
+                    </div>
+                    <div style="width: 100%; height: 10px; background: #000; border: 1px solid #333; border-radius: 5px; overflow: hidden;">
+                        <div id="cosmetic-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #54a0ff, #10ac84);"></div>
+                    </div>
+                    <div id="over-cos-action" style="margin-top: 5px;">
+                        <!-- Dynamically populated by JS -->
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- CONTROLS -->
+        <div id="over-controls" class="smash-item" style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button id="return-lobby-btn" onclick="returnToLobby()" style="display: none; background: #2e86de; border-color: #2e86de; color: #fff; flex: 1; min-width: 150px; height: 40px; margin: 0; font-size: 12px;">RETURN TO LOBBY</button>
+            <button onclick="requestRestart()" style="background: #a83232; border-color: #a83232; color: #fff; flex: 1; min-width: 150px; height: 40px; margin: 0; font-size: 12px;">PLAY AGAIN</button>
+            <button onclick="location.reload()" style="background: #111; border-color: #333; color: #aaa; flex: 1; min-width: 150px; height: 40px; margin: 0; font-size: 12px;">MAIN MENU</button>
+        </div>
+    </div>
+</div>
+
+<!-- GAME UI GAMEPLAY LAYER -->
+<div id="game-ui">
+    <div id="damage-flash"></div>
+    <div id="round-box" class="hud-text">1</div>
+    
+    <!-- Next Boss Countdown Indicator -->
+    <div id="boss-timer-box" style="position: absolute; top: 80px; left: 50%; transform: translateX(-50%); color: #ffd700; font-size: 14px; font-weight: bold; text-shadow: 2px 2px 0 #000; text-align: center; z-index: 1000; pointer-events: none;">
+        Next Boss in: 4 Round(s)
+    </div>
+
+    <!-- Player 1 HUD -->
+    <div id="hud-p1" class="hud-cluster">
+        <div id="p1-name" style="color: #3498db; font-size: 18px; font-weight: bold;">Survivor</div>
+        <div id="p1-hp-bar-container" style="width: 140px; height: 8px; background: #222; border: 1px solid #444; border-radius: 4px; margin-top: 5px; overflow: hidden; box-sizing: border-box;">
+            <div id="p1-hp-bar" style="width: 100%; height: 100%; background: #2ecc71; transition: width 0.2s ease;"></div>
+        </div>
+        <div id="p1-score" style="color: #ffd700; font-size: 28px; font-weight: bold; margin-top: 5px;">500 ⛃</div>
+        <div id="p1-gun-name" style="color: #fff; font-size: 24px; font-weight: bold;">Model 1911</div>
+        <div id="p1-ammo-text" style="color: #ccc; font-size: 20px;">8 / 32</div>
+        <div id="p1-perks" class="perk-area"><div id="p1-icon-vig" class="perk" style="background: #c0392b;"></div></div>
+    </div>
+
+    <!-- Player 2 HUD -->
+    <div id="hud-p2" class="hud-cluster">
+        <div id="p2-name" style="color: #e67e22; font-size: 18px; font-weight: bold;">Player 2</div>
+        <div id="p2-hp-bar-container" style="width: 140px; height: 8px; background: #222; border: 1px solid #444; border-radius: 4px; margin-top: 5px; margin-left: auto; overflow: hidden; box-sizing: border-box;">
+            <div id="p2-hp-bar" style="width: 100%; height: 100%; background: #2ecc71; transition: width 0.2s ease;"></div>
+        </div>
+        <div id="p2-score" style="color: #ffd700; font-size: 28px; font-weight: bold; margin-top: 5px;">500 ⛃</div>
+        <div id="p2-gun-name" style="color: #fff; font-size: 24px; font-weight: bold;">Model 1911</div>
+        <div id="p2-ammo-text" style="color: #ccc; font-size: 20px;">8 / 32</div>
+        <div id="p2-perks" class="perk-area"><div id="p2-icon-vig" class="perk" style="background: #c0392b;"></div></div>
+    </div>
+
+    <!-- Player 3 HUD -->
+    <div id="hud-p3" class="hud-cluster">
+        <div id="hud-p3-hp-bar-container" style="width: 140px; height: 8px; background: #222; border: 1px solid #444; border-radius: 4px; margin-top: 5px; overflow: hidden; box-sizing: border-box;">
+            <div id="p3-hp-bar" style="width: 100%; height: 100%; background: #2ecc71; transition: width 0.2s ease;"></div>
+        </div>
+        <div id="p3-score" style="color: #ffd700; font-size: 28px; font-weight: bold; margin-top: 5px;">500 ⛃</div>
+        <div id="p3-gun-name" style="color: #fff; font-size: 24px; font-weight: bold;">Model 1911</div>
+        <div id="p3-ammo-text" style="color: #ccc; font-size: 20px;">8 / 32</div>
+        <div id="p3-perks" class="perk-area"><div id="p3-icon-vig" class="perk" style="background: #c0392b;"></div></div>
+    </div>
+
+    <!-- Player 4 HUD -->
+    <div id="hud-p4" class="hud-cluster">
+        <div id="p4-name" style="color: #9b59b6; font-size: 18px; font-weight: bold;">Player 4</div>
+        <div id="p4-hp-bar-container" style="width: 140px; height: 8px; background: #222; border: 1px solid #444; border-radius: 4px; margin-top: 5px; margin-left: auto; overflow: hidden; box-sizing: border-box;">
+            <div id="p4-hp-bar" style="width: 100%; height: 100%; background: #2ecc71; transition: width 0.2s ease;"></div>
+        </div>
+        <div id="p4-score" style="color: #ffd700; font-size: 28px; font-weight: bold; margin-top: 5px;">500 ⛃</div>
+        <div id="p4-gun-name" style="color: #fff; font-size: 24px; font-weight: bold;">Model 1911</div>
+        <div id="p4-ammo-text" style="color: #ccc; font-size: 20px;">8 / 32</div>
+        <div id="p4-perks" class="perk-area"><div id="p4-icon-vig" class="perk" style="background: #c0392b;"></div></div>
+    </div>
+
+    <!-- TUTORIAL HUD -->
+    <div id="tutorial-hud" style="display:none; position:absolute; bottom:20px; left:50%; transform:translateX(-50%); width:460px; max-width:90%; background:rgba(10,10,10,0.92); border:1px solid #ffd700; border-top:3px solid #ffd700; border-radius:4px; padding:15px; color:white; z-index:1500; font-family:inherit; box-sizing:border-box; text-align:center; pointer-events:auto; box-shadow:0 10px 25px rgba(0,0,0,0.8);">
+        <div id="tutorial-title" style="font-weight:bold; color:#ffd700; font-size:18px; margin-bottom:5px; text-transform:uppercase; letter-spacing:1px;">Boot Camp</div>
+        <div id="tutorial-text" style="font-size:14px; color:#ddd; line-height:1.4; margin-bottom:10px;">Tutorial text loading...</div>
+        <div id="tutorial-progress" style="font-size:11px; color:#888; font-weight:bold; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">Step 1 / 10</div>
+        
+        <button onclick="Tutorial.skip()" style="width: auto; padding: 6px 15px; font-size: 11px; background: rgba(168, 50, 50, 0.15); border: 1px solid #a83232; color: #fff; margin: 0 auto; display: block; border-radius: 4px; cursor: pointer;">Skip Tutorial</button>
+        <div id="tutorial-coin-arrow" style="display:none; position:absolute; bottom:100%; left:20px; font-size:24px; animation:arrowBounce 0.4s infinite alternate;">⬇️</div>
+    </div>
+
+    <div id="ach-toast-container"></div>
+    <div id="controls-hint">WASD: Move | MOUSE: Shoot | R: Reload | F: Interact | TAB: Scoreboard</div>
+    <div id="interact-msg">Press F</div>
+</div>
+
+<!-- JOYSTICKS AND MOBILE OVERLAYS -->
+<div id="mobile-overlay" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; user-select: none; z-index: 1005;">
+    <div id="touch-stick-left" style="position: absolute; bottom: 30px; left: 30px; width: 120px; height: 120px; background: rgba(255, 255, 255, 0.08); border: 2px solid rgba(255, 255, 255, 0.25); border-radius: 50%; pointer-events: auto;">
+        <div id="touch-knob-left" style="position: absolute; top: 35px; left: 35px; width: 50px; height: 50px; background: rgba(255, 255, 255, 0.45); border-radius: 50%; pointer-events: none; box-shadow: 0 0 10px rgba(0,0,0,0.5);"></div>
+    </div>
+    
+    <div id="touch-stick-right" style="position: absolute; bottom: 30px; right: 30px; width: 120px; height: 120px; background: rgba(255, 255, 255, 0.08); border: 2px solid rgba(255, 255, 255, 0.25); border-radius: 50%; pointer-events: auto;">
+        <div id="touch-knob-right" style="position: absolute; top: 35px; left: 35px; width: 50px; height: 50px; background: rgba(168, 50, 50, 0.6); border: 2px solid rgba(255, 255, 255, 0.2); border-radius: 50%; pointer-events: none; box-shadow: 0 0 10px rgba(0,0,0,0.5);"></div>
+    </div>
+
+    <div style="position: absolute; bottom: 170px; right: 30px; display: flex; gap: 15px; pointer-events: auto;">
+        <button id="btn-touch-interact" style="width: 55px; height: 55px; border-radius: 50%; background: rgba(30, 30, 30, 0.85); border: 2px solid #a83232; color: #fff; font-size: 13px; font-weight: bold; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center;">INT</button>
+        <button id="btn-touch-reload" style="width: 55px; height: 55px; border-radius: 50%; background: rgba(30, 30, 30, 0.85); border: 2px solid #fff; color: #fff; font-size: 13px; font-weight: bold; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center;">REL</button>
+        <button id="btn-touch-switch" style="width: 55px; height: 55px; border-radius: 50%; background: rgba(30, 30, 30, 0.85); border: 2px solid #3498db; color: #fff; font-size: 13px; font-weight: bold; margin: 0; padding: 0; display: flex; align-items: center; justify-content: center;">GUN</button>
+    </div>
+</div>
+
+<canvas id="gameCanvas"></canvas>
 
 <!-- SCRIPTS -->
 <script src="data.js"></script>

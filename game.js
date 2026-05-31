@@ -163,26 +163,50 @@ window.matchStartingCoins = 0;
 window.startingUnlockedBosses = [];
 window.startingDefeatedBosses = [];
 
+// Automated menu leaderboard populate helper on start
+async function populateMenuLeaderboard() {
+    const menuBoard = document.getElementById('menu-leaderboard-body');
+    if (!menuBoard) return;
+    try {
+        if (typeof db !== 'undefined' && db) {
+            const snap = await db.collection("users").orderBy("highestRound", "desc").limit(10).get();
+            menuBoard.innerHTML = "";
+            if (snap.empty) {
+                menuBoard.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:15px; color:#555; font-size:10px;">No combat logs found.</td></tr>`;
+                return;
+            }
+            let rank = 1;
+            snap.forEach(doc => {
+                const u = doc.data();
+                const name = u.displayName || "Survivor";
+                const lvl = Math.floor((u.xp || 0) / 1000) + 1;
+                const kills = u.kills !== undefined ? u.kills : 0;
+                const round = u.highestRound !== undefined ? u.highestRound : 1;
+                menuBoard.innerHTML += `
+                    <tr style="border-bottom: 1px solid #222;">
+                        <td style="padding:6px; font-weight:bold; color:#ffd700; text-align:center;">#${rank}</td>
+                        <td style="padding:6px; color:#fff; font-weight:bold; max-width:115px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${name}">${name} <span style="font-size:9px; color:#555;">[Lv.${lvl}]</span></td>
+                        <td style="padding:6px; color:#ffd700; font-weight:bold; text-align:center;">R${round}</td>
+                        <td style="padding:6px; color:#ff4757; text-align:center; font-weight:bold;">${kills}</td>
+                    </tr>
+                `;
+                rank++;
+            });
+        }
+    } catch(e) {
+        console.warn("Menu leaderboard loading failed gracefully:", e);
+        menuBoard.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:15px; color:#e74c3c; font-size:9px;">Sync failed.</td></tr>`;
+    }
+}
+
 function init() {
     refreshMainMenuStats();
-    
-    // Safety check: prioritize touch verification before first layout scaling calculation runs [1]
-    checkTouchDevice();
-    
-    // Swaps width/height if vertical screen aspect is detected [1]
-    function resizeCanvas() {
-        const isPortrait = window.innerHeight > window.innerWidth;
-        if (isPortrait && isTouchDevice) {
-            canvas.width = window.innerHeight;
-            canvas.height = window.innerWidth;
-        } else {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        }
-    }
-    
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
+    populateMenuLeaderboard(); // Pull leaderboard records immediately on load
+
+    window.addEventListener('resize', function () { 
+        canvas.width = window.innerWidth; 
+        canvas.height = window.innerHeight; 
+    });
 
     window.addEventListener('keydown', function (e) { 
         if (e.code === 'Tab') { 
@@ -247,6 +271,7 @@ function init() {
             nameInput.value = savedName;
         }
     }
+    checkTouchDevice();
 
     if (!localStorage.getItem('zombieSaveModular') && !localStorage.getItem('zombieTutorialSkippedOrCompleted')) {
         console.log("Welcome! Automatically launching Boot Camp...");
@@ -281,7 +306,7 @@ function init() {
             };
         }
 
-        // List of modals with highly customized layout structures that must NOT be dynamically restructured [1]
+        // List of modals with highly customized layout structures that must NOT be dynamically restructured
         const customModals = [
             'cosmetics-modal', 
             'lobby-browser-modal', 
@@ -292,7 +317,6 @@ function init() {
         ];
         
         if (customModals.includes(modal.id)) {
-            modal.style.overflowY = 'auto'; // Fallback scroll option for extremely low resolution screens
             return; // Skip structural wrapper modifications for these custom layouts
         }
         
@@ -510,7 +534,7 @@ function setupTouchControls() {
 window.openMenu = function (id) {
     const el = document.getElementById(id);
     if (el) {
-        el.style.display = 'flex'; // Fixes display rules from block to flex [1]
+        el.style.display = 'flex'; // Fixes display rules from block to flex
     }
     if (id === 'ach-modal') renderAchievements();
     if (id === 'gun-modal') renderGunLibrary();
@@ -641,7 +665,6 @@ function startCosmeticPreviewLoop() {
     const previewCtx = canvas.getContext('2d');
     
     function drawPreviewFrame() {
-        // Fix: Changed exit display check to 'flex' so loop can run [1]
         if (document.getElementById('cosmetics-modal').style.display !== 'flex') { 
             cancelAnimationFrame(previewAnimFrame); 
             previewAnimFrame = null; 
@@ -1012,7 +1035,7 @@ function renderBossesMenu() {
 
                 c.fillStyle = '#f00'; 
                 c.strokeStyle = '#000'; 
-                c.lineWidth = 0.8;
+                c.lineWidth = 1;
                 c.beginPath(); 
                 c.arc(30 - 5, 30 - 5, 2.5, 0, Math.PI*2); 
                 c.fill(); 
@@ -1032,7 +1055,7 @@ function renderBossesMenu() {
 
                 c.fillStyle = '#00ffff'; 
                 c.strokeStyle = '#000'; 
-                c.lineWidth = 0.8;
+                c.lineWidth = 1;
                 c.beginPath(); 
                 c.arc(30 - 5, 30 - 2, 2.5, 0, Math.PI*2); 
                 c.fill(); 
@@ -1641,3 +1664,5 @@ function feedbackCopyButton() {
         }, 2000); 
     }
 }
+
+init();
