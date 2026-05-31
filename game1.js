@@ -34,7 +34,9 @@ function loop(currentTime) {
         if (survivor) camTarget = survivor;
     }
     if (camTarget) {
-        const baseHeight = 900, scale = canvas.height / baseHeight;
+        // Updated to dynamically scale camera centering offset to match widescreen viewports [1]
+        const baseHeight = isTouchDevice ? 520 : 900;
+        const scale = canvas.height / baseHeight;
         camera.x = camTarget.x - (canvas.width / scale) / 2; 
         camera.y = camTarget.y - (canvas.height / scale) / 2;
         drawGame(); 
@@ -127,7 +129,10 @@ function updateGameLogic() {
                     shootGun(p); 
                     p.pressHandled = true; 
                 }
-            } else p.pressHandled = false;
+            } else {
+                p.pressHandled = false;
+                p.dryFireHandled = false; // Reset out-of-ammo sound trigger
+            }
         });
         if (window.doublePointsTimer > 0) window.doublePointsTimer--;
         if (window.instaKillTimer > 0) window.instaKillTimer--;
@@ -492,7 +497,12 @@ function shootGun(p) {
                 }
             }
         } else if (gun.ammo > 0) forceReload(p); 
-        else if (typeof SoundSystem !== 'undefined') SoundSystem.play('dry_fire');
+        else if (typeof SoundSystem !== 'undefined') {
+            if (!p.dryFireHandled) {
+                SoundSystem.play('dry_fire');
+                p.dryFireHandled = true;
+            }
+        }
     }
 }
 
@@ -1260,7 +1270,7 @@ function drawOverBossIcon(bId, discovered, defeated, strikeProgress) {
             c.stroke();
 
             c.strokeStyle = '#7f8c8d'; 
-            c.lineWidth = 2.5;
+            c.lineWidth = 3;
             c.beginPath(); 
             c.arc(27, 27, 11, 0, Math.PI, true); 
             c.stroke();
@@ -1338,13 +1348,13 @@ function drawOverBossIcon(bId, discovered, defeated, strikeProgress) {
 
             c.fillStyle = '#f00'; 
             c.strokeStyle = '#000'; 
-            c.lineWidth = 0.8;
+            c.lineWidth = 1;
             c.beginPath(); 
-            c.arc(27 - 4, 27 - 4, 2, 0, Math.PI * 2); 
+            c.arc(30 - 5, 30 - 5, 2.5, 0, Math.PI*2); 
             c.fill(); 
             c.stroke();
             c.beginPath(); 
-            c.arc(27 + 4, 27 - 4, 2, 0, Math.PI * 2); 
+            c.arc(30 + 5, 30 - 5, 2.5, 0, Math.PI*2); 
             c.fill(); 
             c.stroke();
         }

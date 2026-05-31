@@ -25,26 +25,12 @@
             display: block; 
         }
         
-        /* --- DYNAMIC COGNITIVE MOBILE LANDSCAPE FORCE ROTATION --- */
         #app-container {
             width: 100%;
             height: 100%;
             position: absolute;
             top: 0;
             left: 0;
-        }
-        
-        /* When vertical, rotate the content wrapper 90 degrees sideways */
-        @media screen and (max-width: 1024px) and (orientation: portrait) {
-            #app-container {
-                width: 100vh !important;
-                height: 100vw !important;
-                transform: rotate(90deg);
-                transform-origin: top left;
-                position: absolute;
-                top: 0;
-                left: 100vw; /* Shifts container into viewport coordinates */
-            }
         }
         
         /* --- UI OVERLAY --- */
@@ -767,11 +753,44 @@
             z-index: 0;
             display: none;
         }
+
+        /* --- PORTRAIT ORIENTATION BLOCKER PANEL (RESTORED) --- */
+        #orientation-warning {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #050505;
+            color: #fff;
+            z-index: 99999;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-family: 'Courier New', monospace;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        /* Activates only on mobile touch screens in portrait (vertical) orientation */
+        @media (max-width: 1024px) and (orientation: portrait) {
+            #orientation-warning {
+                display: flex !important;
+            }
+        }
     </style>
 </head>
 <body oncontextmenu="return false;">
 
 <div id="app-container">
+
+    <!-- PORTRAIT ORIENTATION WARNING FOR MOBILE -->
+    <div id="orientation-warning">
+        <div style="font-size: 60px; margin-bottom: 20px; animation: arrowBounce 0.5s infinite alternate;">📱🔄</div>
+        <div style="color: #a83232; font-size: 24px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px;">Landscape Only</div>
+        <p style="color: #888; font-size: 14px; max-width: 320px; line-height: 1.5; margin: 0;">Please rotate your mobile device to Landscape (Horizontal) mode to play Zombie Dombie.</p>
+    </div>
 
     <!-- MAIN MENU -->
     <div id="main-menu" class="screen">

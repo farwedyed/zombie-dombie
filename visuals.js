@@ -41,12 +41,10 @@ function drawBackCosmetic(id, r, targetCtx = ctx) {
         targetCtx.closePath();
         targetCtx.fill();
         targetCtx.stroke();
-    } 
-    else if (cos.type === 'backpack') {
+    } else if (cos.type === 'backpack') {
         targetCtx.fillRect(-r - 12, -8, 12, 16);
         targetCtx.strokeRect(-r - 12, -8, 12, 16);
-    } 
-    else if (cos.type === 'cape') {
+    } else if (cos.type === 'cape') {
         targetCtx.beginPath();
         targetCtx.moveTo(-r + 3, -12);
         targetCtx.lineTo(-r - 24, -18);
@@ -55,8 +53,7 @@ function drawBackCosmetic(id, r, targetCtx = ctx) {
         targetCtx.closePath();
         targetCtx.fill();
         targetCtx.stroke();
-    }
-    else if (cos.type === 'jetpack') {
+    } else if (cos.type === 'jetpack') {
         targetCtx.fillStyle = '#7f8c8d';
         targetCtx.fillRect(-r - 10, -10, 10, 20);
         targetCtx.strokeRect(-r - 10, -10, 10, 20);
@@ -75,8 +72,7 @@ function drawBackCosmetic(id, r, targetCtx = ctx) {
             targetCtx.fillRect(-r - 18, -6, 4, 1);
             targetCtx.fillRect(-r - 18, 5, 4, 1);
         }
-    }
-    else if (cos.type === 'wings') {
+    } else if (cos.type === 'wings') {
         const flap = Math.sin(Date.now() / 100) * 0.25;
         
         targetCtx.save();
@@ -130,8 +126,7 @@ function drawBackCosmetic(id, r, targetCtx = ctx) {
         targetCtx.lineTo(2, 20);
         targetCtx.stroke();
         targetCtx.restore();
-    }
-    else if (cos.type === 'halo') {
+    } else if (cos.type === 'halo') {
         targetCtx.save();
         const pulse = 1 + Math.sin(Date.now() / 150) * 0.08;
         
@@ -157,7 +152,8 @@ function drawGame() {
     
     ctx.save();
 
-    const baseHeight = 900;
+    // Adjust scale base dynamically depending on device types to manage viewport dimensions [1]
+    const baseHeight = isTouchDevice ? 520 : 900;
     const scale = canvas.height / baseHeight;
     ctx.scale(scale, scale);
 
@@ -174,7 +170,7 @@ function drawGame() {
 
     activeMap.rooms.forEach(r => {
         ctx.fillStyle = r.color;
-        if(r.unlocked) {
+        if (r.unlocked) {
             ctx.globalAlpha = 1.0;
         } else {
             ctx.globalAlpha = 0.15; 
@@ -298,7 +294,6 @@ function drawGame() {
             let alpha = s.life / 25;
             if (alpha < 0) alpha = 0; if (alpha > 1) alpha = 1;
             
-            // Decides between custom color template or the default dark orange
             ctx.strokeStyle = s.color ? s.color.replace('ALPHA', alpha) : `rgba(211, 84, 0, ${alpha})`;
             ctx.lineWidth = 4;
             ctx.beginPath();
@@ -316,7 +311,6 @@ function drawGame() {
             ctx.lineWidth = z.r * 2;
             ctx.lineCap = 'round';
             
-            // Dynamic path calculation depending on short Rapid bursts vs long Heavy charges
             const speed = (z.chargeAttackType === 'RAPID') ? 20 : 24;
             const ticks = (z.chargeAttackType === 'RAPID') ? 18 : 35;
             const chargeLen = speed * ticks;
@@ -398,15 +392,15 @@ function drawGame() {
         ctx.strokeRect(w.x, w.y, w.w, w.h);
         
         ctx.fillStyle = '#8B4513';
-        if(w.boards > 0) {
+        if (w.boards > 0) {
             const isHorizontal = (w.orientation === 'H');
             const totalLength = isHorizontal ? w.w : w.h;
             const boardSpacing = totalLength / w.max;
             const boardWidth = boardSpacing * 0.7; 
             const padding = boardSpacing * 0.15; 
             
-            for(let i=0; i<w.boards; i++) {
-                if(isHorizontal) {
+            for (let i = 0; i < w.boards; i++) {
+                if (isHorizontal) {
                     ctx.fillRect(w.x + (i * boardSpacing) + padding, w.y, boardWidth, w.h);
                     ctx.strokeStyle = '#000000';
                     ctx.lineWidth = 1.5;
@@ -422,7 +416,7 @@ function drawGame() {
     });
 
     activeMap.rooms.forEach(r => {
-        if(!r.unlocked && r.door) {
+        if (!r.unlocked && r.door) {
             ctx.fillStyle = '#8d6e63'; 
             ctx.fillRect(r.door.x, r.door.y, r.door.w, r.door.h);
             ctx.strokeStyle = '#000000';
@@ -435,7 +429,7 @@ function drawGame() {
 
             ctx.fillStyle = '#fff'; 
             ctx.textAlign = 'center'; 
-            ctx.font="14px monospace";
+            ctx.font = "14px monospace";
             ctx.fillText(r.price + "⛃", r.door.x + r.door.w/2, r.door.y + r.door.h/2 + 25);
         }
     });
@@ -450,15 +444,13 @@ function drawGame() {
         ctx.fillStyle = '#fff'; 
         ctx.textAlign = 'center';
         
-        if(i.type === 'WALLBUY') { 
+        if (i.type === 'WALLBUY') { 
             ctx.font = "10px Arial"; 
             ctx.fillText("GUN", i.x+20, i.y+20); 
-        }
-        else if (i.type === 'PERK') { 
+        } else if (i.type === 'PERK') { 
             ctx.font = "bold 10px Arial"; 
             ctx.fillText("VIG", i.x+25, i.y+25); 
-        }
-        else { 
+        } else { 
             ctx.font = "30px Arial"; 
             ctx.fillText("?", i.x+30, i.y+40); 
         }
@@ -468,7 +460,7 @@ function drawGame() {
         ctx.save();
         ctx.translate(p.x, p.y);
         
-        if(p.state === 'ALIVE' && p.name) {
+        if (p.state === 'ALIVE' && p.name) {
             ctx.fillStyle = "#fff";
             ctx.font = "bold 12px Arial";
             ctx.textAlign = "center";
@@ -478,9 +470,9 @@ function drawGame() {
             ctx.shadowBlur = 0;
         }
 
-        if(p.state === 'DOWNED') {
+        if (p.state === 'DOWNED') {
             ctx.globalAlpha = 0.5; 
-            if(p.reviveTimer > 0) {
+            if (p.reviveTimer > 0) {
                 ctx.fillStyle = "black"; 
                 ctx.fillRect(-20, -35, 40, 5);
                 ctx.fillStyle = "#0f0"; 
@@ -552,8 +544,7 @@ function drawGame() {
                 ctx.moveTo(z.x - 12, z.y - 12); ctx.lineTo(z.x + 12, z.y + 12);
                 ctx.moveTo(z.x + 12, z.y - 12); ctx.lineTo(z.x - 12, z.y + 12);
                 ctx.stroke();
-            }
-            else if (z.type === 'boss_rampager') {
+            } else if (z.type === 'boss_rampager') {
                 ctx.strokeStyle = '#7f8c8d';
                 ctx.lineWidth = 3;
                 ctx.beginPath();
@@ -573,8 +564,7 @@ function drawGame() {
                 ctx.moveTo(10, 12); ctx.lineTo(25, 20); ctx.lineTo(14, 5);
                 ctx.closePath(); ctx.fill(); ctx.stroke();
                 ctx.restore();
-            }
-            else if (z.type === 'boss_decayer') {
+            } else if (z.type === 'boss_decayer') {
                 ctx.fillStyle = 'rgba(46, 204, 113, 0.4)';
                 ctx.beginPath();
                 ctx.arc(z.x - 6, z.y + 6, 5, 0, Math.PI*2);
@@ -604,13 +594,13 @@ function drawGame() {
             ctx.stroke();
         }
         
-        if(z.hp < z.maxHp) {
+        if (z.hp < z.maxHp) {
             ctx.fillStyle = '#000'; 
             ctx.fillRect(z.x - 12, z.y - 25, 24, 4);
             
             ctx.fillStyle = '#f00'; 
             let pct = z.hp / z.maxHp;
-            if(pct < 0) pct = 0;
+            if (pct < 0) pct = 0;
             ctx.fillRect(z.x - 12, z.y - 25, 24 * pct, 4);
         }
         ctx.restore();

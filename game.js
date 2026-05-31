@@ -292,6 +292,7 @@ function init() {
         ];
         
         if (customModals.includes(modal.id)) {
+            modal.style.overflowY = 'auto'; // Fallback scroll option for extremely low resolution screens
             return; // Skip structural wrapper modifications for these custom layouts
         }
         
