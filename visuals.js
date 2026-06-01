@@ -343,9 +343,9 @@ function drawGame() {
             ctx.setLineDash([12, 6]);
             ctx.beginPath();
             ctx.moveTo(z.x + Math.cos(z.chargeAngle + Math.PI/2)*z.r, z.y + Math.sin(z.chargeAngle + Math.PI/2)*z.r);
-            ctx.lineTo(z.x + Math.cos(z.chargeAngle + Math.PI/2)*z.r + Math.cos(z.chargeAngle) * chargeLen, z.y + Math.sin(z.chargeAngle + Math.PI/2)*z.r + Math.sin(z.chargeAngle) * chargeLen);
+            ctx.lineTo(z.x + Math.cos(z.chargeAngle + Math.PI/2)*z.r + Math.cos(z.chargeAngle) * chargeLen, z.y + Math.sin(z.chargeAngle + Math.PI/2)*z.r + Math.cos(z.chargeAngle) * chargeLen);
             ctx.moveTo(z.x - Math.cos(z.chargeAngle + Math.PI/2)*z.r, z.y - Math.sin(z.chargeAngle + Math.PI/2)*z.r);
-            ctx.lineTo(z.x - Math.cos(z.chargeAngle + Math.PI/2)*z.r + Math.cos(z.chargeAngle) * chargeLen, z.y - Math.sin(z.chargeAngle + Math.PI/2)*z.r + Math.sin(z.chargeAngle) * chargeLen);
+            ctx.lineTo(z.x - Math.cos(z.chargeAngle + Math.PI/2)*z.r + Math.cos(z.chargeAngle) * chargeLen, z.y - Math.sin(z.chargeAngle + Math.PI/2)*z.r + Math.cos(z.chargeAngle) * chargeLen);
             ctx.stroke();
             ctx.restore();
         }
@@ -595,25 +595,60 @@ function drawGame() {
             }
         }
         
-        ctx.fillStyle = '#f00';
-        ctx.strokeStyle = '#000000';
-        ctx.lineWidth = 1;
-        
+        // --- DRAW ANGRY EYEBROWS & EYES ---
         if (z.type === 'boss_blink') {
             ctx.fillStyle = '#00ffff';
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 1;
             ctx.beginPath(); ctx.arc(z.x - 6, z.y - 4, 2.8, 0, Math.PI*2); ctx.fill(); ctx.stroke();
             ctx.beginPath(); ctx.arc(z.x + 6, z.y - 4, 2.8, 0, Math.PI*2); ctx.fill(); ctx.stroke();
             ctx.beginPath(); ctx.arc(z.x, z.y - 10, 3.2, 0, Math.PI*2); ctx.fill(); ctx.stroke();
         } else {
-            ctx.beginPath(); 
-            ctx.arc(z.x - 5, z.y - 5, 2.5, 0, Math.PI*2); 
-            ctx.fill();
-            ctx.stroke();
-            
+            // Scale geometry smoothly depending on zombie base size (r)
+            const r = z.r;
+
+            // Red glow eyes
+            const eyeRadius = r * 0.22;
+            const eyeY = -r * 0.1;
+            const eyeXOffset = r * 0.35;
+
+            ctx.fillStyle = '#ff0000';
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 1;
+
+            // Left Eye
             ctx.beginPath();
-            ctx.arc(z.x + 5, z.y - 5, 2.5, 0, Math.PI*2); 
+            ctx.arc(z.x - eyeXOffset, z.y + eyeY, eyeRadius, 0, Math.PI * 2);
             ctx.fill();
             ctx.stroke();
+
+            // Right Eye
+            ctx.beginPath();
+            ctx.arc(z.x + eyeXOffset, z.y + eyeY, eyeRadius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Slanted black eyebrows drawn on top
+            const browWidth = r * 0.75;
+            const browHeight = r * 0.18;
+            const browY = -r * 0.25;
+            const slantAngle = 0.42;
+
+            // Left Eyebrow (Angles downwards to the center)
+            ctx.save();
+            ctx.translate(z.x - eyeXOffset + (r * 0.05), z.y + browY);
+            ctx.rotate(slantAngle);
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(-browWidth / 2, -browHeight / 2, browWidth, browHeight);
+            ctx.restore();
+
+            // Right Eyebrow (Angles downwards to the center)
+            ctx.save();
+            ctx.translate(z.x + eyeXOffset - (r * 0.05), z.y + browY);
+            ctx.rotate(-slantAngle);
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(-browWidth / 2, -browHeight / 2, browWidth, browHeight);
+            ctx.restore();
         }
         
         if(z.hp < z.maxHp) {

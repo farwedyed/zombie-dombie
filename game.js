@@ -832,8 +832,18 @@ function updateZombies() {
             }
         }
         if (typeof ZombieVariants !== 'undefined') ZombieVariants.updateSpecialBehaviors(z);
+        
         Object.values(players).forEach(p => {
-            if (Math.hypot(p.x - z.x, p.y - z.y) < 30 && p.state === 'ALIVE') {
+            // If it's a remote player, evaluate damage using their actual reported coordinates 
+            // instead of their interpolated path to remove artificial lag.
+            let px = (p !== me && p.serverX !== undefined) ? p.serverX : p.x;
+            let py = (p !== me && p.serverY !== undefined) ? p.serverY : p.y;
+            
+            // Give remote clients a slightly smaller, more lenient damage hitbox (e.g., 22px instead of 30px)
+            // to make up for P2P connection latency.
+            let hitRadius = (p !== me) ? 22 : 30;
+
+            if (Math.hypot(px - z.x, py - z.y) < hitRadius && p.state === 'ALIVE') {
                 if (p.invincibleTimer && p.invincibleTimer > 0) return; 
                 let baseDmg = GameBalanceConfig.ZOMBIE_BASE_DAMAGE;
                 let scaleBonus = Math.floor((stats.round - 1) * GameBalanceConfig.ZOMBIE_DAMAGE_ROUND_SCALE);
