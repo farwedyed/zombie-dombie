@@ -164,7 +164,7 @@ const cosmeticDB = [
     { id: 'wings_carbon', name: "Cyber Wings (Black/Cyan)", price: 2000, color: "#00ffff", type: "wings" }
 ];
 
-/* --- BOSSES DATABASE (EXPANDED TO 6 BOSSES) --- */
+/* --- BOSSES DATABASE --- */
 const bossesDB = [
     { id: 'boss_logbreaker', name: "The Golem Smasher", round: 5, desc: "A colossal, alabaster stone brute. He pounds the ground, sending a traveling sequence of devastating seismic fractures along the floor toward survivors.", color: '#ffffff', icon: "🗿" },
     { id: 'boss_blink', name: "The Warp Phantom", round: 5, desc: "An elusive teleporter with three glowing cyan eyes that warps directly near players' positions to initiate ambush attacks.", color: '#9b59b6', icon: "👁️" },
@@ -187,13 +187,31 @@ const SoundSystem = {
         round_start: 'sounds/round_start.mp3',
         purchase: 'sounds/purchase.mp3'
     },
+    
+    _lastPlayed: {}, // Track play timestamps to prevent ear-splitting machine gun sound layering
 
     init: function() {
-        // Direct instantiation on-play ensures robust performance on all browsers
+        this._lastPlayed = {};
     },
 
     play: function(key) {
         if (!this.enabled || !this.audioFiles[key]) return;
+        
+        const now = Date.now();
+        
+        // Throttler: Prevents distorted shotgun hit blasts & gunshot overlaps inside the same tick/millisecond
+        if (key === 'zombie_hurt') {
+            if (this._lastPlayed[key] && now - this._lastPlayed[key] < 80) {
+                return; // Suppress redundant grunt overlaps within 80ms
+            }
+            this._lastPlayed[key] = now;
+        }
+        if (key === 'shoot') {
+            if (this._lastPlayed[key] && now - this._lastPlayed[key] < 30) {
+                return; // Suppress redundant gunshot overlaps within 30ms
+            }
+            this._lastPlayed[key] = now;
+        }
         
         try {
             let audio = new Audio(this.audioFiles[key]);
