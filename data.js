@@ -144,7 +144,7 @@ const achievements = [
     { id: 'k10', name: "First Blood", desc: "Get 10 Kills in one game", icon: "🩸", check: (s) => s.sessionKills >= 10 },
     { id: 'k100', name: "Slayer", desc: "Get 100 Kills Total", icon: "💀", check: (s) => (saveData.kills + s.sessionKills) >= 100 },
     { id: 'k500', name: "Massacre", desc: "Get 500 Kills Total", icon: "☠️", check: (s) => (saveData.kills + s.sessionKills) >= 500 },
-    { id: 'k1000', name: "Genocide", desc: "Get 1000 Kills Total", icon: "👹", check: (s) => (saveData.kills + s.sessionKills) >= 1000 },
+    { id: 'k1000', name: "Genocide", desc: "Get 1000 Kills Total", icon: "☠️", check: (s) => (saveData.kills + s.sessionKills) >= 1000 },
     { id: 'k2500', name: "Apocalyptic Legend", desc: "Get 2500 Kills Total", icon: "⚡", check: (s) => (saveData.kills + s.sessionKills) >= 2500 },
     { id: 'r5', name: "Survivor", desc: "Reach Round 5", icon: "🏕️", check: (s) => s.round >= 5 },
     { id: 'r15', name: "Veteran Survivor", desc: "Reach Round 15", icon: "🎖️", check: (s) => s.round >= 15 },
@@ -188,7 +188,7 @@ const SoundSystem = {
         purchase: 'sounds/purchase.mp3'
     },
     
-    _lastPlayed: {}, // Track play timestamps to prevent ear-splitting machine gun sound layering
+    _lastPlayed: {}, // Track play timestamps to prevent ear-splitting sound layering
 
     init: function() {
         this._lastPlayed = {};
@@ -209,6 +209,13 @@ const SoundSystem = {
         if (key === 'shoot') {
             if (this._lastPlayed[key] && now - this._lastPlayed[key] < 30) {
                 return; // Suppress redundant gunshot overlaps within 30ms
+            }
+            this._lastPlayed[key] = now;
+        }
+        // Dry Fire Audio Guard: Prevents overlapping system sound clicks within 350ms
+        if (key === 'dry_fire') {
+            if (this._lastPlayed[key] && now - this._lastPlayed[key] < 350) {
+                return; // Suppress rapid dry fire clicks
             }
             this._lastPlayed[key] = now;
         }

@@ -491,11 +491,17 @@ function shootGun(p) {
                     });
                 }
             }
-        } else if (gun.ammo > 0) forceReload(p); 
-        else if (typeof SoundSystem !== 'undefined') {
-            // Only play dry fire clicks for local players (self or local co-op partner)
-            if (p === me || (Network.mode === 'LOCAL_COOP' && p.id === 'p2')) {
-                SoundSystem.play('dry_fire');
+        } else if (gun.ammo > 0) {
+            forceReload(p); 
+        } else {
+            // Dry fire cooldown: Only trigger the click sound every 35 frames (approx. 0.6 seconds)
+            if (stats.frame - (gun.lastDryFire || 0) >= 35) {
+                gun.lastDryFire = stats.frame;
+                if (typeof SoundSystem !== 'undefined') {
+                    if (p === me || (Network.mode === 'LOCAL_COOP' && p.id === 'p2')) {
+                        SoundSystem.play('dry_fire');
+                    }
+                }
             }
         }
     }
