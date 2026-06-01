@@ -492,7 +492,12 @@ function shootGun(p) {
                 }
             }
         } else if (gun.ammo > 0) forceReload(p); 
-        else if (typeof SoundSystem !== 'undefined') SoundSystem.play('dry_fire');
+        else if (typeof SoundSystem !== 'undefined') {
+            // Only play dry fire clicks for local players (self or local co-op partner)
+            if (p === me || (Network.mode === 'LOCAL_COOP' && p.id === 'p2')) {
+                SoundSystem.play('dry_fire');
+            }
+        }
     }
 }
 

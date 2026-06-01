@@ -521,6 +521,11 @@ function setupTouchControls() {
         e.preventDefault(); 
         if (me) me.isTouch = true;
         if (gameActive && me && me.inventory.length > 1) {
+            // Debounce touch event to prevent immediate duplicate switches on mobile
+            const now = Date.now();
+            if (now - (me.lastSwitchTime || 0) < 300) return;
+            me.lastSwitchTime = now;
+
             me.weapIdx = (me.weapIdx + 1) % me.inventory.length;
             addText(me.x, me.y - 40, me.inventory[me.weapIdx].name, "#fff");
             if (Network.mode === 'CLIENT') {
@@ -1148,7 +1153,7 @@ function renderBossesMenu() {
                 c.lineWidth = 2.5; 
                 c.stroke();
 
-                c.fillStyle = 'rgba(46, 204, 113, 0.6)';
+                c.fillStyle = 'rgba(46, 204, 113, 0.4)';
                 c.beginPath(); 
                 c.arc(30 - 5, 30 + 5, 4, 0, Math.PI*2); 
                 c.arc(30 + 6, 30 - 6, 3.5, 0, Math.PI*2); 
