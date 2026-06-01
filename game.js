@@ -1428,7 +1428,7 @@ function gameOver() {
     document.getElementById('cosmetic-bar').style.width = "0%";
     document.getElementById('cosmetic-percentage-text').innerText = "0%";
 
-    const items = ["over-title", "over-round-box", "card-stats", "perf-msg", "card-xp", "card-boss", "card-achievements", "card-cosmetic", "over-controls"];
+    const items = ["over-title", "over-round-box", "card-stats", "perf-msg", "card-xp", "card-boss", "card-cosmetic", "over-controls"];
     items.forEach(id => { 
         let el = document.getElementById(id); 
         if (el) el.classList.remove("smash-active"); 
@@ -1460,9 +1460,8 @@ function gameOver() {
         { id: "perf-msg", delay: 2450, sound: "purchase", shake: 4 },
         { id: "card-xp", delay: 3200, sound: "shoot", shake: 10, action: animateXP },
         { id: "card-boss", delay: 3950, sound: "shoot", shake: 10, action: animateBoss },
-        { id: "card-achievements", delay: 4700, sound: "powerup", shake: 8, action: animateAchievements },
-        { id: "card-cosmetic", delay: 5450, sound: "shoot", shake: 10, action: animateCosmetic },
-        { id: "over-controls", delay: 6200, sound: "purchase", shake: 6 }
+        { id: "card-cosmetic", delay: 4700, sound: "shoot", shake: 10, action: animateCosmetic },
+        { id: "over-controls", delay: 5450, sound: "purchase", shake: 6 }
     ];
 
     staggerSequence.forEach(step => {
@@ -1635,46 +1634,6 @@ function gameOver() {
                 }
                 
             }, 300 + idx * 250); // Stagger interval (250ms)
-        });
-    }
-
-    function animateAchievements() {
-        const achRow = document.getElementById('over-achievements-row');
-        if (!achRow) return;
-        achRow.innerHTML = "";
-        
-        let newlyUnlockedAch = (saveData.unlockedAch || []).filter(id => !window.startingUnlockedAch.includes(id));
-        
-        if (newlyUnlockedAch.length === 0) {
-            achRow.innerHTML = `<div style="font-size:10px; color:#666; text-align:center; padding-top:20px; line-height:1.4;">No achievements unlocked.<br>Try drinking Jug-O-Lug next run!</div>`;
-            return;
-        }
-        
-        newlyUnlockedAch.forEach((achId, idx) => {
-            const achObj = achievements.find(a => a.id === achId);
-            if (!achObj) return;
-            
-            const achHtml = `
-                <div id="over-ach-slot-${achId}" style="display:flex; align-items:center; gap:8px; background:rgba(255,215,0,0.04); border:1px solid rgba(255,215,0,0.25); border-left:4px solid #ffd700; border-radius:4px; padding:6px 10px; transform:scale(0); opacity:0; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.25), opacity 0.3s;">
-                    <span style="font-size:18px;">${achObj.icon}</span>
-                    <div style="display:flex; flex-direction:column; text-align:left;">
-                        <span style="font-size:10px; font-weight:bold; color:#fff;">${achObj.name}</span>
-                        <span style="font-size:8px; color:#aaa;">${achObj.desc}</span>
-                    </div>
-                </div>
-            `;
-            achRow.insertAdjacentHTML('beforeend', achHtml);
-            
-            setTimeout(() => {
-                const slot = document.getElementById(`over-ach-slot-${achId}`);
-                if (slot) {
-                    slot.style.transform = "scale(1)";
-                    slot.style.opacity = "1";
-                    if (typeof SoundSystem !== 'undefined') {
-                        SoundSystem.play('powerup');
-                    }
-                }
-            }, idx * 250);
         });
     }
 

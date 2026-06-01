@@ -151,17 +151,46 @@ const Tutorial = {
         },
         {
             title: "Vigor Rescue",
-            text: "Look! Vigor-Up automatically saves you when you run out of hearts! Watch your revive bar fill up until you get right back up!",
+            text: "A red hazard zone has appeared! Go step inside the red 'DAMAGE' box to drain your health. Vigor-Up will automatically save you and get you right back up!",
             check: () => {
-                return me && me.state === 'ALIVE'; // Complete once they survive and get back up
+                if (!me) return false;
+
+                if (me.state === 'ALIVE' && !Tutorial._hasBeenDowned) {
+                    // Check if player is standing inside the damage box (radius 40px around x: 1000, y: 200)
+                    const onBox = Math.hypot(me.x - 1000, me.y - 200) < 40;
+                    if (onBox) {
+                        Tutorial._vigorStepTimer++;
+                        
+                        // Inflict damage at paced intervals of 45 frames (~0.75 seconds)
+                        if (Tutorial._vigorStepTimer % 45 === 0) {
+                            const damageAmount = Math.ceil(me.maxHp / 4);
+
+                            if (me.hp - damageAmount <= 0) {
+                                // Fatal hit leads to knockdown
+                                me.hp = 0;
+                                me.state = 'DOWNED';
+                                me.reviveTimer = 180; // 3-second knockdown demo
+                                Tutorial._hasBeenDowned = true;
+                                addText(me.x, me.y, "VIGOR RESCUE INITIATED!", "#0f0");
+                                triggerTutorialDamageFlash();
+                            } else {
+                                me.hp -= damageAmount;
+                                addText(me.x, me.y, `-${damageAmount} HP`, "#ff4757");
+                                triggerTutorialDamageFlash();
+                            }
+                        }
+                    }
+                    return false;
+                } else {
+                    // Step completes once Vigor-Up auto-revives player back to ALIVE
+                    return Tutorial._hasBeenDowned && me.state === 'ALIVE';
+                }
             },
             onStart: () => {
-                // Force a knockdown state and start the automatic revive timer
+                Tutorial._hasBeenDowned = false;
+                Tutorial._vigorStepTimer = 0;
                 if (me) {
-                    me.hp = 0;
-                    me.state = 'DOWNED';
-                    me.reviveTimer = 180; // 3-second knockdown demo
-                    addText(me.x, me.y, "DOWNED!", "#f00");
+                    me.hp = me.maxHp; // Start from full health
                 }
                 Tutorial.toggleGuideArrow('tut-guide-interact', false);
             }
@@ -214,6 +243,8 @@ const Tutorial = {
     _windowRepaired: false,
     _ammoPurchased: false,
     _roundChangeTimer: 0,
+    _hasBeenDowned: false,
+    _vigorStepTimer: 0,
 
     start: function() {
         this.isActive = true;
@@ -222,6 +253,8 @@ const Tutorial = {
         this._windowRepaired = false;
         this._ammoPurchased = false;
         this._roundChangeTimer = 0;
+        this._hasBeenDowned = false;
+        this._vigorStepTimer = 0;
         
         const hud = document.getElementById('tutorial-hud');
         if (hud) hud.style.display = 'block';
@@ -385,7 +418,30 @@ const Tutorial = {
             case 7: // Drink Vigor-Up -> Point to newly spawned red Perk machine
                 drawFloatingArrow(920, 60, '#e74c3c');
                 break;
-            case 8: // Vigor Rescue Demonstration -> No Target (Player is DOWNED)
+            case 8: // Vigor Rescue Demonstration -> Stand in the red damage hazard zone
+                if (me && me.state === 'ALIVE') {
+                    ctx.save();
+                    // Draw a semi-transparent red damage hazard box
+                    ctx.fillStyle = 'rgba(231, 76, 60, 0.4)';
+                    ctx.strokeStyle = '#e74c3c';
+                    ctx.lineWidth = 3;
+                    ctx.fillRect(970, 170, 60, 60);
+                    ctx.strokeRect(970, 170, 60, 60);
+                    
+                    // Draw centered "DAMAGE" text label
+                    ctx.fillStyle = '#ffffff';
+                    ctx.strokeStyle = '#000000';
+                    ctx.lineWidth = 2.5;
+                    ctx.font = 'bold 12px monospace';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.strokeText("DAMAGE", 1000, 200);
+                    ctx.fillText("DAMAGE", 1000, 200);
+                    ctx.restore();
+
+                    // Point directly to the damage area
+                    drawFloatingArrow(1000, 200, '#e74c3c');
+                }
                 break;
             case 9: // Clear Door Step -> Point to locked Door and HTML Coins
                 drawFloatingArrow(1160, 200, '#f1c40f');
@@ -396,3 +452,21 @@ const Tutorial = {
         }
     }
 };
+
+// Isolated helper function to play tutorial damage impacts cleanly
+function triggerTutorialDamageFlash() {
+    const flash = document.getElementById('damage-flash');
+    if (flash) {
+        flash.style.boxShadow = "inset 0 0 120px rgba(180, 0, 0, 0.95)";
+        flash.style.border = "16px solid rgba(180, 0, 0, 0.8)";
+        flash.style.background = "rgba(180, 0, 0, 0.2)";
+        setTimeout(() => {
+            flash.style.boxShadow = "none"; 
+            flash.style.border = "none"; 
+            flash.style.background = "transparent";
+        }, 250); // Slightly longer flash duration for heavy impact feel
+    }
+    if (typeof SoundSystem !== 'undefined') {
+        SoundSystem.play('zombie_hurt'); // Clean local grunt on hit
+    }
+}

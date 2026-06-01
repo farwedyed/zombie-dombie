@@ -92,11 +92,12 @@ const playableMaps = [
             { x: -600, y: 400, w: 50, h: 50, type: 'PERK', price: 2500, color: '#c0392b', label: "VIG" }
         ],
         spawnPoints: [
-            { x: 250, y: 900, roomId: 0 }, { x: 550, y: 900, roomId: 0 },
-            { x: 1150, y: 100, roomId: 1 },
-            { x: 2000, y: -350, roomId: 2 }, { x: 2000, y: 900, roomId: 2 },
-            { x: -400, y: -150, roomId: 3 }, { x: -150, y: -450, roomId: 4 },
-            { x: -1500, y: 380, roomId: 5 }, { x: 3050, y: 300, roomId: 6 } // Zombie spawn outside supply window
+            { x: 250, y: 900, roomId: 0 }, { x: 550, y: 900, roomId: 0 }, // Spawn Room windows
+            { x: 1150, y: 100, roomId: 1 },                               // East Hall window
+            { x: 2000, y: -350, roomId: 2 }, { x: 2000, y: 900, roomId: 2 }, // Warehouse windows
+            { x: -400, y: -100, roomId: 3 }, { x: -400, y: 900, roomId: 3 }, // Laboratory windows
+            { x: -100, y: -400, roomId: 4 }, { x: 900, y: -400, roomId: 4 }, // Courtyard windows
+            { x: 3100, y: 300, roomId: 6 }                                 // Supply Office window
         ]
     },
 
@@ -124,20 +125,20 @@ const playableMaps = [
             { x: 0, y: -20, w: 200, h: 40 }, { x: 400, y: -20, w: 200, h: 40 }, 
             { x: -20, y: 0, w: 40, h: 200 }, { x: -20, y: 400, w: 40, h: 200 }, 
 
-            // Storage Sector (Room 1) boundaries
+            // Storage Sector (Room 1) boundaries (Fixed Mess Hall dividing wall gap alignment)
             { x: 0, y: -500, w: 200, h: 40 }, { x: 400, y: -500, w: 200, h: 40 }, 
-            { x: -20, y: -500, w: 40, h: 100 }, { x: -20, y: -250, w: 40, h: 250 }, 
+            { x: -20, y: -500, w: 40, h: 150 }, { x: -20, y: -200, w: 40, h: 200 }, 
             { x: 560, y: -500, w: 40, h: 500 }, 
 
-            // West Platform (Room 2) boundaries
+            // West Platform (Room 2) boundaries (Fixed Vault dividing wall gap alignment)
             { x: -500, y: 0, w: 500, h: 40 }, 
             { x: -500, y: 560, w: 500, h: 40 }, 
-            { x: -520, y: 0, w: 40, h: 150 }, { x: -520, y: 350, w: 40, h: 250 }, 
+            { x: -520, y: 0, w: 40, h: 200 }, { x: -520, y: 350, w: 40, h: 250 }, 
 
-            // Mess Hall (Room 3) boundaries
+            // Mess Hall (Room 3) boundaries (Fixed Left Wall overlapping the window)
             { x: -600, y: -500, w: 600, h: 40 },
             { x: -600, y: -40, w: 600, h: 40 },
-            { x: -600, y: -500, w: 40, h: 500 },
+            { x: -600, y: -500, w: 40, h: 250 }, { x: -600, y: -150, w: 40, h: 150 },
 
             // Armoury Vault (Room 4) boundaries
             { x: -1100, y: 100, w: 600, h: 40 },
@@ -162,12 +163,10 @@ const playableMaps = [
             { x: -400, y: 400, w: 50, h: 50, type: 'PERK', price: 2500, color: '#c0392b', label: "VIG" }
         ],
         spawnPoints: [
-            { x: 300, y: 700, roomId: 0 },
-            { x: 700, y: 300, roomId: 0 },
-            { x: -700, y: 300, roomId: 2 },
-            { x: 300, y: -600, roomId: 1 },
-            { x: -800, y: -300, roomId: 3 },
-            { x: -1200, y: 250, roomId: 4 }
+            { x: 300, y: 700, roomId: 0 },   // Room 0 Bottom window
+            { x: 700, y: 300, roomId: 0 },   // Room 0 Right window
+            { x: 300, y: -600, roomId: 1 },  // Room 1 Top window
+            { x: -750, y: -200, roomId: 3 }  // Room 3 Left window
         ]
     },
 
@@ -195,25 +194,25 @@ const playableMaps = [
             { x: 0, y: -20, w: 200, h: 40 }, { x: 300, y: -20, w: 200, h: 40 }, 
             { x: 480, y: 0, w: 40, h: 200 }, { x: 480, y: 300, w: 40, h: 200 }, 
 
-            // North Asylum Wing (Room 1)
-            { x: 0, y: -500, w: 500, h: 40 }, 
-            { x: -20, y: -500, w: 40, h: 150 }, { x: -20, y: -200, w: 40, h: 200 }, 
+            // North Asylum Wing (Room 1) (Fixed Top Wall overlapping the window)
+            { x: 0, y: -500, w: 200, h: 40 }, { x: 300, y: -500, w: 200, h: 40 }, 
+            { x: -20, y: -500, w: 40, h: 200 }, { x: -20, y: -150, w: 40, h: 150 }, // (Fixed dividing wall gap alignment)
             { x: 460, y: -500, w: 40, h: 500 }, 
 
-            // East Lab Chambers (Room 2)
+            // East Lab Chambers (Room 2) (Fixed Extraction dividing wall gap alignment)
             { x: 500, y: 0, w: 500, h: 40 }, 
             { x: 500, y: 460, w: 500, h: 40 }, 
-            { x: 960, y: 0, w: 40, h: 150 }, { x: 960, y: 350, w: 40, h: 150 },
+            { x: 960, y: 0, w: 40, h: 200 }, { x: 960, y: 350, w: 40, h: 150 },
 
             // Testing Chamber B (Room 3) boundaries
             { x: -500, y: -500, w: 500, h: 40 },
             { x: -500, y: -40, w: 500, h: 40 },
             { x: -500, y: -500, w: 40, h: 500 },
 
-            // Extraction Vent (Room 4) boundaries
+            // Extraction Vent (Room 4) boundaries (Fixed Right Wall overlapping the window)
             { x: 1000, y: 0, w: 500, h: 40 },
             { x: 1000, y: 460, w: 500, h: 40 },
-            { x: 1460, y: 0, w: 40, h: 500 }
+            { x: 1460, y: 0, w: 40, h: 200 }, { x: 1460, y: 300, w: 40, h: 200 }
         ],
         windows: [
             { x: 200, y: 460, w: 100, h: 40, boards: 6, max: 6, orientation: 'H', entryX: 250, entryY: 400 },
@@ -233,11 +232,9 @@ const playableMaps = [
             { x: 850, y: 350, w: 50, h: 50, type: 'PERK', price: 2500, color: '#c0392b', label: "VIG" }
         ],
         spawnPoints: [
-            { x: 250, y: 600, roomId: 0 },
-            { x: 250, y: -600, roomId: 1 },
-            { x: 1100, y: 250, roomId: 2 },
-            { x: -350, y: -350, roomId: 3 },
-            { x: 1350, y: 250, roomId: 4 }
+            { x: 250, y: 600, roomId: 0 },   // Room 0 Bottom window
+            { x: 250, y: -600, roomId: 1 },  // Room 1 Top window
+            { x: 1550, y: 250, roomId: 4 }   // Room 4 Right window (Zombies will now spawn outside)
         ]
     }
 ];
