@@ -133,8 +133,8 @@ const Tutorial = {
             }
         },
         {
-            title: "Drink Jug-O-Lug",
-            text: "Time to get super strong! Go to the red juice machine and buy some cherry Jug-O-Lug to get extra hearts!",
+            title: "Drink Vigor-Up",
+            text: "Time to get super strong! Go to the red juice machine and buy some sweet Vigor-Up to get extra hearts!",
             check: () => {
                 return me && me.hasVigor;
             },
@@ -147,6 +147,23 @@ const Tutorial = {
                     }
                 }
                 Tutorial.toggleGuideArrow('tut-guide-interact', true);
+            }
+        },
+        {
+            title: "Vigor Rescue",
+            text: "Look! Vigor-Up automatically saves you when you run out of hearts! Watch your revive bar fill up until you get right back up!",
+            check: () => {
+                return me && me.state === 'ALIVE'; // Complete once they survive and get back up
+            },
+            onStart: () => {
+                // Force a knockdown state and start the automatic revive timer
+                if (me) {
+                    me.hp = 0;
+                    me.state = 'DOWNED';
+                    me.reviveTimer = 180; // 3-second knockdown demo
+                    addText(me.x, me.y, "DOWNED!", "#f00");
+                }
+                Tutorial.toggleGuideArrow('tut-guide-interact', false);
             }
         },
         {
@@ -365,13 +382,15 @@ const Tutorial = {
             case 6: // Ammo Step -> Point to Olympus wallbuy again
                 drawFloatingArrow(580, 60, '#3498db');
                 break;
-            case 7: // Drink Jug-O-Lug -> Point to newly spawned red Perk machine
+            case 7: // Drink Vigor-Up -> Point to newly spawned red Perk machine
                 drawFloatingArrow(920, 60, '#e74c3c');
                 break;
-            case 8: // Clear Door Step -> Point to locked Door and HTML Coins
+            case 8: // Vigor Rescue Demonstration -> No Target (Player is DOWNED)
+                break;
+            case 9: // Clear Door Step -> Point to locked Door and HTML Coins
                 drawFloatingArrow(1160, 200, '#f1c40f');
                 break;
-            case 9: // Escape Step -> Point to the exit pad
+            case 10: // Escape Step -> Point to the exit pad
                 drawFloatingArrow(1480, 200, '#2ecc71');
                 break;
         }
