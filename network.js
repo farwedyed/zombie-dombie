@@ -175,6 +175,11 @@ const Network = {
                     if (data.reload) p.triggerReload = true;
                     p.equippedCosmetic = data.cosmetic || 'none';
                     p.isTouch = data.isTouch || false;
+
+                    // Sync the active weapon selection sent by client
+                    if (data.gunName) {
+                        syncPlayerInventory(p, data.weapIdx, data.gunName);
+                    }
                 }
             }
             else if(data.type === 'INTERACT') {
@@ -241,7 +246,6 @@ const Network = {
             p2: getPrunedPlayer(players['p2']), 
             p3: getPrunedPlayer(players['p3']), 
             p4: getPrunedPlayer(players['p4']), 
-            // Broadcasters updated to include zombie types, charge variables, and environmental hazards
             zombies: zombies.map(z => ({ 
                 id: z.id, x: z.x, y: z.y, hp: z.hp, maxHp: z.maxHp, 
                 hitTimer: z.hitTimer, color: z.color, r: z.r, 
@@ -428,6 +432,7 @@ const Network = {
 
                 const incomingBullets = data.bullets || [];
                 const serverBulletMap = new Map();
+                let shotSoundPlayedThisTick = false; // Prevent overlapping multi-pellet shotgun blasts
                 
                 incomingBullets.forEach(sb => {
                     serverBulletMap.set(sb.id, sb);
@@ -446,6 +451,14 @@ const Network = {
                             type: sb.type,
                             life: 50
                         });
+                        
+                        // Play shoot sound for network bullets while filtering shotgun pellet duplicate blasts
+                        if (!shotSoundPlayedThisTick) {
+                            if (typeof SoundSystem !== 'undefined') {
+                                SoundSystem.play('shoot');
+                            }
+                            shotSoundPlayedThisTick = true;
+                        }
                     }
                 });
 
@@ -494,6 +507,7 @@ const Network = {
                             let myAngle = me.angle;
                             let myX = me.x;
                             let myY = me.y;
+                            let myWeapIdx = me.weapIdx; // Preserve weapon indexing during host sync frame
                             
                             if (me.state === 'DOWNED' && fallbackPId.state === 'ALIVE') {
                                 const spawnSource = data.p1;
@@ -527,6 +541,7 @@ const Network = {
 
                             Object.assign(me, fallbackPId);
                             me.angle = myAngle; 
+                            me.weapIdx = myWeapIdx; // Apply localized index lock
                             
                             if (fallbackPId.state === 'DOWNED') {
                                 me.x = fallbackPId.x;
@@ -589,7 +604,14 @@ const Network = {
                 });
 
                 data.windows.forEach((wData, i) => { if(activeMap.windows[i]) activeMap.windows[i].boards = wData.boards; });
-                data.doors.forEach((dData, i) => { if(activeMap.rooms[i]) activeMap.rooms[i].unlocked = dData.unlocked; });
+                data.doors.forEach((dData, i) => { 
+                    if(activeMap.rooms[i] && activeMap.rooms[i].unlocked !== dData.unlocked) {
+                        activeMap.rooms[i].unlocked = dData.unlocked;
+                        if (dData.unlocked && typeof SoundSystem !== 'undefined') {
+                            SoundSystem.play('purchase');
+                        }
+                    }
+                });
             }
             else if(data.type === 'GAME_OVER') {
                 stats = { ...stats, ...data.stats };
@@ -654,6 +676,7 @@ const Network = {
 
         document.getElementById('game-ui').style.display = 'none';
         document.getElementById('game-over').style.display = 'none';
+        document.getElementById('main-menu').style.display = 'none'; // Ensure lobby list re-renders correctly on fail
         document.getElementById('lobby-screen').style.display = 'none';
         document.getElementById('main-menu').style.display = 'flex';
 
@@ -680,7 +703,9 @@ const Network = {
                     reload: p.reloading,
                     name: p.name,
                     cosmetic: p.equippedCosmetic || 'none',
-                    isTouch: p.isTouch
+                    isTouch: p.isTouch,
+                    weapIdx: p.weapIdx,
+                    gunName: p.inventory && p.inventory[p.weapIdx] ? p.inventory[p.weapIdx].name : ""
                 });
             } catch (e) {
                 console.warn("Failed to send client data payload:", e);

@@ -250,7 +250,7 @@
             pointer-events: auto; 
             z-index: 2000; 
             box-shadow: inset 0 0 100px rgba(0,0,0,0.8);
-            overflow: hidden !important; /* Block global window-level scrollbars */
+            overflow: hidden !important; /* STRICTLY block scroll bars */
             padding: 2vh 2vw;
             box-sizing: border-box;
         }
@@ -852,14 +852,14 @@
                 padding: 4px !important;
                 margin-bottom: 0px !important;
             }
-            #card-boss {
+            #card-boss, #card-achievements {
                 padding: 4px !important;
-                height: 100% !important;
+                height: 50% !important;
                 box-sizing: border-box !important;
                 margin-bottom: 0px !important;
                 justify-content: flex-start !important;
             }
-            #card-boss div:first-child {
+            #card-boss div:first-child, #card-achievements div:first-child {
                 margin-bottom: 4px !important;
             }
             #over-bosses-row {
@@ -1064,7 +1064,7 @@
     </div>
 </div>
 
-<!-- GLOBAL LEADERBOARDS MODAL (Leftover backup structure compatible with references) -->
+<!-- GLOBAL LEADERBOARDS MODAL -->
 <div id="leaderboard-modal" class="modal" style="width: 580px; max-width: 95%; height: 490px; max-height: 85vh; padding: 20px;">
     <h2 style="color:white; text-align:center; margin-top:0; margin-bottom:15px;">GLOBAL LEADERBOARDS</h2>
     
@@ -1472,15 +1472,25 @@
                 </div>
             </div>
 
-            <!-- COLUMN 3: BOSSES ENCOUNTERED -->
-            <div class="over-column over-right-panel" style="flex: 1.1; display: flex; flex-direction: column; max-width: 420px; box-sizing: border-box; overflow: hidden !important;">
+            <!-- COLUMN 3: BOSSES & ACHIEVEMENTS -->
+            <div class="over-column over-right-panel" style="flex: 1.1; display: flex; flex-direction: column; gap: 15px; max-width: 420px; box-sizing: border-box; overflow: hidden !important;">
                 <!-- BOSS DISCOVERY CARD -->
-                <div id="card-boss" class="smash-item" style="background: rgba(255,255,255,0.02); border: 1px solid #222; border-radius: 6px; padding: 15px; position: relative; text-align: left; height: 100%; box-sizing: border-box; display: flex; flex-direction: column; overflow: hidden !important;">
-                    <div style="font-weight: bold; font-size: 12px; color: #ff4757; text-transform: uppercase; margin-bottom: 15px; letter-spacing: 1px; border-bottom: 1px dashed #222; padding-bottom: 5px;">
+                <div id="card-boss" class="smash-item" style="background: rgba(255,255,255,0.02); border: 1px solid #222; border-radius: 6px; padding: 12px; position: relative; text-align: left; height: 50%; box-sizing: border-box; display: flex; flex-direction: column; overflow: hidden !important;">
+                    <div style="font-weight: bold; font-size: 11px; color: #ff4757; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 1px; border-bottom: 1px dashed #222; padding-bottom: 4px;">
                         Bosses Encountered:
                     </div>
-                    <div id="over-bosses-row" style="display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: flex-start; width: 100%; box-sizing: border-box; flex: 1; overflow: hidden !important;">
+                    <div id="over-bosses-row" style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: flex-start; width: 100%; box-sizing: border-box; flex: 1; overflow: hidden !important;">
                         <!-- Rendered dynamically and staggered via animateBoss() -->
+                    </div>
+                </div>
+
+                <!-- ACHIEVEMENTS GOT CARD -->
+                <div id="card-achievements" class="smash-item" style="background: rgba(255,255,255,0.02); border: 1px solid #222; border-radius: 6px; padding: 12px; position: relative; text-align: left; height: 50%; box-sizing: border-box; display: flex; flex-direction: column; overflow: hidden !important;">
+                    <div style="font-weight: bold; font-size: 11px; color: #ffd700; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 1px; border-bottom: 1px dashed #222; padding-bottom: 4px;">
+                        Achievements Got:
+                    </div>
+                    <div id="over-achievements-row" style="display: flex; flex-direction: column; gap: 6px; width: 100%; box-sizing: border-box; flex: 1; overflow-y: auto; max-height: 120px;">
+                        <!-- Rendered dynamically via game.js -->
                     </div>
                 </div>
             </div>
@@ -1537,8 +1547,7 @@
 
     <!-- Player 4 HUD -->
     <div id="hud-p4" class="hud-cluster">
-        <div id="p4-name" style="color: #9b59b6; font-size: 18px; font-weight: bold;">Player 4</div>
-        <div id="p4-hp-bar-container" style="width: 140px; height: 8px; background: #222; border: 1px solid #444; border-radius: 4px; margin-top: 5px; margin-left: auto; overflow: hidden; box-sizing: border-box;">
+        <div id="hud-p4-hp-bar-container" style="width: 140px; height: 8px; background: #222; border: 1px solid #444; border-radius: 4px; margin-top: 5px; margin-left: auto; overflow: hidden; box-sizing: border-box;">
             <div id="p4-hp-bar" style="width: 100%; height: 100%; background: #2ecc71; transition: width 0.2s ease;"></div>
         </div>
         <div id="p4-score" style="color: #ffd700; font-size: 28px; font-weight: bold; margin-top: 5px;">500 🪙</div>

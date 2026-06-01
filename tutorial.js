@@ -4,8 +4,8 @@ const Tutorial = {
     currentStep: 0,
     steps: [
         {
-            title: "Basic Movement",
-            text: "Welcome to Boot Camp, Survivor. Use WASD (or Arrow keys for P2) on PC, or the left virtual joystick on Mobile to move. Find the open door at the right wall.",
+            title: "Walk Around",
+            text: "Let's learn how to walk! Use WASD (or Arrow keys) to move around. Go through the open door on your right!",
             check: () => {
                 if (!Tutorial._startPos && me) {
                     Tutorial._startPos = { x: me.x, y: me.y };
@@ -27,8 +27,8 @@ const Tutorial = {
             }
         },
         {
-            title: "Chalk Wallbuys",
-            text: "Good movement! Move into the Armory room and walk up to the Olympus shotgun chalk outline. Press [F] on PC or tap [INT] on Mobile to purchase it for free.",
+            title: "Get a Blaster",
+            text: "Great! Walk up to the chalk drawing of the Olympus blaster and press [F] (or tap [INT]) to get it for free!",
             check: () => {
                 return me && me.inventory.some(w => w.name === "Olympus");
             },
@@ -42,8 +42,8 @@ const Tutorial = {
             }
         },
         {
-            title: "Weapon Switching",
-            text: "Excellent! Notice your HUD has updated. You now hold the Olympus! Press [Q] (or scroll your mouse wheel) on PC, or tap the blue [GUN] button on Mobile, to switch back to your starting pistol.",
+            title: "Swap Blasters",
+            text: "Cool blaster! Press [Q] (or tap the blue [GUN] button) to switch back to your starting water pistol.",
             check: () => {
                 return me && me.weapIdx === 0; // Back to starting pistol slot (index 0)
             },
@@ -54,8 +54,8 @@ const Tutorial = {
             }
         },
         {
-            title: "Defensive Barricades",
-            text: "Nicely swapped. Now proceed right into the Defend Room. Rebuild the wooden window barrier (repair all 6 logs) by holding down [F] on PC or [INT] on Mobile.",
+            title: "Fix the Window",
+            text: "Let's block the window! Go right, stand near the broken window, and hold [F] (or [INT]) to build wooden boards.",
             check: () => {
                 const win = activeMap.windows[0];
                 return win && win.boards >= win.max; // Requires all 6 boards to complete step
@@ -70,8 +70,8 @@ const Tutorial = {
             }
         },
         {
-            title: "Eliminate the Threat",
-            text: "A zombie has spawned outside! Watch it tear down your window boards and smash through. Aim and fire your weapon to eliminate it.",
+            title: "Blast the Zombie",
+            text: "Look out! A silly zombie is coming! Aim and blast it to keep yourself safe!",
             check: () => {
                 return stats.sessionKills >= 1; // Completed once player kills the training zombie
             },
@@ -91,8 +91,8 @@ const Tutorial = {
             }
         },
         {
-            title: "Rounds & Wave Progression",
-            text: "The threat is clear! Notice the top box has transitioned to Round 2. In real matches, rounds advance only when all active waves are defeated, making zombies faster and tougher.",
+            title: "Watch the Rounds",
+            text: "You did it! See the round number go up? Zombies get a little faster each round, so watch out!",
             check: () => {
                 if (!Tutorial._roundChangeTimer) Tutorial._roundChangeTimer = Date.now();
                 return (Date.now() - Tutorial._roundChangeTimer > 4000); // 4-second reading timer
@@ -113,8 +113,8 @@ const Tutorial = {
             }
         },
         {
-            title: "Replenishing Ammunition",
-            text: "Click! You ran out of ammunition. Walk back to the Olympus outline and buy cheap Ammo refills for half price (0 ⛃ in tutorial) using [F] or [INT].",
+            title: "Get More Ammo",
+            text: "Oh no! Your blaster is empty. Walk back to the chalk drawing and buy more reload juice for free!",
             check: () => {
                 return Tutorial._ammoPurchased === true;
             },
@@ -133,8 +133,25 @@ const Tutorial = {
             }
         },
         {
-            title: "Unlock Doors & Proceed",
-            text: "You have enough coins! Barricades and zombie kills grant resources. Walk up to the locked door on your right and purchase passage (cost: 200 ⛃).",
+            title: "Drink Jug-O-Lug",
+            text: "Time to get super strong! Go to the red juice machine and buy some cherry Jug-O-Lug to get extra hearts!",
+            check: () => {
+                return me && me.hasVigor;
+            },
+            onStart: () => {
+                // Dynamically spawn the Vigor machine in Room 2 (Defend Room) if it doesn't exist
+                if (activeMap === tutorialMapData) {
+                    const hasVig = activeMap.interactables.some(i => i.type === 'PERK');
+                    if (!hasVig) {
+                        activeMap.interactables.push({ x: 920, y: 60, w: 50, h: 50, type: 'PERK', price: 0, color: '#c0392b', label: "VIG" });
+                    }
+                }
+                Tutorial.toggleGuideArrow('tut-guide-interact', true);
+            }
+        },
+        {
+            title: "Unlock the Door",
+            text: "Let's escape! Walk up to the locked door on your right and press [F] or [INT] to open it with your points.",
             check: () => {
                 // Complete when Room 3 door is opened using points
                 return activeMap.rooms[3].unlocked === true;
@@ -149,8 +166,8 @@ const Tutorial = {
             }
         },
         {
-            title: "Escape Corridor",
-            text: "Final Objective: Run down the Escape Corridor and reach the safety extraction pad at the end of the room.",
+            title: "Run to Safety",
+            text: "Almost there! Run down the hallway to the glowing safe zone to win!",
             check: () => {
                 return me && me.x > 1400; // Trigger completion once reaching exit pad coordinates
             },
@@ -162,8 +179,8 @@ const Tutorial = {
             }
         },
         {
-            title: "Survival Master",
-            text: "Boot Camp complete! Return to the menu to try solo waves or host/join cooperative multiplayer online matches. Excellent work!",
+            title: "Zombie Master!",
+            text: "Hooray! You are now a Zombie Master! Return to the menu to try solo matches or play with friends.",
             check: () => false, // Terminal success step
             onStart: () => {
                 addText(me.x, me.y - 40, "YOU ESCAPED!", "#0f0");
@@ -348,10 +365,13 @@ const Tutorial = {
             case 6: // Ammo Step -> Point to Olympus wallbuy again
                 drawFloatingArrow(580, 60, '#3498db');
                 break;
-            case 7: // Clear Door Step -> Point to locked Door and HTML Coins
+            case 7: // Drink Jug-O-Lug -> Point to newly spawned red Perk machine
+                drawFloatingArrow(920, 60, '#e74c3c');
+                break;
+            case 8: // Clear Door Step -> Point to locked Door and HTML Coins
                 drawFloatingArrow(1160, 200, '#f1c40f');
                 break;
-            case 8: // Escape Step -> Point to the exit pad
+            case 9: // Escape Step -> Point to the exit pad
                 drawFloatingArrow(1480, 200, '#2ecc71');
                 break;
         }
