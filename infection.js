@@ -299,7 +299,7 @@ const InfectionMode = {
             Object.keys(players).forEach(id => {
                 if (!this.infectedIds.has(id)) {
                     players[id].score += 1500; // Bonus points for surviving
-                    if (id === 'p1') {
+                    if (id === window.myPlayerId) { // <--- FIXED: Dynamic coin check
                         saveData.lobbyCoins = (saveData.lobbyCoins || 0) + 40; // Bonus coins
                     }
                 }
@@ -309,7 +309,7 @@ const InfectionMode = {
             Object.keys(players).forEach(id => {
                 if (this.infectedIds.has(id)) {
                     players[id].score += 500;
-                    if (id === 'p1') {
+                    if (id === window.myPlayerId) { // <--- FIXED: Dynamic coin check
                         saveData.lobbyCoins = (saveData.lobbyCoins || 0) + 15;
                     }
                 }

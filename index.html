@@ -1520,42 +1520,47 @@
 <canvas id="gameCanvas"></canvas>
 
 <!-- SCRIPTS -->
-<script src="data.js"></script>
-<script src="account.js"></script>
-<script src="maps.js"></script>
-<script src="rooms.js"></script>
-<script src="visuals.js"></script>
-<script src="network.js"></script>
-<script src="infection.js"></script> <!-- MODULAR PVP INFECTION MODULE LOADED FIRST -->
-<script src="tutorial.js"></script>
-<script src="zombies.js"></script>
-<script src="game.js"></script>
-<script src="game1.js"></script>
+    <script src="data.js"></script>
+    <script src="account.js"></script>
+    <script src="maps.js"></script>
+    <script src="rooms.js"></script>
+    <script src="visuals.js"></script>
+    <script src="network.js"></script>
+    <script src="infection.js"></script> <!-- MODULAR PVP INFECTION MODULE LOADED FIRST -->
+    <script src="tutorial.js"></script>
+    <script src="zombies.js"></script>
+    
+    <!-- NEW MODULAR GAME ENGINE SCRIPTS (Keep this exact order) -->
+    <script src="game_state.js"></script>
+    <script src="game_menu.js"></script>
+    <script src="game_player.js"></script>
+    <script src="game_combat.js"></script>
+    <script src="game_loop.js"></script>
 
-<script>
-    toggleCoopHelp();
-    function toggleCoopHelp() {
-        const selected = document.getElementById('p2-input-select').value;
-        const kbHelp = document.getElementById('p2-keyboard-help');
-        const gpHelp = document.getElementById('p2-gamepad-help');
-        if (selected === 'keyboard') {
-            kbHelp.style.display = 'block';
-            gpHelp.style.display = 'none';
-        } else {
-            kbHelp.style.display = 'none';
-            gpHelp.style.display = 'block';
+    <script>
+        toggleCoopHelp();
+        function toggleCoopHelp() {
+            const selected = document.getElementById('p2-input-select').value;
+            const kbHelp = document.getElementById('p2-keyboard-help');
+            const gpHelp = document.getElementById('p2-gamepad-help');
+            if (selected === 'keyboard') {
+                kbHelp.style.display = 'block';
+                gpHelp.style.display = 'none';
+            } else {
+                kbHelp.style.display = 'none';
+                gpHelp.style.display = 'block';
+            }
         }
-    }
-</script>
+    </script>
 
-<script>
-    setInterval(function() {
-        const el = document.getElementById('menu-coins');
-        if (el && el.innerText.includes('⛃')) {
-            el.innerText = el.innerText.replace('⛃', '🪙');
-        }
-    }, 300);
-</script>
+    <script>
+        setInterval(function() {
+            const el = document.getElementById('menu-coins');
+            if (el && el.innerText.includes('⛃')) {
+                el.innerText = el.innerText.replace('⛃', '🪙');
+            }
+        }, 300);
+    </script>
 
 </body>
 </html>
