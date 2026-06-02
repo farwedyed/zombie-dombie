@@ -1,4 +1,4 @@
-/* --- NETWORKING MODULE --- */
+/* --- NETWORKING MODULE WITH HOST MIGRATION & CORRECTED METERED.CA CREDENTIALS --- */
 if (!window.lobbyPlayers) {
     window.lobbyPlayers = { p1: "Survivor", p2: "", p3: "", p4: "", p5: "", p6: "", p7: "", p8: "" };
 }
@@ -14,9 +14,12 @@ const Network = {
     lastUpdate: 0,
     lastClientUpdate: 0, // Throttle client-to-host payloads
     lastGameStateTime: 0, // Watchdog tracker for host status
+    peerIds: {}, // Master mapping of active player slots ('p1'...'p8') to PeerJS IDs
+    isMigrating: false, // Network guard to prevent duplicate migration triggers
+    hostPlayerId: 'p1', // Tracks current active host slot ID
     
     init: function(onOpen) {
-        // Provider 1: Metered.ca Credentials
+        // Provider 1: Metered.ca Credentials (From your dashboard)
         const METERED_USER = "ec41d9c5a5a8f7a1a1b19e9e";
         const METERED_PASS = "rzCBD4AfbDn7JjG8";
 
@@ -24,39 +27,65 @@ const Network = {
         const EXPRESSTURN_USER = "000000002095335910";
         const EXPRESSTURN_PASS = "GK3y4yS5fDUutl+1ITp1BTxZgR4=";
 
+        // Reset tracking variables
+        this.peerIds = {};
+        this.isMigrating = false;
+        this.hostPlayerId = 'p1';
+
         this.peer = new Peer(undefined, { 
+            host: 'farwedd-zombie-dombie-server.hf.space',
+            port: 443,
+            path: '/peerjs/myapp',
+            secure: true,
             debug: 1,
             config: {
                 iceServers: [
                     // --- STUN SERVERS ---
                     { urls: 'stun:stun.l.google.com:19302' },
                     { urls: 'stun:global.stun.twilio.com:3478' },
-                    { urls: 'stun:stun.relay.metered.ca:80' },
+                    { urls: 'stun:stun.relay.metered.ca:80' }, // Your dashboard's STUN
                     { urls: 'stun:free.expressturn.com:3478' },
                     
-                    // --- TURN SERVER GROUP 1: METERED.CA ---
+                    // --- METERED.CA TURN SERVERS (FIXED TO YOUR DASHBOARD'S 'STANDARD' DOMAIN) ---
                     { 
-                        urls: 'turn:global.relay.metered.ca:80', 
+                        urls: 'turn:standard.relay.metered.ca:80', 
                         username: METERED_USER, 
                         credential: METERED_PASS 
                     },
                     { 
-                        urls: 'turn:global.relay.metered.ca:80?transport=tcp', 
+                        urls: 'turn:standard.relay.metered.ca:80?transport=tcp', 
                         username: METERED_USER, 
                         credential: METERED_PASS 
                     },
                     { 
-                        urls: 'turn:global.relay.metered.ca:443', 
+                        urls: 'turn:standard.relay.metered.ca:443', 
                         username: METERED_USER, 
                         credential: METERED_PASS 
                     },
                     { 
-                        urls: 'turns:global.relay.metered.ca:443?transport=tcp', 
+                        urls: 'turns:standard.relay.metered.ca:443?transport=tcp', 
                         username: METERED_USER, 
                         credential: METERED_PASS 
                     },
 
-                    // --- TURN SERVER GROUP 2: EXPRESSTURN ---
+                    // --- METERED.CA OPEN RELAY PROJECT (20 GB FREE/MONTH BACKUP) ---
+                    { 
+                        urls: 'turn:openrelay.metered.ca:80', 
+                        username: 'openrelayproject', 
+                        credential: 'openrelayproject' 
+                    },
+                    { 
+                        urls: 'turn:openrelay.metered.ca:443', 
+                        username: 'openrelayproject', 
+                        credential: 'openrelayproject' 
+                    },
+                    { 
+                        urls: 'turns:openrelay.metered.ca:443?transport=tcp', 
+                        username: 'openrelayproject', 
+                        credential: 'openrelayproject' 
+                    },
+
+                    // --- EXPRESSTURN FREE TIER (1,000 GB FREE/MONTH) ---
                     { 
                         urls: 'turn:free.expressturn.com:3478', 
                         username: EXPRESSTURN_USER, 
@@ -76,7 +105,12 @@ const Network = {
             console.warn("PeerJS global error caught gracefully:", err);
         });
 
-        this.peer.on('open', (id) => { onOpen(id); });
+        this.peer.on('open', (id) => { 
+            // Save our own PeerJS ID dynamically
+            this.peerIds[window.myPlayerId] = id;
+            onOpen(id); 
+        });
+
         this.peer.on('connection', (c) => {
             // Allow up to 7 guest connections (Host + 7 guests = 8 players)
             if (this.conns.length >= 7) {
@@ -146,6 +180,10 @@ const Network = {
             if (data.type === 'JOIN_LOBBY') {
                 const clientLvl = data.level || 1;
                 window.lobbyPlayers[c.playerId] = (data.name || ("Player " + c.playerId.substring(1))) + " [Lv. " + clientLvl + "]";
+                
+                // Map their PeerJS ID to the correct player slot
+                this.peerIds[c.playerId] = c.peer;
+
                 if (typeof updateLobbyPlayersList === 'function') updateLobbyPlayersList();
                 if (typeof updateLobbyUI === 'function') updateLobbyUI(true);
                 
@@ -161,7 +199,9 @@ const Network = {
                         assignedId: c.playerId,
                         lobbyPlayers: window.lobbyPlayers,
                         difficulty: stats.difficulty || 'medium',
-                        visibility: visibility
+                        visibility: visibility,
+                        peerIds: this.peerIds,
+                        hostPlayerId: this.hostPlayerId
                     });
                 } catch(e) {
                     console.warn("Failed to send LOBBY_WELCOME:", e);
@@ -170,7 +210,9 @@ const Network = {
                 this.broadcastToAll({
                     type: 'LOBBY_UPDATE',
                     lobbyPlayers: window.lobbyPlayers,
-                    gameMode: stats.gameMode || 'SURVIVAL'
+                    gameMode: stats.gameMode || 'SURVIVAL',
+                    peerIds: this.peerIds,
+                    hostPlayerId: this.hostPlayerId
                 });
 
                 // MID-GAME JOIN HANDSHAKE: Spawn as spectator
@@ -197,6 +239,31 @@ const Network = {
                         console.warn("Failed to send mid-game START:", e);
                     }
                 }
+            }
+            else if (data.type === 'MIGRATE_REJOIN') {
+                console.log(`Received host migration rejoin handshake from ${data.playerId} (${data.name})`);
+                c.playerId = data.playerId;
+                this.peerIds[c.playerId] = c.peer;
+                window.lobbyPlayers[c.playerId] = data.name || ("Player " + c.playerId.substring(1));
+
+                if (!players[c.playerId] && gameActive) {
+                    const spawnX = activeMap.rooms[0].x + activeMap.rooms[0].w / 2;
+                    const spawnY = activeMap.rooms[0].y + activeMap.rooms[0].h / 2;
+                    players[c.playerId] = createPlayer(c.playerId, spawnX, spawnY, getPlayerColor(c.playerId), window.lobbyPlayers[c.playerId]);
+                } else if (players[c.playerId]) {
+                    players[c.playerId].state = 'ALIVE';
+                }
+
+                // Broadcast the updated lobby state with the new host details to all reconnected clients
+                this.broadcastToAll({
+                    type: 'LOBBY_UPDATE',
+                    lobbyPlayers: window.lobbyPlayers,
+                    gameMode: stats.gameMode || 'SURVIVAL',
+                    peerIds: this.peerIds,
+                    hostPlayerId: this.hostPlayerId
+                });
+
+                if (typeof updateLobbyPlayersList === 'function') updateLobbyPlayersList();
             }
             else if(data.type === 'P_DATA') {
                 const p = players[c.playerId];
@@ -246,8 +313,9 @@ const Network = {
         });
         
         c.on('close', () => {
-            console.log(c.playerId + " Disconnected");
+            console.log(c.playerId + " Disconnected from Host");
             window.lobbyPlayers[c.playerId] = "";
+            delete this.peerIds[c.playerId];
             this.conns = this.conns.filter(conn => conn !== c);
 
             if (typeof updateLobbyPlayersList === 'function') updateLobbyPlayersList();
@@ -255,7 +323,9 @@ const Network = {
             this.broadcastToAll({
                 type: 'LOBBY_UPDATE',
                 lobbyPlayers: window.lobbyPlayers,
-                gameMode: stats.gameMode || 'SURVIVAL'
+                gameMode: stats.gameMode || 'SURVIVAL',
+                peerIds: this.peerIds,
+                hostPlayerId: this.hostPlayerId
             });
 
             if (typeof updateLobbyUI === 'function') {
@@ -280,7 +350,7 @@ const Network = {
 
             if(players[c.playerId]) {
                 delete players[c.playerId]; 
-                texts.push({x: players['p1'].x, y: players['p1'].y, text: c.playerId.toUpperCase() + " LEFT", color: "#f00", life: 120});
+                texts.push({x: players['p1'] ? players['p1'].x : (me ? me.x : 200), y: players['p1'] ? players['p1'].y : (me ? me.y : 200), text: c.playerId.toUpperCase() + " LEFT", color: "#f00", life: 120});
             }
         });
     },
@@ -331,6 +401,8 @@ const Network = {
             fireZones: window.fireZones || [],
             mortarTargets: window.mortarTargets || [],
             groundSmashes: window.groundSmashes || [],
+            peerIds: this.peerIds, // Sync peerIds to all clients continuously
+            hostPlayerId: this.hostPlayerId, // Sync the current host player ID slot
 
             // --- REPLICATE ACTIVE INFECTION MODE STATES ---
             infectionActive: (typeof InfectionMode !== 'undefined' && InfectionMode.isActive),
@@ -369,6 +441,8 @@ const Network = {
                 stats.selectedMapIdx = data.mapIndex;
                 stats.gameMode = data.gameMode || 'SURVIVAL';
                 stats.difficulty = data.difficulty || 'medium';
+                this.peerIds = data.peerIds || {};
+                if (data.hostPlayerId) this.hostPlayerId = data.hostPlayerId;
                 this.lastGameStateTime = Date.now(); // Feed watchdog
 
                 if (typeof updateLobbyPlayersList === 'function') updateLobbyPlayersList();
@@ -396,6 +470,8 @@ const Network = {
             }
             else if (data.type === 'LOBBY_UPDATE') {
                 window.lobbyPlayers = data.lobbyPlayers;
+                this.peerIds = data.peerIds || {};
+                if (data.hostPlayerId) this.hostPlayerId = data.hostPlayerId;
                 if (data.gameMode) stats.gameMode = data.gameMode;
                 this.lastGameStateTime = Date.now(); 
                 if (typeof updateLobbyPlayersList === 'function') updateLobbyPlayersList();
@@ -482,7 +558,9 @@ const Network = {
 
             else if(data.type === 'GAME_STATE') {
                 this.lastGameStateTime = Date.now(); // Feed watchdog on every gamestate frame
-                
+                this.peerIds = data.peerIds || {}; // Continually synchronize client list
+                if (data.hostPlayerId) this.hostPlayerId = data.hostPlayerId;
+
                 // --- CONTINUOUS SYNC OF INFECTION STATES ---
                 if (data.infectionActive) {
                     if (typeof InfectionMode !== 'undefined') {
@@ -823,20 +901,22 @@ const Network = {
         });
 
         this.conn.on('close', () => {
-            this.handleDisconnectFallback();
+            this.attemptHostMigration();
         });
 
         if (this.conn.peerConnection) {
             this.conn.peerConnection.addEventListener('iceconnectionstatechange', () => {
                 const state = this.conn.peerConnection.iceConnectionState;
                 if (state === 'disconnected' || state === 'failed' || state === 'closed') {
-                    this.handleDisconnectFallback("⚠️ ICE Disconnection: Lost network path to the Host.");
+                    console.log("ICE Connection disconnected, triggering host migration...");
+                    this.attemptHostMigration();
                 }
             });
             this.conn.peerConnection.addEventListener('connectionstatechange', () => {
                 const state = this.conn.peerConnection.connectionState;
                 if (state === 'disconnected' || state === 'failed' || state === 'closed') {
-                    this.handleDisconnectFallback("⚠️ peer Disconnection: Connection with host closed.");
+                    console.log("Peer Connection disconnected, triggering host migration...");
+                    this.attemptHostMigration();
                 }
             });
         }
@@ -852,14 +932,163 @@ const Network = {
 
         const elapsed = Date.now() - this.lastGameStateTime;
         if (elapsed > 4000) { 
-            console.warn("Watchdog: Host heartbeat lost. Redirecting.");
-            this.handleDisconnectFallback("⚠️ Connection Timed Out: The Host stopped responding.");
+            console.warn("Watchdog: Host heartbeat lost. Attempting host migration...");
+            this.attemptHostMigration();
         }
     },
 
-    handleDisconnectFallback: function(customMsg) {
-        if (this.mode !== 'CLIENT') return;
+    attemptHostMigration: function() {
+        if (this.isMigrating) return; // Prevent double triggers
+        this.isMigrating = true;
 
+        console.log("Host disconnected! Evaluating migration candidates...");
+        console.log("Current cached peerIds mapping:", JSON.stringify(this.peerIds));
+
+        // Gather all active player slots except the disconnected host (p1)
+        const activePlayerIds = Object.keys(this.peerIds || {}).filter(pId => pId !== 'p1');
+        
+        console.log("Found candidate players for migration:", activePlayerIds);
+
+        // Sort slot positions deterministically ('p2', 'p3', 'p4'...)
+        activePlayerIds.sort((a, b) => {
+            return parseInt(a.substring(1)) - parseInt(b.substring(1));
+        });
+
+        if (activePlayerIds.length === 0) {
+            console.log("No surviving clients remaining to migrate hosting to.");
+            this.handleDisconnectFallbackReal("⚠️ Connection Lost: No active survivors remaining.");
+            return;
+        }
+
+        const nextHostId = activePlayerIds[0];
+        console.log("Next elected squad leader (host) is:", nextHostId);
+
+        if (window.myPlayerId === nextHostId) {
+            this.becomeNewHost();
+        } else {
+            const newHostPeerId = this.peerIds[nextHostId];
+            if (newHostPeerId) {
+                this.connectToNewHost(newHostPeerId, nextHostId);
+            } else {
+                console.error("PeerJS ID for the newly elected host was not found in cache.");
+                this.isMigrating = false;
+                this.handleDisconnectFallbackReal("⚠️ Host Migration Failed: Selected leader is unreachable.");
+            }
+        }
+    },
+
+    becomeNewHost: function() {
+        console.log("I am taking over as the new squad leader!");
+        this.mode = 'HOST';
+        this.isMigrating = false;
+        this.hostPlayerId = window.myPlayerId; // Take over as Host ID
+
+        // Close stale connection back to the old host
+        if (this.conn) {
+            try { this.conn.close(); } catch(e) {}
+            this.conn = null;
+        }
+
+        // Wipe old host data
+        if (players['p1']) delete players['p1'];
+        window.lobbyPlayers['p1'] = "";
+        delete this.peerIds['p1'];
+
+        // Reset the host connections list
+        this.conns = [];
+
+        // If we are still in the lobby, update our host UI
+        if (!gameActive) {
+            const statusEl = document.getElementById('lobby-status');
+            if (statusEl) {
+                statusEl.innerText = "⚠️ YOU ARE THE NEW LOBBY HOST!";
+                statusEl.style.color = "#ffd700";
+            }
+            
+            // Show the start match button since we are now the host
+            const startBtn = document.getElementById('start-btn');
+            if (startBtn) {
+                startBtn.style.display = 'block';
+                startBtn.disabled = false;
+                startBtn.style.background = '#a83232';
+            }
+
+            // Restore drop-down select controls for the promoted host
+            ['lobby-map-select', 'lobby-mode-select', 'lobby-diff-select', 'lobby-visibility-select'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.style.display = 'block';
+            });
+            ['lobby-map-display-client', 'lobby-mode-display-client', 'lobby-diff-display-client', 'lobby-visibility-display-client'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.style.display = 'none';
+            });
+
+            // Register the newly migrated lobby on the server browser
+            if (typeof LobbyManager !== 'undefined' && this.peer) {
+                LobbyManager.registerLobby(this.peer.id);
+            }
+            
+            if (typeof updateLobbyPlayersList === 'function') updateLobbyPlayersList();
+        } else {
+            if (me) {
+                addText(me.x, me.y - 120, "⚠️ YOU ARE THE NEW SQUAD LEADER!", "#ffd700");
+            }
+        }
+    },
+
+    connectToNewHost: function(peerId, hostPlayerId) {
+        console.log(`Connecting to newly elected squad leader (${hostPlayerId}) at ID: ${peerId}`);
+        this.mode = 'CLIENT';
+        this.hostPlayerId = hostPlayerId; // Track the new host slot ID
+
+        // Tear down old connection
+        if (this.conn) {
+            try { this.conn.close(); } catch(e) {}
+            this.conn = null;
+        }
+
+        this.conn = this.peer.connect(peerId, {
+            reliable: true,
+            serialization: 'json'
+        });
+
+        this.conn.on('error', (err) => {
+            console.warn("Connection to migrated host failed:", err);
+            this.isMigrating = false;
+            this.handleDisconnectFallbackReal("⚠️ Host Migration Failed: Selected leader is unreachable.");
+        });
+
+        this.conn.on('open', () => {
+            this.lastGameStateTime = Date.now();
+            this.isMigrating = false;
+            console.log("Connected to migrated host successfully!");
+            
+            try {
+                this.conn.send({
+                    type: 'MIGRATE_REJOIN',
+                    playerId: window.myPlayerId,
+                    name: myUsername
+                });
+            } catch(e) {
+                console.warn("Failed to transmit re-join packet:", e);
+            }
+
+            if (me) {
+                addText(me.x, me.y - 120, "⚠️ CONNECTED TO NEW SQUAD LEADER!", "#3498db");
+            } else {
+                const statusEl = document.getElementById('lobby-status');
+                if (statusEl) {
+                    statusEl.innerText = "Connected to new Lobby Host!";
+                    statusEl.style.color = "#3498db";
+                }
+            }
+        });
+
+        this.setupClient();
+    },
+
+    handleDisconnectFallbackReal: function(customMsg) {
+        this.isMigrating = false;
         gameActive = false;
         if (animationFrameId) {
             cancelAnimationFrame(animationFrameId);
@@ -887,6 +1116,11 @@ const Network = {
             menuMsg.style.color = "#ff4757";
             menuMsg.style.borderColor = "#ff4757";
         }
+    },
+
+    handleDisconnectFallback: function(customMsg) {
+        // Intercept standard disconnects to trigger automatic host migration
+        this.attemptHostMigration();
     },
 
     sendClientData: function(p) {

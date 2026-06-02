@@ -865,492 +865,505 @@ window.openGlobalLeaderboardConsole = function () {
 /* --- DEPLOYMENT TRIGGERS --- */
 function startLocalCoop() {
     p2InputConfig = document.getElementById('p2-input-select').value; 
-    closeMenu('coop-modal');
-    Network.mode = 'LOCAL_COOP'; 
-    window.myPlayerId = 'p1'; 
-    window.lobbyPlayers = { p1: "Survivor", p2: "Player 2 [Lv. 1]", p3: "", p4: "", p5: "", p6: "", p7: "", p8: "" };
-    stats.difficulty = document.getElementById('menu-diff-select') ? document.getElementById('menu-diff-select').value : "medium";
-    stats.gameMode = "SURVIVAL"; 
-    saveLocalUsername(); 
-    activeMap = playableMaps[document.getElementById('map-select') ? parseInt(document.getElementById('map-select').value) : 0];
-    launchGame();
-}
-
-function startTutorial() {
-    Network.mode = 'OFFLINE'; 
-    window.myPlayerId = 'p1'; 
-    window.lobbyPlayers = { p1: "Survivor", p2: "", p3: "", p4: "", p5: "", p6: "", p7: "", p8: "" }; 
-    stats.difficulty = "medium";
-    stats.gameMode = "SURVIVAL";
-    saveLocalUsername(); 
-    if (typeof Tutorial !== 'undefined') {
-        Tutorial.isActive = true; 
-    }
-    activeMap = tutorialMapData; 
-    launchGame(); 
-    if (typeof Tutorial !== 'undefined') {
-        Tutorial.start();
-    }
-}
-
-function enterLobbyHost() {
-    if (!validateOnlineName()) return;
-    stats.selectedMapIdx = document.getElementById('map-select') ? parseInt(document.getElementById('map-select').value) : 0; 
-    stats.difficulty = "medium";
-    stats.gameMode = "SURVIVAL"; 
-    
-    if (document.getElementById('lobby-map-select')) {
-        document.getElementById('lobby-map-select').value = stats.selectedMapIdx;
-    }
-    if (document.getElementById('lobby-diff-select')) {
-        document.getElementById('lobby-diff-select').value = stats.difficulty;
-    }
-    if (document.getElementById('lobby-mode-select')) {
-        document.getElementById('lobby-mode-select').value = stats.gameMode;
-    }
-    
-    document.getElementById('lobby-map-select').style.display = 'block'; 
-    document.getElementById('lobby-map-display-client').style.display = 'none';
-    document.getElementById('lobby-mode-select').style.display = 'block'; 
-    document.getElementById('lobby-mode-display-client').style.display = 'none';
-    document.getElementById('lobby-diff-select').style.display = 'block'; 
-    document.getElementById('lobby-diff-display-client').style.display = 'none';
-    document.getElementById('lobby-visibility-select').style.display = 'block'; 
-    document.getElementById('lobby-visibility-display-client').style.display = 'none';
-    document.getElementById('lobby-visibility-select').value = 'public';
-
-    myUsername = (document.getElementById('username-input').value || "Survivor").substring(0, 12);
-    const myLvl = Math.floor((saveData.xp || 0) / 1000) + 1;
-    window.myPlayerId = 'p1'; 
-    window.lobbyPlayers = { p1: myUsername + " [Lv. " + myLvl + "]", p2: "", p3: "", p4: "", p5: "", p6: "", p7: "", p8: "" }; 
-    updateLobbyPlayersList();
-    
-    document.getElementById('main-menu').style.display = 'none'; 
-    document.getElementById('lobby-screen').style.display = 'flex';
-    Network.mode = 'HOST'; 
-    Network.init(function (id) { 
-        document.getElementById('host-id-display').innerText = id; 
-        if (typeof LobbyManager !== 'undefined') {
-            LobbyManager.registerLobby(id); 
+            closeMenu('coop-modal');
+            Network.mode = 'LOCAL_COOP'; 
+            window.myPlayerId = 'p1'; 
+            window.lobbyPlayers = { p1: "Survivor", p2: "Player 2 [Lv. 1]", p3: "", p4: "", p5: "", p6: "", p7: "", p8: "" };
+            stats.difficulty = document.getElementById('menu-diff-select') ? document.getElementById('menu-diff-select').value : "medium";
+            stats.gameMode = "SURVIVAL"; 
+            saveLocalUsername(); 
+            activeMap = playableMaps[document.getElementById('map-select') ? parseInt(document.getElementById('map-select').value) : 0];
+            launchGame();
         }
-    });
-}
 
-function enterLobbyJoin() {
-    if (!validateOnlineName()) return;
-    let id = document.getElementById('join-input').value; 
-    if (!id) return alert("Enter Host ID");
-    document.getElementById('lobby-status').innerText = "Connecting...";
-    document.getElementById('main-menu').style.display = 'none'; 
-    document.getElementById('lobby-screen').style.display = 'flex'; 
-    document.getElementById('start-btn').style.display = 'none';
-    document.getElementById('host-id-display').innerText = "ID: " + id;
-    
-    document.getElementById('lobby-map-select').style.display = 'none'; 
-    document.getElementById('lobby-map-display-client').style.display = 'block';
-    document.getElementById('lobby-mode-select').style.display = 'none'; 
-    document.getElementById('lobby-mode-display-client').style.display = 'block';
-    document.getElementById('lobby-diff-select').style.display = 'none'; 
-    document.getElementById('lobby-diff-display-client').style.display = 'block';
-    document.getElementById('lobby-visibility-select').style.display = 'none'; 
-    document.getElementById('lobby-visibility-display-client').style.display = 'block';
-
-    myUsername = (document.getElementById('username-input').value || "Survivor").substring(0, 12);
-    window.lobbyPlayers = { p1: "Host [Lv. ?]", p2: "", p3: "", p4: "", p5: "", p6: "", p7: "", p8: "" }; 
-    updateLobbyPlayersList();
-    Network.init(function () { 
-        Network.join(id, function () { 
-            document.getElementById('lobby-status').innerText = "Ready to Deploy!"; 
-        }); 
-    });
-}
-
-function lobbyChangeMap() {
-    const select = document.getElementById('lobby-map-select'); 
-    if (!select) return;
-    stats.selectedMapIdx = parseInt(select.value);
-    if (Network.mode === 'HOST') { 
-        try { 
-            Network.broadcastToAll({ type: 'LOBBY_MAP_CHANGE', mapIndex: stats.selectedMapIdx }); 
-            if (typeof db !== 'undefined' && db && Network.peer) {
-                db.collection("lobbies").doc(Network.peer.id).update({
-                    mapIndex: stats.selectedMapIdx,
-                    lastActive: firebase.firestore.FieldValue.serverTimestamp()
-                }).catch(e => {});
+        function startTutorial() {
+            Network.mode = 'OFFLINE'; 
+            window.myPlayerId = 'p1'; 
+            window.lobbyPlayers = { p1: "Survivor", p2: "", p3: "", p4: "", p5: "", p6: "", p7: "", p8: "" }; 
+            stats.difficulty = "medium";
+            stats.gameMode = "SURVIVAL";
+            saveLocalUsername(); 
+            if (typeof Tutorial !== 'undefined') {
+                Tutorial.isActive = true; 
             }
-        } catch(e){} 
-    }
-}
-
-window.lobbyChangeMode = function() {
-    const select = document.getElementById('lobby-mode-select');
-    if (!select) return;
-    stats.gameMode = select.value;
-    if (Network.mode === 'HOST') {
-        try {
-            Network.broadcastToAll({ type: 'LOBBY_MODE_CHANGE', gameMode: stats.gameMode });
-            if (typeof db !== 'undefined' && db && Network.peer) {
-                db.collection("lobbies").doc(Network.peer.id).update({
-                    gameMode: stats.gameMode,
-                    lastActive: firebase.firestore.FieldValue.serverTimestamp()
-                }).catch(e => console.warn("Lobby mode sync failed:", e));
+            activeMap = tutorialMapData; 
+            launchGame(); 
+            if (typeof Tutorial !== 'undefined') {
+                Tutorial.start();
             }
-        } catch(e){}
-    }
-};
+        }
 
-function lobbyChangeDifficulty() {
-    const select = document.getElementById('lobby-diff-select'); 
-    if (!select) return;
-    stats.difficulty = select.value;
-    if (Network.mode === 'HOST') { 
-        try { 
-            Network.broadcastToAll({ type: 'LOBBY_DIFF_CHANGE', difficulty: stats.difficulty }); 
-            if (typeof db !== 'undefined' && db && Network.peer) {
-                db.collection("lobbies").doc(Network.peer.id).update({
-                    difficulty: stats.difficulty,
-                    lastActive: firebase.firestore.FieldValue.serverTimestamp()
-                }).catch(e => {});
+        function enterLobbyHost() {
+            if (!validateOnlineName()) return;
+            stats.selectedMapIdx = document.getElementById('map-select') ? parseInt(document.getElementById('map-select').value) : 0; 
+            stats.difficulty = "medium";
+            stats.gameMode = "SURVIVAL"; 
+            
+            if (document.getElementById('lobby-map-select')) {
+                document.getElementById('lobby-map-select').value = stats.selectedMapIdx;
             }
-        } catch(e){} 
-    }
-}
+            if (document.getElementById('lobby-diff-select')) {
+                document.getElementById('lobby-diff-select').value = stats.difficulty;
+            }
+            if (document.getElementById('lobby-mode-select')) {
+                document.getElementById('lobby-mode-select').value = stats.gameMode;
+            }
+            
+            document.getElementById('lobby-map-select').style.display = 'block'; 
+            document.getElementById('lobby-map-display-client').style.display = 'none';
+            document.getElementById('lobby-mode-select').style.display = 'block'; 
+            document.getElementById('lobby-mode-display-client').style.display = 'none';
+            document.getElementById('lobby-diff-select').style.display = 'block'; 
+            document.getElementById('lobby-diff-display-client').style.display = 'none';
+            document.getElementById('lobby-visibility-select').style.display = 'block'; 
+            document.getElementById('lobby-visibility-display-client').style.display = 'none';
+            document.getElementById('lobby-visibility-select').value = 'public';
 
-function updateLobbyPlayersList() {
-    const listEl = document.getElementById('player-list'); 
-    if (!listEl) return;
-    let html = `<div style="text-align:left; background:rgba(255,255,255,0.05); padding:15px; border:1px solid #333; border-radius:4px; min-width:280px; box-sizing:border-box;"><div style="border-bottom:1px solid #444; padding-bottom:5px; margin-bottom:10px; font-weight:bold; color:#a83232;">LOBBY survivors:</div>`;
-    html += `<div style="color:#3498db; font-size:15px; margin-bottom:5px; display:flex; justify-content:space-between; align-items:center;"><span>👑 P1 (Host): <strong>${window.lobbyPlayers.p1 || "Survivor"}</strong></span></div>`;
-    
-    ['p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8'].forEach(function (pId, idx) {
-        const pName = window.lobbyPlayers[pId];
-        const pColor = getPlayerColor(pId);
-        const playerDisplayIndex = idx + 2;
-        if (pName && pName !== "Reserved") {
-            html += `<div style="color:${pColor}; font-size:15px; margin-bottom:5px; display:flex; justify-content:space-between; align-items:center;"><span>👤 P${playerDisplayIndex}: <strong>${pName}</strong></span>`;
+            myUsername = (document.getElementById('username-input').value || "Survivor").substring(0, 12);
+            const myLvl = Math.floor((saveData.xp || 0) / 1000) + 1;
+            window.myPlayerId = 'p1'; 
+            window.lobbyPlayers = { p1: myUsername + " [Lv. " + myLvl + "]", p2: "", p3: "", p4: "", p5: "", p6: "", p7: "", p8: "" }; 
+            updateLobbyPlayersList();
+            
+            document.getElementById('main-menu').style.display = 'none'; 
+            document.getElementById('lobby-screen').style.display = 'flex';
+            Network.mode = 'HOST'; 
+            Network.init(function (id) { 
+                document.getElementById('host-id-display').innerText = id; 
+                if (typeof LobbyManager !== 'undefined') {
+                    LobbyManager.registerLobby(id); 
+                }
+            });
+        }
+
+        function enterLobbyJoin() {
+            if (!validateOnlineName()) return;
+            let id = document.getElementById('join-input').value; 
+            if (!id) return alert("Enter Host ID");
+            document.getElementById('lobby-status').innerText = "Connecting...";
+            document.getElementById('main-menu').style.display = 'none'; 
+            document.getElementById('lobby-screen').style.display = 'flex'; 
+            document.getElementById('start-btn').style.display = 'none';
+            document.getElementById('host-id-display').innerText = "ID: " + id;
+            
+            document.getElementById('lobby-map-select').style.display = 'none'; 
+            document.getElementById('lobby-map-display-client').style.display = 'block';
+            document.getElementById('lobby-mode-select').style.display = 'none'; 
+            document.getElementById('lobby-mode-display-client').style.display = 'block';
+            document.getElementById('lobby-diff-select').style.display = 'none'; 
+            document.getElementById('lobby-diff-display-client').style.display = 'block';
+            document.getElementById('lobby-visibility-select').style.display = 'none'; 
+            document.getElementById('lobby-visibility-display-client').style.display = 'block';
+
+            myUsername = (document.getElementById('username-input').value || "Survivor").substring(0, 12);
+            window.lobbyPlayers = { p1: "Host [Lv. ?]", p2: "", p3: "", p4: "", p5: "", p6: "", p7: "", p8: "" }; 
+            updateLobbyPlayersList();
+            Network.init(function () { 
+                Network.join(id, function () { 
+                    document.getElementById('lobby-status').innerText = "Ready to Deploy!"; 
+                }); 
+            });
+        }
+
+        function lobbyChangeMap() {
+            const select = document.getElementById('lobby-map-select'); 
+            if (!select) return;
+            stats.selectedMapIdx = parseInt(select.value);
+            if (Network.mode === 'HOST') { 
+                try { 
+                    Network.broadcastToAll({ type: 'LOBBY_MAP_CHANGE', mapIndex: stats.selectedMapIdx }); 
+                    if (typeof db !== 'undefined' && db && Network.peer) {
+                        db.collection("lobbies").doc(Network.peer.id).update({
+                            mapIndex: stats.selectedMapIdx,
+                            lastActive: firebase.firestore.FieldValue.serverTimestamp()
+                        }).catch(e => {});
+                    }
+                } catch(e){} 
+            }
+        }
+
+        window.lobbyChangeMode = function() {
+            const select = document.getElementById('lobby-mode-select');
+            if (!select) return;
+            stats.gameMode = select.value;
             if (Network.mode === 'HOST') {
-                html += `<button onclick="kickPlayer('${pId}')" style="width:auto; margin:0; padding:2px 8px; font-size:11px; background:#c0392b; color:#fff; border:1px solid #a83232; border-radius:3px; height:auto;">Kick</button>`;
+                try {
+                    Network.broadcastToAll({ type: 'LOBBY_MODE_CHANGE', gameMode: stats.gameMode });
+                    if (typeof db !== 'undefined' && db && Network.peer) {
+                        db.collection("lobbies").doc(Network.peer.id).update({
+                            gameMode: stats.gameMode,
+                            lastActive: firebase.firestore.FieldValue.serverTimestamp()
+                        }).catch(e => console.warn("Lobby mode sync failed:", e));
+                    }
+                } catch(e){}
             }
-            html += `</div>`;
-        } else if (pName === "Reserved") {
-            html += `<div style="color:#888; font-size:14px; margin-bottom:5px; font-style:italic;">👤 P${playerDisplayIndex}: Connecting...</div>`;
-        } else {
-            html += `<div style="color:#666; font-size:14px; margin-bottom:5px; font-style:italic;">👤 P${playerDisplayIndex}: Open Slot</div>`;
+        };
+
+        function lobbyChangeDifficulty() {
+            const select = document.getElementById('lobby-diff-select'); 
+            if (!select) return;
+            stats.difficulty = select.value;
+            if (Network.mode === 'HOST') { 
+                try { 
+                    Network.broadcastToAll({ type: 'LOBBY_DIFF_CHANGE', difficulty: stats.difficulty }); 
+                    if (typeof db !== 'undefined' && db && Network.peer) {
+                        db.collection("lobbies").doc(Network.peer.id).update({
+                            difficulty: stats.difficulty,
+                            lastActive: firebase.firestore.FieldValue.serverTimestamp()
+                        }).catch(e => {});
+                    }
+                } catch(e){} 
+            }
         }
-    });
-    listEl.innerHTML = html + "</div>";
-}
 
-function updateLobbyUI(connected) { 
-    if (connected) { 
-        document.getElementById('lobby-status').style.color = '#0f0'; 
-        document.getElementById('lobby-status').innerText = "PLAYERS CONNECTED!"; 
-        document.getElementById('start-btn').disabled = false; 
-        document.getElementById('start-btn').style.background = '#a83232'; 
-    } 
-}
+        function updateLobbyPlayersList() {
+            const listEl = document.getElementById('player-list'); 
+            if (!listEl) return;
+            
+            // Determine who the host is dynamically
+            const hostId = (typeof Network !== 'undefined' && Network.hostPlayerId) ? Network.hostPlayerId : 'p1';
 
-function hostStartGame() { 
-    try { 
-        Network.broadcastToAll({ type: 'START', mapIndex: stats.selectedMapIdx, gameMode: stats.gameMode }); 
-    } catch(e){} 
-    activeMap = playableMaps[stats.selectedMapIdx]; 
-    launchGame(); 
-}
+            let html = `<div style="text-align:left; background:rgba(255,255,255,0.05); padding:15px; border:1px solid #333; border-radius:4px; min-width:280px; box-sizing:border-box;"><div style="border-bottom:1px solid #444; padding-bottom:5px; margin-bottom:10px; font-weight:bold; color:#a83232;">LOBBY survivors:</div>`;
+            
+            ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8'].forEach(function (pId, idx) {
+                const pName = window.lobbyPlayers[pId];
+                const pColor = getPlayerColor(pId);
+                const playerDisplayIndex = idx + 1;
+                const isCurrentHost = (pId === hostId);
 
-function launchGame() {
-    if (animationFrameId) { 
-        cancelAnimationFrame(animationFrameId); 
-        animationFrameId = null; 
-    }
-    document.getElementById('lobby-screen').style.display = 'none'; 
-    document.getElementById('main-menu').style.display = 'none'; 
-    document.getElementById('game-over').style.display = 'none'; 
-    document.getElementById('game-ui').style.display = 'block';
-    
-    if (typeof Tutorial !== 'undefined' && Tutorial.isActive) {
-        activeMap = tutorialMapData; 
-    } else if (typeof Tutorial !== 'undefined') {
-        Tutorial.end();
-    }
-
-    if (Network.mode === 'HOST' && Network.peer && typeof LobbyManager !== 'undefined') {
-        LobbyManager.unregisterLobby(Network.peer.id);
-    }
-    resetSession();
-    
-    myUsername = (document.getElementById('username-input').value || "Survivor").substring(0, 12);
-    const myLvl = Math.floor((saveData.xp || 0) / 1000) + 1;
-    const displayName = myUsername + " [Lv. " + myLvl + "]";
-    
-    window.matchStartingXP = saveData.xp || 0;
-    window.matchStartingCoins = saveData.lobbyCoins || 0;
-
-    window.startingUnlockedBosses = [...(saveData.unlockedBosses || [])];
-    window.startingDefeatedBosses = [...(saveData.defeatedBosses || [])];
-
-    players = {};
-    
-    let spawnX = 200;
-    let spawnY = 200;
-    if (activeMap === playableMaps[0]) { 
-        spawnX = 400; 
-        spawnY = 400; 
-    } else if (activeMap === playableMaps[1]) { 
-        spawnX = 300; 
-        spawnY = 300; 
-    } else if (activeMap === playableMaps[2]) { 
-        spawnX = 250; 
-        spawnY = 250; 
-    } else if (activeMap === playableMaps[3]) {
-        spawnX = 1400;
-        spawnY = 1200;
-    }
-    
-    if (Network.mode === 'CLIENT') {
-        me = createPlayer(window.myPlayerId, spawnX, spawnY, getPlayerColor(window.myPlayerId), displayName); 
-        players[window.myPlayerId] = me;
-    } else {
-        players['p1'] = createPlayer('p1', spawnX, spawnY, getPlayerColor('p1'), displayName); 
-        me = players['p1'];
-        if (Network.mode === 'HOST') {
-            ['p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8'].forEach(function (pId, idx) {
-                if (window.lobbyPlayers[pId] && window.lobbyPlayers[pId] !== "Reserved") {
-                    players[pId] = createPlayer(pId, spawnX + 40 * (idx + 1), spawnY, getPlayerColor(pId), window.lobbyPlayers[pId]);
+                if (pName && pName !== "Reserved") {
+                    html += `<div style="color:${pColor}; font-size:15px; margin-bottom:5px; display:flex; justify-content:space-between; align-items:center;">`;
+                    
+                    if (isCurrentHost) {
+                        html += `<span>👑 P${playerDisplayIndex} (Host): <strong>${pName}</strong></span>`;
+                    } else {
+                        html += `<span>👤 P${playerDisplayIndex}: <strong>${pName}</strong></span>`;
+                    }
+                    
+                    // Only show Kick button if we are the host and it's not our own slot
+                    if (typeof Network !== 'undefined' && Network.mode === 'HOST' && pId !== window.myPlayerId) {
+                        html += `<button onclick="kickPlayer('${pId}')" style="width:auto; margin:0; padding:2px 8px; font-size:11px; background:#c0392b; color:#fff; border:1px solid #a83232; border-radius:3px; height:auto;">Kick</button>`;
+                    }
+                    html += `</div>`;
+                } else if (pName === "Reserved") {
+                    html += `<div style="color:#888; font-size:14px; margin-bottom:5px; font-style:italic;">👤 P${playerDisplayIndex}: Connecting...</div>`;
+                } else {
+                    html += `<div style="color:#666; font-size:14px; margin-bottom:5px; font-style:italic;">👤 P${playerDisplayIndex}: Open Slot</div>`;
                 }
             });
-        } else if (Network.mode === 'LOCAL_COOP') {
-            players['p2'] = createPlayer('p2', spawnX + 40, spawnY, getPlayerColor('p2'), "Player 2 [Lv. 1]");
-        }
-    }
-
-    if (typeof InfectionMode !== 'undefined' && stats.gameMode === 'INFECTION') {
-        InfectionMode.init();
-    }
-
-    lastLoopTime = performance.now(); 
-    accumulator = 0; 
-    gameActive = true; 
-    loop();
-}
-
-function requestRestart() { 
-    if (Network.mode === 'CLIENT') return; 
-    if (Network.mode === 'HOST') { 
-        try { 
-            Network.broadcastToAll({ type: 'START', mapIndex: stats.selectedMapIdx, gameMode: stats.gameMode }); 
-        } catch(e){} 
-    }
-    launchGame(); 
-}
-
-function createPlayer(id, x, y, color, name) { 
-    const startingHp = (stats.difficulty === 'easy') ? 150 : 100;
-    return { 
-        id: id, 
-        name: name, 
-        x: x, 
-        y: y, 
-        r: 15, 
-        hp: startingHp, 
-        maxHp: startingHp, 
-        state: 'ALIVE', 
-        inventory: [{ ...weaponDB[0], clip: 8, ammo: 32 }], 
-        weapIdx: 0, 
-        angle: 0, 
-        reloading: false, 
-        reloadTimer: 0, 
-        hasVigor: false, 
-        reviveTimer: 0, 
-        color: color, 
-        kills: 0, 
-        score: 500, 
-        isShooting: false, 
-        pressHandled: false, 
-        lastRepairTime: 0,
-        invincibleTimer: 0, 
-        muzzleFlash: 0, 
-        equippedCosmetic: (id === 'p1') ? (saveData.equippedCosmetic || 'none') : 'none', 
-        isTouch: (id === window.myPlayerId) ? isTouchDevice : false
-    }; 
-}
-
-function goToLobbyScreen() {
-    gameActive = false; 
-    if (animationFrameId) { 
-        cancelAnimationFrame(animationFrameId); 
-        animationFrameId = null; 
-    }
-    if (Network.mode === 'HOST' && Network.peer && typeof LobbyManager !== 'undefined') {
-        LobbyManager.unregisterLobby(Network.peer.id);
-    }
-    
-    document.getElementById('game-ui').style.display = 'none'; 
-    document.getElementById('game-over').style.display = 'none'; 
-    document.getElementById('main-menu').style.display = 'none'; 
-    document.getElementById('lobby-screen').style.display = 'flex';
-    
-    zombies = []; 
-    bullets = []; 
-    particles = []; 
-    texts = []; 
-    window.bloodStains = []; 
-    window.drops = []; 
-    window.doublePointsTimer = 0; 
-    window.instaKillTimer = 0;
-    
-    if (Network.mode === 'HOST') {
-        document.getElementById('lobby-status').innerText = "LOBBY ACTIVE!"; 
-        document.getElementById('lobby-status').style.color = '#0f0';
-        document.getElementById('start-btn').style.display = 'block'; 
-        document.getElementById('start-btn').disabled = false; 
-        document.getElementById('start-btn').style.background = '#a83232';
-        document.getElementById('lobby-map-select').style.display = 'block'; 
-        document.getElementById('lobby-map-display-client').style.display = 'none';
-        
-        document.getElementById('lobby-mode-select').style.display = 'block';
-        document.getElementById('lobby-mode-display-client').style.display = 'none';
-
-        if (Network.peer && typeof LobbyManager !== 'undefined') {
-            LobbyManager.registerLobby(Network.peer.id);
-        }
-    } else if (Network.mode === 'CLIENT') {
-        document.getElementById('lobby-status').innerText = "Connected! Waiting for Host to start..."; 
-        document.getElementById('lobby-status').style.color = "#0f0"; 
-        document.getElementById('start-btn').style.display = 'none';
-        document.getElementById('lobby-map-select').style.display = 'none'; 
-        const clientMapDisplay = document.getElementById('lobby-map-display-client'); 
-        clientMapDisplay.style.display = 'block';
-        clientMapDisplay.innerText = (typeof playableMaps !== 'undefined' && playableMaps[stats.selectedMapIdx]) ? playableMaps[stats.selectedMapIdx].name : "Unknown Map";
-
-        document.getElementById('lobby-mode-select').style.display = 'none';
-        const clientModeDisplay = document.getElementById('lobby-mode-display-client');
-        clientModeDisplay.style.display = 'block';
-        clientModeDisplay.innerText = (stats.gameMode === 'INFECTION') ? "Infection Mode" : "Classic Survival";
-    }
-}
-
-function copyHostId() {
-    const display = document.getElementById('host-id-display'); 
-    if (!display) return;
-    let idText = display.innerText.replace("ID: ", "").trim(); 
-    if (idText === "Generating..." || idText === "") return;
-    if (navigator.clipboard && navigator.clipboard.writeText) { 
-        navigator.clipboard.writeText(idText).then(function () {
-            feedbackCopyButton();
-        }).catch(function () {
-            fallbackCopy(idText);
-        }); 
-    } else {
-        fallbackCopy(idText);
-    }
-}
-
-function fallbackCopy(text) {
-    const tempInput = document.createElement("input"); 
-    tempInput.value = text; 
-    document.body.appendChild(tempInput); 
-    tempInput.select();
-    try { 
-        document.execCommand("copy"); 
-        feedbackCopyButton(); 
-    } catch (e) { 
-        alert("Your Host ID is: " + text); 
-    }
-    document.body.removeChild(tempInput);
-}
-
-function feedbackCopyButton() {
-    const btn = document.getElementById('copy-id-btn'); 
-    if (btn) { 
-        const orig = btn.innerHTML; 
-        btn.innerHTML = "✅ Copied!"; 
-        setTimeout(function () { 
-            btn.innerHTML = orig; 
-        }, 2000); 
-    }
-}
-
-/* --- BOOTSTRAP INITIALIZATION --- */
-function init() {
-    refreshMainMenuStats();
-    populateMenuLeaderboard(); 
-
-    let nameInput = document.getElementById('username-input');
-    if (nameInput) {
-        let savedName = localStorage.getItem('zombieUsername');
-        if (savedName) {
-            nameInput.value = savedName;
-        }
-    }
-    checkTouchDevice();
-
-    if (!localStorage.getItem('zombieSaveModular') && !localStorage.getItem('zombieTutorialSkippedOrCompleted')) {
-        console.log("Welcome! Automatically launching Boot Camp...");
-        setTimeout(function () { 
-            startTutorial(); 
-        }, 800);
-    }
-
-    // Modal scroll wrap styling setup
-    document.querySelectorAll('.modal').forEach(function (modal) {
-        modal.style.overflow = 'hidden';
-        modal.style.display = 'none';
-        modal.style.flexDirection = 'column';
-        
-        let closeBtn = modal.querySelector('button[onclick^="closeMenu"]');
-        let title = modal.querySelector('h2');
-        
-        if (closeBtn) {
-            closeBtn.className = 'close-btn-top';
-            closeBtn.innerHTML = '✕';
-            closeBtn.style.cssText = 'position:absolute; top:15px; right:15px; width:30px; height:30px; border-radius:50%; background:#222; border:1px solid #444; color:#aaa; font-size:14px; display:flex; align-items:center; justify-content:center; cursor:pointer; margin:0; padding:0; line-height:1; z-index:1000; font-weight:bold; transition:all 0.15s;';
-            closeBtn.onmouseover = function () { 
-                closeBtn.style.background = '#a83232'; 
-                closeBtn.style.color = '#fff'; 
-                closeBtn.style.borderColor = '#a83232'; 
-            };
-            closeBtn.onmouseout = function () { 
-                closeBtn.style.background = '#222'; 
-                closeBtn.style.color = '#aaa'; 
-                closeBtn.style.borderColor = '#444'; 
-            };
+            listEl.innerHTML = html + "</div>";
         }
 
-        const customModals = [
-            'cosmetics-modal', 
-            'lobby-browser-modal', 
-            'coop-modal', 
-            'settings-modal', 
-            'solo-deployment-modal', 
-            'leaderboard-modal'
-        ];
-        
-        if (customModals.includes(modal.id)) {
-            return; 
+        function updateLobbyUI(connected) { 
+            if (connected) { 
+                document.getElementById('lobby-status').style.color = '#0f0'; 
+                document.getElementById('lobby-status').innerText = "PLAYERS CONNECTED!"; 
+                document.getElementById('start-btn').disabled = false; 
+                document.getElementById('start-btn').style.background = '#a83232'; 
+            } 
         }
-        
-        let listContainer = modal.querySelector('#ach-list, #gun-list, #bosses-list, #player-list');
-        
-        if (!listContainer) {
-            let scrollWrapper = document.createElement('div');
-            scrollWrapper.style.cssText = 'overflow-y:auto; flex:1; width:100%; box-sizing:border-box; padding-right:5px; margin-top:10px; margin-bottom:10px;';
-            Array.from(modal.childNodes).forEach(function (child) {
-                if (child !== title && child !== closeBtn && !child.classList?.contains('close-btn-top') && child.tagName !== 'STYLE') {
-                    scrollWrapper.appendChild(child);
+
+        function hostStartGame() { 
+            try { 
+                Network.broadcastToAll({ type: 'START', mapIndex: stats.selectedMapIdx, gameMode: stats.gameMode }); 
+            } catch(e){} 
+            activeMap = playableMaps[stats.selectedMapIdx]; 
+            launchGame(); 
+        }
+
+        function launchGame() {
+            if (animationFrameId) { 
+                cancelAnimationFrame(animationFrameId); 
+                animationFrameId = null; 
+            }
+            document.getElementById('lobby-screen').style.display = 'none'; 
+            document.getElementById('main-menu').style.display = 'none'; 
+            document.getElementById('game-over').style.display = 'none'; 
+            document.getElementById('game-ui').style.display = 'block';
+            
+            if (typeof Tutorial !== 'undefined' && Tutorial.isActive) {
+                activeMap = tutorialMapData; 
+            } else if (typeof Tutorial !== 'undefined') {
+                Tutorial.end();
+            }
+
+            if (Network.mode === 'HOST' && Network.peer && typeof LobbyManager !== 'undefined') {
+                LobbyManager.unregisterLobby(Network.peer.id);
+            }
+            resetSession();
+            
+            myUsername = (document.getElementById('username-input').value || "Survivor").substring(0, 12);
+            const myLvl = Math.floor((saveData.xp || 0) / 1000) + 1;
+            const displayName = myUsername + " [Lv. " + myLvl + "]";
+            
+            window.matchStartingXP = saveData.xp || 0;
+            window.matchStartingCoins = saveData.lobbyCoins || 0;
+
+            window.startingUnlockedBosses = [...(saveData.unlockedBosses || [])];
+            window.startingDefeatedBosses = [...(saveData.defeatedBosses || [])];
+
+            players = {};
+            
+            let spawnX = 200;
+            let spawnY = 200;
+            if (activeMap === playableMaps[0]) { 
+                spawnX = 400; 
+                spawnY = 400; 
+            } else if (activeMap === playableMaps[1]) { 
+                spawnX = 300; 
+                spawnY = 300; 
+            } else if (activeMap === playableMaps[2]) { 
+                spawnX = 250; 
+                spawnY = 250; 
+            } else if (activeMap === playableMaps[3]) {
+                spawnX = 1400;
+                spawnY = 1200;
+            }
+            
+            if (Network.mode === 'CLIENT') {
+                me = createPlayer(window.myPlayerId, spawnX, spawnY, getPlayerColor(window.myPlayerId), displayName); 
+                players[window.myPlayerId] = me;
+            } else {
+                players['p1'] = createPlayer('p1', spawnX, spawnY, getPlayerColor('p1'), displayName); 
+                me = players['p1'];
+                if (Network.mode === 'HOST') {
+                    ['p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8'].forEach(function (pId, idx) {
+                        if (window.lobbyPlayers[pId] && window.lobbyPlayers[pId] !== "Reserved") {
+                            players[pId] = createPlayer(pId, spawnX + 40 * (idx + 1), spawnY, getPlayerColor(pId), window.lobbyPlayers[pId]);
+                        }
+                    });
+                } else if (Network.mode === 'LOCAL_COOP') {
+                    players['p2'] = createPlayer('p2', spawnX + 40, spawnY, getPlayerColor('p2'), "Player 2 [Lv. 1]");
+                }
+            }
+
+            if (typeof InfectionMode !== 'undefined' && stats.gameMode === 'INFECTION') {
+                InfectionMode.init();
+            }
+
+            lastLoopTime = performance.now(); 
+            accumulator = 0; 
+            gameActive = true; 
+            loop();
+        }
+
+        function requestRestart() { 
+            if (Network.mode === 'CLIENT') return; 
+            if (Network.mode === 'HOST') { 
+                try { 
+                    Network.broadcastToAll({ type: 'START', mapIndex: stats.selectedMapIdx, gameMode: stats.gameMode }); 
+                } catch(e){} 
+            }
+            launchGame(); 
+        }
+
+        function createPlayer(id, x, y, color, name) { 
+            const startingHp = (stats.difficulty === 'easy') ? 150 : 100;
+            return { 
+                id: id, 
+                name: name, 
+                x: x, 
+                y: y, 
+                r: 15, 
+                hp: startingHp, 
+                maxHp: startingHp, 
+                state: 'ALIVE', 
+                inventory: [{ ...weaponDB[0], clip: 8, ammo: 32 }], 
+                weapIdx: 0, 
+                angle: 0, 
+                reloading: false, 
+                reloadTimer: 0, 
+                hasVigor: false, 
+                reviveTimer: 0, 
+                color: color, 
+                kills: 0, 
+                score: 500, 
+                isShooting: false, 
+                pressHandled: false, 
+                lastRepairTime: 0,
+                invincibleTimer: 0, 
+                muzzleFlash: 0, 
+                equippedCosmetic: (id === 'p1') ? (saveData.equippedCosmetic || 'none') : 'none', 
+                isTouch: (id === window.myPlayerId) ? isTouchDevice : false
+            }; 
+        }
+
+        function goToLobbyScreen() {
+            gameActive = false; 
+            if (animationFrameId) { 
+                cancelAnimationFrame(animationFrameId); 
+                animationFrameId = null; 
+            }
+            if (Network.mode === 'HOST' && Network.peer && typeof LobbyManager !== 'undefined') {
+                LobbyManager.unregisterLobby(Network.peer.id);
+            }
+            
+            document.getElementById('game-ui').style.display = 'none'; 
+            document.getElementById('game-over').style.display = 'none'; 
+            document.getElementById('main-menu').style.display = 'none'; 
+            document.getElementById('lobby-screen').style.display = 'flex';
+            
+            zombies = []; 
+            bullets = []; 
+            particles = []; 
+            texts = []; 
+            window.bloodStains = []; 
+            window.drops = []; 
+            window.doublePointsTimer = 0; 
+            window.instaKillTimer = 0;
+            
+            if (Network.mode === 'HOST') {
+                document.getElementById('lobby-status').innerText = "LOBBY ACTIVE!"; 
+                document.getElementById('lobby-status').style.color = '#0f0';
+                document.getElementById('start-btn').style.display = 'block'; 
+                document.getElementById('start-btn').disabled = false; 
+                document.getElementById('start-btn').style.background = '#a83232';
+                document.getElementById('lobby-map-select').style.display = 'block'; 
+                document.getElementById('lobby-map-display-client').style.display = 'none';
+                
+                document.getElementById('lobby-mode-select').style.display = 'block';
+                document.getElementById('lobby-mode-display-client').style.display = 'none';
+
+                if (Network.peer && typeof LobbyManager !== 'undefined') {
+                    LobbyManager.registerLobby(Network.peer.id);
+                }
+            } else if (Network.mode === 'CLIENT') {
+                document.getElementById('lobby-status').innerText = "Connected! Waiting for Host to start..."; 
+                document.getElementById('lobby-status').style.color = "#0f0"; 
+                document.getElementById('start-btn').style.display = 'none';
+                document.getElementById('lobby-map-select').style.display = 'none'; 
+                const clientMapDisplay = document.getElementById('lobby-map-display-client'); 
+                clientMapDisplay.style.display = 'block';
+                clientMapDisplay.innerText = (typeof playableMaps !== 'undefined' && playableMaps[stats.selectedMapIdx]) ? playableMaps[stats.selectedMapIdx].name : "Unknown Map";
+
+                document.getElementById('lobby-mode-select').style.display = 'none';
+                const clientModeDisplay = document.getElementById('lobby-mode-display-client');
+                clientModeDisplay.style.display = 'block';
+                clientModeDisplay.innerText = (stats.gameMode === 'INFECTION') ? "Infection Mode" : "Classic Survival";
+            }
+        }
+
+        function copyHostId() {
+            const display = document.getElementById('host-id-display'); 
+            if (!display) return;
+            let idText = display.innerText.replace("ID: ", "").trim(); 
+            if (idText === "Generating..." || idText === "") return;
+            if (navigator.clipboard && navigator.clipboard.writeText) { 
+                navigator.clipboard.writeText(idText).then(function () {
+                    feedbackCopyButton();
+                }).catch(function () {
+                    fallbackCopy(idText);
+                }); 
+            } else {
+                fallbackCopy(idText);
+            }
+        }
+
+        function fallbackCopy(text) {
+            const tempInput = document.createElement("input"); 
+            tempInput.value = text; 
+            document.body.appendChild(tempInput); 
+            tempInput.select();
+            try { 
+                document.execCommand("copy"); 
+                feedbackCopyButton(); 
+            } catch (e) { 
+                alert("Your Host ID is: " + text); 
+            }
+            document.body.removeChild(tempInput);
+        }
+
+        function feedbackCopyButton() {
+            const btn = document.getElementById('copy-id-btn'); 
+            if (btn) { 
+                const orig = btn.innerHTML; 
+                btn.innerHTML = "✅ Copied!"; 
+                setTimeout(function () { 
+                    btn.innerHTML = orig; 
+                }, 2000); 
+            }
+        }
+
+        /* --- BOOTSTRAP INITIALIZATION --- */
+        function init() {
+            refreshMainMenuStats();
+            populateMenuLeaderboard(); 
+
+            let nameInput = document.getElementById('username-input');
+            if (nameInput) {
+                let savedName = localStorage.getItem('zombieUsername');
+                if (savedName) {
+                    nameInput.value = savedName;
+                }
+            }
+            checkTouchDevice();
+
+            if (!localStorage.getItem('zombieSaveModular') && !localStorage.getItem('zombieTutorialSkippedOrCompleted')) {
+                console.log("Welcome! Automatically launching Boot Camp...");
+                setTimeout(function () { 
+                    startTutorial(); 
+                }, 800);
+            }
+
+            // Modal scroll wrap styling setup
+            document.querySelectorAll('.modal').forEach(function (modal) {
+                modal.style.overflow = 'hidden';
+                modal.style.display = 'none';
+                modal.style.flexDirection = 'column';
+                
+                let closeBtn = modal.querySelector('button[onclick^="closeMenu"]');
+                let title = modal.querySelector('h2');
+                
+                if (closeBtn) {
+                    closeBtn.className = 'close-btn-top';
+                    closeBtn.innerHTML = '✕';
+                    closeBtn.style.cssText = 'position:absolute; top:15px; right:15px; width:30px; height:30px; border-radius:50%; background:#222; border:1px solid #444; color:#aaa; font-size:14px; display:flex; align-items:center; justify-content:center; cursor:pointer; margin:0; padding:0; line-height:1; z-index:1000; font-weight:bold; transition:all 0.15s;';
+                    closeBtn.onmouseover = function () { 
+                        closeBtn.style.background = '#a83232'; 
+                        closeBtn.style.color = '#fff'; 
+                        closeBtn.style.borderColor = '#a83232'; 
+                    };
+                    closeBtn.onmouseout = function () { 
+                        closeBtn.style.background = '#222'; 
+                        closeBtn.style.color = '#aaa'; 
+                        closeBtn.style.borderColor = '#444'; 
+                    };
+                }
+
+                const customModals = [
+                    'cosmetics-modal', 
+                    'lobby-browser-modal', 
+                    'coop-modal', 
+                    'settings-modal', 
+                    'solo-deployment-modal', 
+                    'leaderboard-modal'
+                ];
+                
+                if (customModals.includes(modal.id)) {
+                    return; 
+                }
+                
+                let listContainer = modal.querySelector('#ach-list, #gun-list, #bosses-list, #player-list');
+                
+                if (!listContainer) {
+                    let scrollWrapper = document.createElement('div');
+                    scrollWrapper.style.cssText = 'overflow-y:auto; flex:1; width:100%; box-sizing:border-box; padding-right:5px; margin-top:10px; margin-bottom:10px;';
+                    Array.from(modal.childNodes).forEach(function (child) {
+                        if (child !== title && child !== closeBtn && !child.classList?.contains('close-btn-top') && child.tagName !== 'STYLE') {
+                            scrollWrapper.appendChild(child);
+                        }
+                    });
+                    modal.appendChild(scrollWrapper);
+                } else {
+                    listContainer.style.overflowY = 'auto';
+                    listContainer.style.flex = '1';
+                    listContainer.style.width = '100%';
+                    listContainer.style.boxSizing = 'border-box';
+                    listContainer.style.marginTop = '10px';
+                    listContainer.style.marginBottom = '10px';
                 }
             });
-            modal.appendChild(scrollWrapper);
-        } else {
-            listContainer.style.overflowY = 'auto';
-            listContainer.style.flex = '1';
-            listContainer.style.width = '100%';
-            listContainer.style.boxSizing = 'border-box';
-            listContainer.style.marginTop = '10px';
-            listContainer.style.marginBottom = '10px';
         }
-    });
-}
 
-// Start up client system on page load
-init();
+        // Start up client system on page load
+        init();
