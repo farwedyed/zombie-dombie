@@ -807,11 +807,11 @@ function drawOverBossIcon(bId, discovered, defeated, strikeProgress) {
             c.strokeStyle = '#000'; 
             c.lineWidth = 1.2;
             c.beginPath(); 
-            c.moveTo(27 - 7, 27 - 8); 
-            c.lineTo(27 - 12, 27 - 15); 
-            c.lineTo(27 - 3, 27 - 10); 
-            c.fill(); 
-            c.stroke();
+            ctx.moveTo(27 - 7, 27 - 8); 
+            ctx.lineTo(27 - 12, 27 - 15); 
+            ctx.lineTo(27 - 3, 27 - 10); 
+            ctx.fill(); 
+            ctx.stroke();
             ctx.beginPath(); 
             ctx.moveTo(27 + 7, 27 - 8); 
             ctx.lineTo(27 + 12, 27 - 15); 
@@ -823,12 +823,12 @@ function drawOverBossIcon(bId, discovered, defeated, strikeProgress) {
             c.strokeStyle = '#000'; 
             c.lineWidth = 0.8;
             c.beginPath(); 
-            c.arc(27 - 4, 27 - 4, 2, 0, Math.PI * 2); 
-            c.fill(); 
-            c.stroke();
+            ctx.arc(27 - 4, 27 - 4, 2, 0, Math.PI * 2); 
+            ctx.fill(); 
+            ctx.stroke();
             ctx.beginPath(); 
             ctx.arc(27 + 4, 27 - 4, 2, 0, Math.PI * 2); 
-            c.fill(); 
+            ctx.fill(); 
             ctx.stroke();
         } else if (b.id === 'boss_decayer') {
             c.fillStyle = '#2ecc71';
@@ -929,7 +929,8 @@ function gameOver() {
     let oldCoins = window.matchStartingCoins !== undefined ? window.matchStartingCoins : (saveData.lobbyCoins || 0);
     let msg = ""; 
     try { 
-        msg = saveGame(stats.round, stats.sessionKills, me.score); 
+        // Modified to pass local player's kills and score instead of stats.sessionKills (Host-authoritative)
+        msg = saveGame(stats.round, me ? me.kills : 0, me ? me.score : 0); 
     } catch (e) {} 
     let newXP = saveData.xp || 0;
     let newCoins = saveData.lobbyCoins || 0;

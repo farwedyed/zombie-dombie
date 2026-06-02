@@ -680,282 +680,304 @@ const Network = {
                             }
 
                             if (!localReloading) {
-                                me.reloading = false;
-                            }
-                            
-                            if (fallbackPId.state === 'DOWNED') {
-                                me.x = fallbackPId.x;
-                                me.y = fallbackPId.y;
-                            } else {
-                                me.x = myX;
-                                me.y = myY;
-                            }
+                                    me.reloading = false;
+                                }
+                                
+                                if (fallbackPId.state === 'DOWNED') {
+                                    me.x = fallbackPId.x;
+                                    me.y = fallbackPId.y;
+                                } else {
+                                    me.x = myX;
+                                    me.y = myY;
+                                }
 
-                            me.gunName = fallbackPId.gunName !== undefined ? fallbackPId.gunName : "Model 1911";
-                            me.gunColor = fallbackPId.gunColor !== undefined ? fallbackPId.gunColor : "#999";
-                            me.clip = fallbackPId.clip !== undefined ? fallbackPId.clip : 8;
-                            me.ammo = fallbackPId.ammo !== undefined ? fallbackPId.ammo : 32;
+                                me.gunName = fallbackPId.gunName !== undefined ? fallbackPId.gunName : "Model 1911";
+                                me.gunColor = fallbackPId.gunColor !== undefined ? fallbackPId.gunColor : "#999";
+                                me.clip = fallbackPId.clip !== undefined ? fallbackPId.clip : 8;
+                                me.ammo = fallbackPId.ammo !== undefined ? fallbackPId.ammo : 32;
 
-                            const activeGunInInv = me.inventory ? me.inventory.find(w => w.name === fallbackPId.gunName) : null;
-                            if (activeGunInInv) {
-                                if (fallbackPId.clip !== undefined) activeGunInInv.clip = fallbackPId.clip;
-                                if (fallbackPId.ammo !== undefined) activeGunInInv.ammo = fallbackPId.ammo;
-                            }
-                        }
-                    } else {
-                        if (data[pId]) {
-                            if (!players[pId]) {
-                                players[pId] = createPlayer(pId, data[pId].x, data[pId].y, getPlayerColor(pId), data[pId].name);
-                            }
-                            const p = players[pId];
-
-                            if (p && p.state === 'DOWNED' && data[pId].state === 'ALIVE') {
-                                if (typeof addText === 'function') {
-                                    addText(p.x, p.y, "REVIVED (+INVINCIBLE!)", "#0f0");
+                                const activeGunInInv = me.inventory ? me.inventory.find(w => w.name === fallbackPId.gunName) : null;
+                                if (activeGunInInv) {
+                                    if (fallbackPId.clip !== undefined) activeGunInInv.clip = fallbackPId.clip;
+                                    if (fallbackPId.ammo !== undefined) activeGunInInv.ammo = fallbackPId.ammo;
                                 }
                             }
-
-                            if (p && data[pId].reloading && !p.reloading) {
-                                if (typeof addText === 'function') {
-                                    addText(p.x, p.y - 40, "RELOADING...", "#fff");
+                        } else {
+                            if (data[pId]) {
+                                if (!players[pId]) {
+                                    players[pId] = createPlayer(pId, data[pId].x, data[pId].y, getPlayerColor(pId), data[pId].name);
                                 }
-                            }
+                                const p = players[pId];
 
-                            if (p && !data[pId].reloading && !p.reloading && data[pId].gunName !== "Bazooka") {
-                                const lastClip = p.clip !== undefined ? p.clip : 8;
-                                if (data[pId].clip < lastClip && (lastClip - data[pId].clip) <= 2) {
-                                    if (typeof spawnShellCasing === 'function') {
-                                        spawnShellCasing(p.x, p.y, p.angle);
+                                if (p && p.state === 'DOWNED' && data[pId].state === 'ALIVE') {
+                                    if (typeof addText === 'function') {
+                                        addText(p.x, p.y, "REVIVED (+INVINCIBLE!)", "#0f0");
                                     }
                                 }
+
+                                if (p && data[pId].reloading && !p.reloading) {
+                                    if (typeof addText === 'function') {
+                                        addText(p.x, p.y - 40, "RELOADING...", "#fff");
+                                    }
+                                }
+
+                                if (p && !data[pId].reloading && !p.reloading && data[pId].gunName !== "Bazooka") {
+                                    const lastClip = p.clip !== undefined ? p.clip : 8;
+                                    if (data[pId].clip < lastClip && (lastClip - data[pId].clip) <= 2) {
+                                        if (typeof spawnShellCasing === 'function') {
+                                            spawnShellCasing(p.x, p.y, p.angle);
+                                        }
+                                    }
+                                }
+
+                                if (data[pId].gunName) {
+                                    syncPlayerInventory(p, data[pId].weapIdx, data[pId].gunName);
+                                }
+
+                                p.serverX = data[pId].x !== undefined ? data[pId].x : p.x;
+                                p.serverY = data[pId].y !== undefined ? data[pId].y : p.y;
+                                p.angle = data[pId].angle !== undefined ? data[pId].angle : p.angle;
+                                p.hp = data[pId].hp !== undefined ? data[pId].hp : p.hp;
+                                p.score = data[pId].score !== undefined ? data[pId].score : p.score;
+                                p.state = data[pId].state !== undefined ? data[pId].state : p.state;
+                                p.hasVigor = data[pId].hasVigor !== undefined ? data[pId].hasVigor : p.hasVigor;
+                                p.reloading = data[pId].reloading !== undefined ? data[pId].reloading : p.reloading;
+                                p.weapIdx = data[pId].weapIdx !== undefined ? data[pId].weapIdx : p.weapIdx;
+                                p.name = data[pId].name !== undefined ? data[pId].name : p.name;
+                                p.gunName = data[pId].gunName !== undefined ? data[pId].gunName : "Model 1911";
+                                p.gunColor = data[pId].gunColor !== undefined ? data[pId].gunColor : "#999";
+                                p.clip = data[pId].clip !== undefined ? data[pId].clip : 8;
+                                p.ammo = data[pId].ammo !== undefined ? data[pId].ammo : 32;
+                                p.equippedCosmetic = data[pId].cosmetic !== undefined ? data[pId].cosmetic : 'none';
+
+                                // Replicate Melee Slashes of other players
+                                p.isSlashing = data[pId].isSlashing !== undefined ? data[pId].isSlashing : p.isSlashing;
+                            } else {
+                                if (players[pId]) delete players[pId];
                             }
+                        }
+                    });
 
-                            if (data[pId].gunName) {
-                                syncPlayerInventory(p, data[pId].weapIdx, data[pId].gunName);
+                    // --- DETECT BOARD REPAIRS ON CLIENT ---
+                    data.windows.forEach((wData, i) => { 
+                        if (activeMap.windows[i]) {
+                            // Detect if a board was added
+                            if (wData.boards > activeMap.windows[i].boards) {
+                                let diff = wData.boards - activeMap.windows[i].boards;
+                                let pointsToGive = GameBalanceConfig.SCORE_WINDOW_REPAIR * diff;
+                                if (window.doublePointsTimer > 0) pointsToGive *= 2;
+                                
+                                // Spawn "+10" (or "+20") at the window's position on client's screen
+                                if (typeof addText === 'function') {
+                                    addText(activeMap.windows[i].x + 20, activeMap.windows[i].y, "+" + pointsToGive, "#fff");
+                                }
+                                
+                                // Play the board repair/purchase sound effect locally for clients
+                                if (typeof SoundSystem !== 'undefined') {
+                                    SoundSystem.play('purchase');
+                                }
                             }
+                            activeMap.windows[i].boards = wData.boards; 
+                        }
+                    });
 
-                            p.serverX = data[pId].x !== undefined ? data[pId].x : p.x;
-                            p.serverY = data[pId].y !== undefined ? data[pId].y : p.y;
-                            p.angle = data[pId].angle !== undefined ? data[pId].angle : p.angle;
-                            p.hp = data[pId].hp !== undefined ? data[pId].hp : p.hp;
-                            p.score = data[pId].score !== undefined ? data[pId].score : p.score;
-                            p.state = data[pId].state !== undefined ? data[pId].state : p.state;
-                            p.hasVigor = data[pId].hasVigor !== undefined ? data[pId].hasVigor : p.hasVigor;
-                            p.reloading = data[pId].reloading !== undefined ? data[pId].reloading : p.reloading;
-                            p.weapIdx = data[pId].weapIdx !== undefined ? data[pId].weapIdx : p.weapIdx;
-                            p.name = data[pId].name !== undefined ? data[pId].name : p.name;
-                            p.gunName = data[pId].gunName !== undefined ? data[pId].gunName : "Model 1911";
-                            p.gunColor = data[pId].gunColor !== undefined ? data[pId].gunColor : "#999";
-                            p.clip = data[pId].clip !== undefined ? data[pId].clip : 8;
-                            p.ammo = data[pId].ammo !== undefined ? data[pId].ammo : 32;
-                            p.equippedCosmetic = data[pId].cosmetic !== undefined ? data[pId].cosmetic : 'none';
+                    data.doors.forEach((dData, i) => { 
+                        if(activeMap.rooms[i] && activeMap.rooms[i].unlocked !== dData.unlocked) {
+                            activeMap.rooms[i].unlocked = dData.unlocked;
+                            if (dData.unlocked && typeof SoundSystem !== 'undefined') {
+                                SoundSystem.play('purchase');
+                            }
+                        }
+                    });
 
-                            // Replicate Melee Slashes of other players
-                            p.isSlashing = data[pId].isSlashing !== undefined ? data[pId].isSlashing : p.isSlashing;
-                        } else {
-                            if (players[pId]) delete players[pId];
+                    // Detect round increase to award local round survival coins
+                    if (data.stats.round > stats.round) {
+                        const roundsSurvived = data.stats.round - stats.round;
+                        const coinBonus = roundsSurvived * 10;
+                        saveData.lobbyCoins = (saveData.lobbyCoins || 0) + coinBonus;
+                        if (me) {
+                            addText(me.x, me.y - 70, `+${coinBonus} ROUND BONUS 🪙`, "#ffd700");
                         }
                     }
-                });
 
-                data.windows.forEach((wData, i) => { if(activeMap.windows[i]) activeMap.windows[i].boards = wData.boards; });
-                data.doors.forEach((dData, i) => { 
-                    if(activeMap.rooms[i] && activeMap.rooms[i].unlocked !== dData.unlocked) {
-                        activeMap.rooms[i].unlocked = dData.unlocked;
-                        if (dData.unlocked && typeof SoundSystem !== 'undefined') {
-                            SoundSystem.play('purchase');
-                        }
-                    }
-                });
-
-                // Detect round increase to award local round survival coins
-                if (data.stats.round > stats.round) {
-                    const roundsSurvived = data.stats.round - stats.round;
-                    const coinBonus = roundsSurvived * 10;
-                    saveData.lobbyCoins = (saveData.lobbyCoins || 0) + coinBonus;
-                    if (me) {
-                        addText(me.x, me.y - 70, `+${coinBonus} ROUND BONUS 🪙`, "#ffd700");
-                    }
+                    stats = data.stats;
                 }
-
-                stats = data.stats;
-            }
-            else if(data.type === 'GAME_OVER') {
-                stats = { ...stats, ...data.stats };
-                gameOver();
-            }
-        });
-
-        this.conn.on('close', () => {
-            this.handleDisconnectFallback();
-        });
-
-        if (this.conn.peerConnection) {
-            this.conn.peerConnection.addEventListener('iceconnectionstatechange', () => {
-                const state = this.conn.peerConnection.iceConnectionState;
-                if (state === 'disconnected' || state === 'failed' || state === 'closed') {
-                    this.handleDisconnectFallback("⚠️ ICE Disconnection: Lost network path to the Host.");
+                else if(data.type === 'GAME_OVER') {
+                    stats = { ...stats, ...data.stats };
+                    gameOver();
                 }
             });
-            this.conn.peerConnection.addEventListener('connectionstatechange', () => {
-                const state = this.conn.peerConnection.connectionState;
-                if (state === 'disconnected' || state === 'failed' || state === 'closed') {
-                    this.handleDisconnectFallback("⚠️ peer Disconnection: Connection with host closed.");
-                }
+
+            this.conn.on('close', () => {
+                this.handleDisconnectFallback();
             });
-        }
-    },
 
-    checkHostHeartbeat: function() {
-        if (this.mode !== 'CLIENT' || !gameActive) return;
-        
-        if (this.lastGameStateTime === 0) {
-            this.lastGameStateTime = Date.now();
-            return;
-        }
+            if (this.conn.peerConnection) {
+                this.conn.peerConnection.addEventListener('iceconnectionstatechange', () => {
+                    const state = this.conn.peerConnection.iceConnectionState;
+                    if (state === 'disconnected' || state === 'failed' || state === 'closed') {
+                        this.handleDisconnectFallback("⚠️ ICE Disconnection: Lost network path to the Host.");
+                    }
+                });
+                this.conn.peerConnection.addEventListener('connectionstatechange', () => {
+                    const state = this.conn.peerConnection.connectionState;
+                    if (state === 'disconnected' || state === 'failed' || state === 'closed') {
+                        this.handleDisconnectFallback("⚠️ peer Disconnection: Connection with host closed.");
+                    }
+                });
+            }
+        },
 
-        const elapsed = Date.now() - this.lastGameStateTime;
-        if (elapsed > 4000) { 
-            console.warn("Watchdog: Host heartbeat lost. Redirecting.");
-            this.handleDisconnectFallback("⚠️ Connection Timed Out: The Host stopped responding.");
-        }
-    },
+        checkHostHeartbeat: function() {
+            if (this.mode !== 'CLIENT' || !gameActive) return;
+            
+            if (this.lastGameStateTime === 0) {
+                this.lastGameStateTime = Date.now();
+                return;
+            }
 
-    handleDisconnectFallback: function(customMsg) {
-        if (this.mode !== 'CLIENT') return;
+            const elapsed = Date.now() - this.lastGameStateTime;
+            if (elapsed > 4000) { 
+                console.warn("Watchdog: Host heartbeat lost. Redirecting.");
+                this.handleDisconnectFallback("⚠️ Connection Timed Out: The Host stopped responding.");
+            }
+        },
 
-        gameActive = false;
-        if (animationFrameId) {
-            cancelAnimationFrame(animationFrameId);
-            animationFrameId = null;
-        }
+        handleDisconnectFallback: function(customMsg) {
+            if (this.mode !== 'CLIENT') return;
 
-        try { if (Network.peer) Network.peer.destroy(); } catch(e){}
-        this.peer = null;
-        this.conn = null;
-        this.conns = [];
-        this.mode = 'OFFLINE';
+            gameActive = false;
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = null;
+            }
 
-        resetSession();
+            try { if (Network.peer) Network.peer.destroy(); } catch(e){}
+            this.peer = null;
+            this.conn = null;
+            this.conns = [];
+            this.mode = 'OFFLINE';
 
-        document.getElementById('game-ui').style.display = 'none';
-        document.getElementById('game-over').style.display = 'none';
-        document.getElementById('main-menu').style.display = 'none'; 
-        document.getElementById('lobby-screen').style.display = 'none';
-        document.getElementById('main-menu').style.display = 'flex';
+            resetSession();
 
-        const menuMsg = document.getElementById('main-menu-msg');
-        if (menuMsg) {
-            menuMsg.style.display = 'block';
-            menuMsg.innerText = customMsg || "⚠️ Connection Lost: The Host disconnected or closed the session.";
-            menuMsg.style.color = "#ff4757";
-            menuMsg.style.borderColor = "#ff4757";
-        }
-    },
+            document.getElementById('game-ui').style.display = 'none';
+            document.getElementById('game-over').style.display = 'none';
+            document.getElementById('main-menu').style.display = 'none'; 
+            document.getElementById('lobby-screen').style.display = 'none';
+            document.getElementById('main-menu').style.display = 'flex';
 
-    sendClientData: function(p) {
-        const now = Date.now();
-        if (now - this.lastClientUpdate < 45) return;
-        this.lastClientUpdate = now;
+            const menuMsg = document.getElementById('main-menu-msg');
+            if (menuMsg) {
+                menuMsg.style.display = 'block';
+                menuMsg.innerText = customMsg || "⚠️ Connection Lost: The Host disconnected or closed the session.";
+                menuMsg.style.color = "#ff4757";
+                menuMsg.style.borderColor = "#ff4757";
+            }
+        },
 
-        if(this.conn && this.conn.open) {
-            try {
-                const activeGun = p.inventory && p.inventory[p.weapIdx] ? p.inventory[p.weapIdx] : null;
+        sendClientData: function(p) {
+            const now = Date.now();
+            if (now - this.lastClientUpdate < 45) return;
+            this.lastClientUpdate = now;
 
-                if (mouse.down && activeGun && activeGun.clip === 0 && activeGun.ammo === 0) {
-                    const nowMs = Date.now();
-                    if (nowMs - (activeGun.lastDryFireTime || 0) >= 600) { 
-                        activeGun.lastDryFireTime = nowMs;
-                        if (typeof SoundSystem !== 'undefined') {
-                            SoundSystem.play('dry_fire');
+            if(this.conn && this.conn.open) {
+                try {
+                    const activeGun = p.inventory && p.inventory[p.weapIdx] ? p.inventory[p.weapIdx] : null;
+
+                    if (mouse.down && activeGun && activeGun.clip === 0 && activeGun.ammo === 0) {
+                        const nowMs = Date.now();
+                        if (nowMs - (activeGun.lastDryFireTime || 0) >= 600) { 
+                            activeGun.lastDryFireTime = nowMs;
+                            if (typeof SoundSystem !== 'undefined') {
+                                SoundSystem.play('dry_fire');
+                            }
                         }
                     }
+
+                    this.conn.send({
+                        type: 'P_DATA',
+                        x: p.x, y: p.y, angle: p.angle,
+                        shoot: mouse.down,
+                        reload: p.reloading,
+                        name: p.name,
+                        cosmetic: p.equippedCosmetic || 'none',
+                        isTouch: p.isTouch,
+                        weapIdx: p.weapIdx,
+                        gunName: activeGun ? activeGun.name : "",
+                        clip: activeGun ? activeGun.clip : 0,    
+                        ammo: activeGun ? activeGun.ammo : 0,    
+                        state: p.state 
+                    });
+                } catch (e) {
+                    console.warn("Failed to send client data payload:", e);
                 }
+            }
+        },
 
-                this.conn.send({
-                    type: 'P_DATA',
-                    x: p.x, y: p.y, angle: p.angle,
-                    shoot: mouse.down,
-                    reload: p.reloading,
-                    name: p.name,
-                    cosmetic: p.equippedCosmetic || 'none',
-                    isTouch: p.isTouch,
-                    weapIdx: p.weapIdx,
-                    gunName: activeGun ? activeGun.name : "",
-                    clip: activeGun ? activeGun.clip : 0,    
-                    ammo: activeGun ? activeGun.ammo : 0,    
-                    state: p.state 
-                });
-            } catch (e) {
-                console.warn("Failed to send client data payload:", e);
+        sendInteract: function() {
+            if(this.conn && this.conn.open) {
+                try {
+                    this.conn.send({ type: 'INTERACT' });
+                } catch(e) {
+                    console.warn("Failed to send INTERACT command:", e);
+                }
             }
         }
-    },
-
-    sendInteract: function() {
-        if(this.conn && this.conn.open) {
-            try {
-                this.conn.send({ type: 'INTERACT' });
-            } catch(e) {
-                console.warn("Failed to send INTERACT command:", e);
-            }
-        }
-    }
-};
-
-function getPlayerColor(id) {
-    if (id === 'p1') return '#3498db'; 
-    if (id === 'p2') return '#e67e22'; 
-    if (id === 'p3') return '#2ecc71'; 
-    return '#9b59b6'; // Purple (p4)
-}
-
-function getPrunedPlayer(p) {
-    if (!p) return null;
-    const activeGun = p.inventory && p.inventory[p.weapIdx] ? p.inventory[p.weapIdx] : null;
-    return {
-        x: p.x,
-        y: p.y,
-        angle: p.angle,
-        hp: p.hp,
-        score: p.score,
-        state: p.state,
-        hasVigor: p.hasVigor,
-        reloading: p.reloading,
-        weapIdx: p.weapIdx,
-        clip: activeGun ? activeGun.clip : 0,
-        ammo: activeGun ? activeGun.ammo : 0,
-        gunName: activeGun ? activeGun.name : "Model 1911",
-        gunColor: activeGun ? activeGun.color : "#999",
-        name: p.name,
-        cosmetic: p.equippedCosmetic || 'none',
-
-        // --- REPLICATE ACTIVE INFECTION PROPERTIES ---
-        isSlashing: p.isSlashing,
-        isInfected: (typeof InfectionMode !== 'undefined' && InfectionMode.isActive) ? InfectionMode.infectedIds.has(p.id) : false
     };
-}
 
-function syncPlayerInventory(p, serverWeapIdx, serverGunName) {
-    if (!p || !p.inventory || !serverGunName) return;
-    
-    const hasWeapon = p.inventory.some(w => w.name === serverGunName);
-    if (!hasWeapon) {
-        const b = weaponDB.find(w => w.name === serverGunName);
-        if (b) {
-            p.inventory.push({ ...b, clip: b.mag, ammo: b.reserve });
+    function getPlayerColor(id) {
+        if (id === 'p1') return '#3498db'; 
+        if (id === 'p2') return '#e67e22'; 
+        if (id === 'p3') return '#2ecc71'; 
+        return '#9b59b6'; // Purple (p4)
+    }
+
+    function getPrunedPlayer(p) {
+        if (!p) return null;
+        const activeGun = p.inventory && p.inventory[p.weapIdx] ? p.inventory[p.weapIdx] : null;
+        return {
+            x: p.x,
+            y: p.y,
+            angle: p.angle,
+            hp: p.hp,
+            score: p.score,
+            state: p.state,
+            hasVigor: p.hasVigor,
+            reloading: p.reloading,
+            weapIdx: p.weapIdx,
+            clip: activeGun ? activeGun.clip : 0,
+            ammo: activeGun ? activeGun.ammo : 0,
+            gunName: activeGun ? activeGun.name : "Model 1911",
+            gunColor: activeGun ? activeGun.color : "#999",
+            name: p.name,
+            cosmetic: p.equippedCosmetic || 'none',
+
+            // --- REPLICATE ACTIVE INFECTION PROPERTIES ---
+            isSlashing: p.isSlashing,
+            isInfected: (typeof InfectionMode !== 'undefined' && InfectionMode.isActive) ? InfectionMode.infectedIds.has(p.id) : false
+        };
+    }
+
+    function syncPlayerInventory(p, serverWeapIdx, serverGunName) {
+        if (!p || !p.inventory || !serverGunName) return;
+        
+        const hasWeapon = p.inventory.some(w => w.name === serverGunName);
+        if (!hasWeapon) {
+            const b = weaponDB.find(w => w.name === serverGunName);
+            if (b) {
+                p.inventory.push({ ...b, clip: b.mag, ammo: b.reserve });
+            }
+        }
+        
+        const targetIdx = p.inventory.findIndex(w => w.name === serverGunName);
+        if (targetIdx !== -1) {
+            p.weapIdx = targetIdx;
+        } else {
+            p.weapIdx = 0; 
         }
     }
-    
-    const targetIdx = p.inventory.findIndex(w => w.name === serverGunName);
-    if (targetIdx !== -1) {
-        p.weapIdx = targetIdx;
-    } else {
-        p.weapIdx = 0; 
-    }
-}
 
-function capitalizeFirstLetter(string) {
-    if (!string) return "Medium";
-    return string.charAt(0).toUpperCase() + string.slice(1);
-}
+    function capitalizeFirstLetter(string) {
+        if (!string) return "Medium";
+        return string.charAt(0).toUpperCase() + string.slice(1);
+    }

@@ -28,6 +28,7 @@ if(!saveData.defeatedBosses) saveData.defeatedBosses = [];
 
 function saveGame(round, kills, score) {
     if(round > saveData.highestRound) saveData.highestRound = round;
+    saveData.kills = (saveData.kills || 0) + kills; // Added to properly update cumulative kills
     
     let msg = "";
     if(saveData.prevScore === 0) msg = "First run logged! ";
