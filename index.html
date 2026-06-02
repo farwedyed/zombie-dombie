@@ -68,6 +68,51 @@
             }
         }
 
+        /* --- MULTIPLAYER RESPONSIVE LOBBY LAYOUT --- */
+.lobby-grid-container {
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+    width: 100%;
+    max-width: 920px;
+    margin-top: 10px;
+    margin-bottom: 20px;
+    box-sizing: border-box;
+    align-items: stretch;
+    justify-content: center;
+}
+
+.lobby-col {
+    flex: 1;
+    background: rgba(10, 10, 10, 0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(168, 50, 50, 0.25);
+    border-top: 3px solid #a83232;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.9);
+    padding: 20px;
+    box-sizing: border-box;
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* Force the JS-generated squad list to scale dynamically on narrower screens */
+#player-list > div {
+    min-width: 0 !important;
+    width: 100% !important;
+}
+
+/* On mobile portrait, stack panels vertically */
+@media (max-width: 768px) and (orientation: portrait) {
+    .lobby-grid-container {
+        flex-direction: column;
+        gap: 15px;
+        width: 100%;
+    }
+}
+
         /* --- UI OVERLAY --- */
         #ui-layer { 
             position: absolute; 
@@ -234,25 +279,25 @@
         }
 
         .screen { 
-            position: absolute; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%; 
-            background: radial-gradient(circle, rgba(15,0,0,0.3) 0%, rgba(5,5,5,1) 100%), 
-                        url('https://www.transparenttextures.com/patterns/black-thread.png');
-            background-color: #050505;
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center;
-            pointer-events: auto; 
-            z-index: 2000; 
-            box-shadow: inset 0 0 100px rgba(0,0,0,0.8);
-            overflow: hidden !important;
-            padding: 2vh 2vw;
-            box-sizing: border-box;
-        }
+    position: absolute; 
+    top: 0; 
+    left: 0; 
+    width: 100%; 
+    height: 100%; 
+    background: radial-gradient(circle, rgba(15,0,0,0.3) 0%, rgba(5,5,5,1) 100%), 
+                url('https://www.transparenttextures.com/patterns/black-thread.png');
+    background-color: #050505;
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    justify-content: flex-start; /* Changed from center to prevent top content cutoff */
+    pointer-events: auto; 
+    z-index: 2000; 
+    box-shadow: inset 0 0 100px rgba(0,0,0,0.8);
+    overflow-y: auto;            /* Enabled vertical scrollbar on the screen container itself */
+    padding: 40px 20px;          /* Static top/bottom padding to give the scrolled content breathing room */
+    box-sizing: border-box;
+}
 
         .main-menu-grid {
             display: flex;
@@ -667,118 +712,160 @@
             }
         }
 
-        @media (max-height: 550px) {
-            .screen {
-                padding: 4px !important;
-            }
+        /* --- MICROSCOPIC SQUISHING FOR MAIN MENU --- */
+@media (max-height: 550px), (max-width: 640px) {
+    .screen {
+        padding: 20px 10px !important;       /* Restores space around the borders on small displays */
+        justify-content: flex-start !important; /* Starts rendering from the top instead of centering */
+        overflow-y: auto !important;          /* Keeps scrolling active even on tiny viewports */
+    }
             h1 { 
-                font-size: 24px !important; 
-                margin-bottom: 4px !important; 
+                font-size: clamp(14px, 5vh, 24px) !important; 
+                margin: 0 0 2px 0 !important; 
+                letter-spacing: 1.5px !important;
             }
             .stats-text { 
-                font-size: 9px !important; 
-                padding: 4px 8px !important; 
-                margin-bottom: 4px !important; 
+                font-size: clamp(7px, 2.2vh, 9px) !important; 
+                padding: 2px 5px !important; 
+                margin-bottom: 2px !important; 
+                gap: 2px !important;
             }
             #menu-xp-bar-container {
-                height: 5px !important;
+                height: clamp(3px, 1vh, 5px) !important;
                 margin-bottom: 1px !important;
+                border-radius: 2px !important;
             }
             #menu-xp-text { 
                 margin-bottom: 4px !important; 
-                font-size: 8px !important;
+                font-size: clamp(6.5px, 1.2vh, 8.5px) !important;
             }
             .main-menu-grid {
                 flex-direction: row !important;
-                gap: 5px !important;
-                margin-top: 4px !important;
+                gap: 4px !important;
+                margin-top: 2px !important;
                 width: 100% !important;
                 align-items: stretch !important;
-                padding: 0 4px !important;
+                padding: 0 2px !important;
             }
             .menu-column {
-                padding: 6px 8px !important;
-                min-height: 180px !important;
-                max-height: 235px !important;
+                padding: 4px 6px !important;
+                min-height: 140px !important;
+                max-height: 220px !important;
                 overflow: hidden !important;
-                min-width: 130px !important;
+                min-width: 0 !important; /* Allow panels to scale down below default content widths */
                 max-width: 32% !important;
                 flex: 1 1 32% !important;
-                border-top: 2px solid #a83232 !important;
+                border-top: 1.5px solid #a83232 !important;
+                border-radius: 3px !important;
             }
             .left-panel, .center-panel, .right-panel {
                 max-width: 32% !important;
             }
             .menu-label {
-                font-size: 8px !important;
-                margin-bottom: 4px !important;
-                padding-bottom: 2px !important;
+                font-size: clamp(6.5px, 1.5vh, 8.5px) !important;
+                margin-bottom: 2px !important;
+                padding-bottom: 1px !important;
+                letter-spacing: 0.3px !important;
             }
             .menu-section {
-                margin-bottom: 4px !important;
+                margin-bottom: 2px !important;
             }
             input, select, button {
-                padding: 4px 6px !important;
-                font-size: 9.5px !important;
+                padding: 2px 4px !important;
+                font-size: clamp(7.5px, 1.6vh, 9.5px) !important;
                 margin: 1px 0 !important;
+                border-radius: 2px !important;
+                height: auto !important;
             }
             .priority-grid {
                 grid-template-columns: repeat(2, 1fr) !important;
-                gap: 4px !important;
+                gap: 3px !important;
             }
             .priority-grid button {
-                padding: 4px 2px !important;
-                font-size: 8px !important;
+                padding: 3px 1px !important;
+                font-size: clamp(6.5px, 1.4vh, 8.5px) !important;
                 white-space: nowrap !important;
                 overflow: hidden !important;
                 text-overflow: ellipsis !important;
             }
+            
+            /* Override dynamically generated Google auth bar layout metrics */
+            #auth-status-container > div {
+                padding: 3px 6px !important;
+                margin-bottom: 4px !important;
+                gap: 4px !important;
+                border-radius: 2px !important;
+            }
+            #auth-status-container img {
+                width: 18px !important;
+                height: 18px !important;
+            }
+            #auth-status-container div {
+                font-size: clamp(6.5px, 1.4vh, 8.5px) !important;
+                line-height: 1.0 !important;
+            }
+            #auth-status-container button {
+                padding: 2px 4px !important;
+                font-size: clamp(6.5px, 1.4vh, 8px) !important;
+            }
+
+            #menu-leaderboard-body-container {
+                max-height: 100px !important;
+                min-height: 0 !important;
+                padding: 1px !important;
+            }
+            #menu-leaderboard-body-container table {
+                font-size: clamp(6.5px, 1.4vh, 8.5px) !important;
+            }
+            #menu-leaderboard-body-container td, #menu-leaderboard-body-container th {
+                padding: 2px 1px !important;
+            }
 
             .modal {
-                padding: 12px !important;
+                padding: 8px !important;
             }
             .modal h2 {
-                font-size: 15px !important;
-                margin-bottom: 10px !important;
+                font-size: 13px !important;
+                margin-bottom: 8px !important;
             }
             .deployment-cards-container {
-                margin-bottom: 8px !important;
-                gap: 6px !important;
+                margin-bottom: 6px !important;
+                gap: 4px !important;
             }
             .deployment-card {
-                min-width: 75px !important;
+                min-width: 65px !important;
             }
             .card-banner {
-                height: 24px !important;
-                font-size: 8px !important;
+                height: 20px !important;
+                font-size: 7px !important;
             }
             .card-content {
-                padding: 4px !important;
+                padding: 2px !important;
             }
             .card-title {
-                font-size: 9px !important;
+                font-size: 8px !important;
             }
             .card-desc {
                 display: none !important;
             }
             .card-illustration-box {
-                height: 26px !important;
-                margin-bottom: 4px !important;
+                height: 20px !important;
+                margin-bottom: 2px !important;
             }
             .mini-player {
-                width: 10px !important;
-                height: 10px !important;
-                bottom: 3px !important;
-            }
-            .mini-player-barrel {
-                width: 3px !important;
-                height: 4px !important;
-                top: -4px !important;
-                left: 2px !important;
-            }
-            .mini-zombie {
                 width: 8px !important;
                 height: 8px !important;
+                bottom: 2px !important;
+            }
+            .mini-player-barrel {
+                width: 2px !important;
+                height: 3px !important;
+                top: -3px !important;
+                left: 1.5px !important;
+            }
+            .mini-zombie {
+                width: 6px !important;
+                height: 6px !important;
             }
             .zombie-eyes {
                 width: 1px !important;
@@ -786,49 +873,49 @@
             }
 
             #over-card-wrapper {
-                padding: 8px 12px !important;
+                padding: 6px 10px !important;
                 max-height: 98vh !important;
                 width: 100% !important;
                 max-width: 100% !important;
             }
             .over-columns-container {
                 flex-direction: row !important;
-                gap: 8px !important;
+                gap: 6px !important;
                 align-items: stretch !important;
             }
             .over-column {
-                padding: 2px !important;
-                min-height: 180px !important;
-                max-height: 205px !important;
+                padding: 1px !important;
+                min-height: 160px !important;
+                max-height: 195px !important;
                 overflow: hidden !important;
                 flex: 1 1 32% !important;
                 max-width: 32% !important;
             }
             #over-title {
-                font-size: 18px !important;
+                font-size: 16px !important;
                 margin-bottom: 1px !important;
             }
             #over-round-box {
-                font-size: 10px !important;
+                font-size: 8px !important;
                 margin-bottom: 2px !important;
             }
             #over-round-val {
-                font-size: 12px !important;
+                font-size: 10px !important;
             }
             #card-stats {
-                padding: 2px 4px !important;
-                margin-bottom: 4px !important;
-                gap: 4px !important;
+                padding: 1px 2px !important;
+                margin-bottom: 2px !important;
+                gap: 2px !important;
             }
             #card-stats div div:first-child {
-                font-size: 7px !important;
+                font-size: 6px !important;
             }
             #card-stats div div:last-child {
-                font-size: 14px !important;
+                font-size: 11px !important;
             }
             #perf-msg {
-                font-size: 8px !important;
-                margin-bottom: 2px !important;
+                font-size: 7px !important;
+                margin-bottom: 1px !important;
             }
             #over-cards-list {
                 flex-direction: row !important;
@@ -1140,38 +1227,6 @@
     </div>
 </div>
 
-<div id="settings-modal" class="modal" style="width: 440px; max-width: 95%; height: 380px; max-height: 85vh; padding: 25px;">
-    <h2 style="color:white; text-align:center; margin-top:0; margin-bottom:20px;">SYSTEM SETTINGS</h2>
-    
-    <div class="menu-section" style="margin-bottom: 25px;">
-        <label for="settings-volume" style="color: #ffd700; font-size: 12px; font-weight: bold; display: block; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">Master Volume:</label>
-        <div style="display: flex; align-items: center; gap: 10px;">
-            <span style="font-size:14px; color:#666;">🔈</span>
-            <input type="range" id="settings-volume" min="0" max="1" step="0.05" value="0.5" oninput="updateSystemVolume(this.value)" style="flex: 1; cursor: pointer;">
-            <span id="settings-volume-percent" style="font-size:12px; color:#aaa; font-weight:bold; min-width: 40px;">50%</span>
-        </div>
-    </div>
-
-    <div class="menu-section" style="margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.02); padding: 10px; border: 1px solid #222; border-radius: 4px;">
-        <span style="color:#aaa; font-size:12px; font-weight:bold; text-transform:uppercase; letter-spacing:0.5px;">Enable Sound Effects:</span>
-        <label style="position: relative; display: inline-block; width: 45px; height: 24px;">
-            <input type="checkbox" id="settings-audio-toggle" checked onchange="toggleSystemAudio(this.checked)" style="opacity: 0; width: 0; height: 0;">
-            <span style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #333; border-radius: 24px; transition: .3s; display: flex; align-items: center; padding: 0 4px; box-sizing: border-box;">
-                <span id="toggle-knob" style="width: 16px; height: 16px; background-color: #fff; border-radius: 50%; transition: .3s; transform: translateX(21px);"></span>
-            </span>
-        </label>
-    </div>
-
-    <div class="menu-section" style="margin-bottom: 20px; font-size: 10px; color: #666; text-align: left; line-height: 1.4; border-top: 1px dashed #333; padding-top: 15px;">
-        <strong>INPUT SCHEMES:</strong><br>
-        • PC: WASD to Move, Mouse to Aim/Shoot, R to Reload, F to Interact.<br>
-        • MOBILE: Use joysticks to move/aim, HUD buttons to reload, swap weapons, and interact.<br>
-        • LOCAL CO-OP: Configure keyboard arrows or Controller inputs.
-    </div>
-
-    <button onclick="closeMenu('settings-modal')" style="background: #333; margin-top: 10px;">BACK TO MENU</button>
-</div>
-
 <!-- LOBBY SCREEN -->
 <div id="lobby-screen" class="screen" style="display: none;">
     <h1>LOBBY</h1>
@@ -1181,51 +1236,72 @@
             📋 Copy
         </button>
     </div>
-    <div id="lobby-status">Waiting for players...</div>
-    
-    <!-- LOBBY GAME MODE SELECTOR -->
-    <div id="lobby-mode-container" style="margin-top: 15px; margin-bottom: 5px; width: 100%; max-width: 320px; text-align: center; background: rgba(0,0,0,0.4); padding: 15px; border: 1px solid #333; box-sizing: border-box;">
-        <label for="lobby-mode-select" style="color: #666; display: block; font-size: 12px; margin-bottom: 8px; text-transform: uppercase; font-weight: bold; letter-spacing: 1px;">GAME MODE:</label>
-        <select id="lobby-mode-select" onchange="lobbyChangeMode()">
-            <option value="SURVIVAL" selected>Classic Survival</option>
-            <option value="INFECTION">☣️ Infection Mode (PvP)</option>
-        </select>
-        <div id="lobby-mode-display-client" style="color: #ffd700; font-weight: bold; font-size: 16px; margin-top: 5px; display: none;">Classic Survival</div>
-    </div>
 
-    <div id="lobby-map-container" style="margin-top: 5px; margin-bottom: 5px; width: 100%; max-width: 320px; text-align: center; background: rgba(0,0,0,0.4); padding: 15px; border: 1px solid #333; box-sizing: border-box;">
-        <label for="lobby-map-select" style="color: #666; display: block; font-size: 12px; margin-bottom: 8px; text-transform: uppercase; font-weight: bold; letter-spacing: 1px;">DEPLOYMENT ZONE:</label>
-        <select id="lobby-map-select" onchange="lobbyChangeMap()">
-            <option value="0">The Facility (Classic)</option>
-            <option value="1">Bunker Outpost (Tactical)</option>
-            <option value="2">Sector-9 Lab Maze (Survival)</option>
-            <option value="3">Sector-12 City (Infection)</option>
-        </select>
-        <div id="lobby-map-display-client" style="color: #ffd700; font-weight: bold; font-size: 16px; margin-top: 5px; display: none;">Retrieving map...</div>
-    </div>
+    <div class="lobby-grid-container">
+        <!-- LEFT COLUMN: TACTICAL SETTINGS -->
+        <div class="lobby-col">
+            <span class="menu-label" style="text-align: center; border-bottom: 1px solid rgba(168, 50, 50, 0.25); padding-bottom: 8px; margin-bottom: 10px;">⚙️ Tactical settings</span>
+            
+            <!-- LOBBY GAME MODE SELECTOR -->
+            <div id="lobby-mode-container" style="width: 100%; text-align: center; background: rgba(0,0,0,0.4); padding: 12px; border: 1px solid #222; box-sizing: border-box; border-radius: 4px;">
+                <label for="lobby-mode-select" style="color: #666; display: block; font-size: 11px; margin-bottom: 6px; text-transform: uppercase; font-weight: bold; letter-spacing: 1px;">GAME MODE:</label>
+                <select id="lobby-mode-select" onchange="lobbyChangeMode()">
+                    <option value="SURVIVAL" selected>Classic Survival</option>
+                    <option value="INFECTION">☣️ Infection Mode (PvP)</option>
+                </select>
+                <div id="lobby-mode-display-client" style="color: #ffd700; font-weight: bold; font-size: 15px; margin-top: 5px; display: none;">Classic Survival</div>
+            </div>
 
-    <div id="lobby-diff-container" style="margin-top: 5px; margin-bottom: 5px; width: 100%; max-width: 320px; text-align: center; background: rgba(0,0,0,0.4); padding: 15px; border: 1px solid #333; box-sizing: border-box;">
-        <label for="lobby-diff-select" style="color: #666; display: block; font-size: 12px; margin-bottom: 8px; text-transform: uppercase; font-weight: bold; letter-spacing: 1px;">DIFFICULTY:</label>
-        <select id="lobby-diff-select" onchange="lobbyChangeDifficulty()">
-            <option value="easy">Easy (More Player Health, Slower Zombies)</option>
-            <option value="medium" selected>Medium (Standard Mode)</option>
-            <option value="hard">Hard (Faster and Stronger Zombies)</option>
-        </select>
-        <div id="lobby-diff-display-client" style="color: #ffd700; font-weight: bold; font-size: 16px; margin-top: 5px; display: none;">Retrieving difficulty...</div>
-    </div>
+            <!-- LOBBY DEPLOYMENT ZONE SELECTOR -->
+            <div id="lobby-map-container" style="width: 100%; text-align: center; background: rgba(0,0,0,0.4); padding: 12px; border: 1px solid #222; box-sizing: border-box; border-radius: 4px;">
+                <label for="lobby-map-select" style="color: #666; display: block; font-size: 11px; margin-bottom: 6px; text-transform: uppercase; font-weight: bold; letter-spacing: 1px;">DEPLOYMENT ZONE:</label>
+                <select id="lobby-map-select" onchange="lobbyChangeMap()">
+                    <option value="0">The Facility (Classic)</option>
+                    <option value="1">Bunker Outpost (Tactical)</option>
+                    <option value="2">Sector-9 Lab Maze (Survival)</option>
+                    <option value="3">Sector-12 City (Infection)</option>
+                </select>
+                <div id="lobby-map-display-client" style="color: #ffd700; font-weight: bold; font-size: 15px; margin-top: 5px; display: none;">Retrieving map...</div>
+            </div>
 
-    <div id="lobby-visibility-container" style="margin-top: 5px; margin-bottom: 15px; width: 100%; max-width: 320px; text-align: center; background: rgba(0,0,0,0.4); padding: 15px; border: 1px solid #333; box-sizing: border-box;">
-        <label for="lobby-visibility-select" style="color: #666; display: block; font-size: 12px; margin-bottom: 8px; text-transform: uppercase; font-weight: bold; letter-spacing: 1px;">LOBBY TYPE:</label>
-        <select id="lobby-visibility-select" onchange="lobbyChangeVisibility()">
-            <option value="public" selected>🌍 Public (Listed in Server Browser)</option>
-            <option value="private">🔒 Private (Joinable by Code Only)</option>
-        </select>
-        <div id="lobby-visibility-display-client" style="color: #ffd700; font-weight: bold; font-size: 16px; margin-top: 5px; display: none;">Public</div>
-    </div>
+            <!-- LOBBY DIFFICULTY SELECTOR -->
+            <div id="lobby-diff-container" style="width: 100%; text-align: center; background: rgba(0,0,0,0.4); padding: 12px; border: 1px solid #222; box-sizing: border-box; border-radius: 4px;">
+                <label for="lobby-diff-select" style="color: #666; display: block; font-size: 11px; margin-bottom: 6px; text-transform: uppercase; font-weight: bold; letter-spacing: 1px;">DIFFICULTY:</label>
+                <select id="lobby-diff-select" onchange="lobbyChangeDifficulty()">
+                    <option value="easy">Easy (More Player Health, Slower Zombies)</option>
+                    <option value="medium" selected>Medium (Standard Mode)</option>
+                    <option value="hard">Hard (Faster and Stronger Zombies)</option>
+                </select>
+                <div id="lobby-diff-display-client" style="color: #ffd700; font-weight: bold; font-size: 15px; margin-top: 5px; display: none;">Retrieving difficulty...</div>
+            </div>
 
-    <div id="player-list" style="margin-top:20px; color:#aaa; font-family: inherit;"></div>
-    <button id="start-btn" onclick="hostStartGame()" disabled style="margin-top:30px;">START MATCH</button>
-    <button onclick="location.reload()" style="background:#444">CANCEL</button>
+            <!-- LOBBY VISIBILITY SELECTOR -->
+            <div id="lobby-visibility-container" style="width: 100%; text-align: center; background: rgba(0,0,0,0.4); padding: 12px; border: 1px solid #222; box-sizing: border-box; border-radius: 4px;">
+                <label for="lobby-visibility-select" style="color: #666; display: block; font-size: 11px; margin-bottom: 6px; text-transform: uppercase; font-weight: bold; letter-spacing: 1px;">LOBBY TYPE:</label>
+                <select id="lobby-visibility-select" onchange="lobbyChangeVisibility()">
+                    <option value="public" selected>🌍 Public (Listed in Server Browser)</option>
+                    <option value="private">🔒 Private (Joinable by Code Only)</option>
+                </select>
+                <div id="lobby-visibility-display-client" style="color: #ffd700; font-weight: bold; font-size: 15px; margin-top: 5px; display: none;">Public</div>
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN: SQUAD & STATUS -->
+        <div class="lobby-col" style="justify-content: space-between;">
+            <div>
+                <span class="menu-label" style="text-align: center; border-bottom: 1px solid rgba(168, 50, 50, 0.25); padding-bottom: 8px; margin-bottom: 10px;">👥 Squad Details</span>
+                
+                <div id="lobby-status" style="font-weight: bold; font-size: 14px; text-align: center; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px;">Waiting for players...</div>
+                
+                <div id="player-list" style="color:#aaa; font-family: inherit; width: 100%;"></div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 20px;">
+                <button id="start-btn" onclick="hostStartGame()" disabled style="font-size: 14px; padding: 12px 10px; margin: 0;">START MATCH</button>
+                <button onclick="location.reload()" style="background:#444; font-size: 13px; padding: 10px; margin: 0;">LEAVE LOBBY</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- TAB SCOREBOARD -->
@@ -1293,8 +1369,6 @@
                     <th style="padding:8px;">HOST</th>
                     <th style="padding:8px;">MAP</th>
                     <th style="padding:8px;">MODE</th>
-                    <th style="padding:8px;">DIFFICULTY</th>
-                    <th style="padding:8px;">PLAYERS</th>
                     <th style="padding:8px; text-align:right;">ACTION</th>
                 </tr>
             </thead>
@@ -1558,8 +1632,8 @@
         <!-- Player 8 HUD -->
         <div id="hud-p8" class="hud-cluster" style="text-align: right;">
             <div id="p8-name" style="color: #10ac84; font-size: 14px; font-weight: bold;">Player 8</div>
-            <div id="p8-hp-bar-container" style="width: 120px; height: 6px; background: #222; border: 1px solid #444; border-radius: 3px; margin-top: 3px; margin-left: auto; overflow: hidden; box-sizing: border-box;">
-                <div id="p8-hp-bar" style="width: 100%; height: 100%; background: #2ecc71; transition: width 0.2s ease;"></div>
+            <div id="hud-p8-hp-bar-container" style="width: 120px; height: 6px; background: #222; border: 1px solid #444; border-radius: 3px; margin-top: 3px; margin-left: auto; overflow: hidden; box-sizing: border-box;">
+                <div id="hud-p8-hp-bar" style="width: 100%; height: 100%; background: #2ecc71; transition: width 0.2s ease;"></div>
             </div>
             <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 3px; gap: 10px;">
                 <div style="text-align: left;">
