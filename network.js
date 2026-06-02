@@ -217,7 +217,15 @@ const Network = {
                     if (data.state) p.state = data.state;
 
                     if (data.gunName) {
-                        syncPlayerInventory(p, data.weapIdx, data.gunName);
+                        if (p.justPurchasedWeapon) {
+                            if (data.gunName === p.justPurchasedWeapon) {
+                                p.justPurchasedWeapon = null; // Clear lock once client equips it
+                                syncPlayerInventory(p, data.weapIdx, data.gunName);
+                            }
+                            // Otherwise ignore out-of-date in-flight weapon packets
+                        } else {
+                            syncPlayerInventory(p, data.weapIdx, data.gunName);
+                        }
                     }
                 }
             }
@@ -611,8 +619,6 @@ const Network = {
                 window.mortarTargets = data.mortarTargets || [];
                 window.groundSmashes = data.groundSmashes || [];
                 
-                stats = data.stats;
-
                 ['p1', 'p2', 'p3', 'p4'].forEach(pId => {
                     if (pId === window.myPlayerId) {
                         const fallbackPId = data[pId];
@@ -761,6 +767,18 @@ const Network = {
                         }
                     }
                 });
+
+                // Detect round increase to award local round survival coins
+                if (data.stats.round > stats.round) {
+                    const roundsSurvived = data.stats.round - stats.round;
+                    const coinBonus = roundsSurvived * 10;
+                    saveData.lobbyCoins = (saveData.lobbyCoins || 0) + coinBonus;
+                    if (me) {
+                        addText(me.x, me.y - 70, `+${coinBonus} ROUND BONUS 🪙`, "#ffd700");
+                    }
+                }
+
+                stats = data.stats;
             }
             else if(data.type === 'GAME_OVER') {
                 stats = { ...stats, ...data.stats };

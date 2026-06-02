@@ -343,7 +343,7 @@ function skipToBossRound(targetRound) {
 }
 
 function addPlayerXP(p, amount) {
-    if (!p || p.state !== 'ALIVE' || Network.mode === 'CLIENT') return;
+    if (!p || p.state !== 'ALIVE') return;
     if (p === me) {
         if (saveData.xp === undefined) saveData.xp = 0;
         if (saveData.lobbyCoins === undefined) saveData.lobbyCoins = 0;
@@ -718,6 +718,7 @@ function processInteraction(p) {
                     let b = weaponDB.find(w => w.name === t.obj.label); 
                     p.inventory.push({ ...b, clip: b.mag, ammo: b.reserve }); 
                     p.weapIdx = p.inventory.length - 1; 
+                    p.justPurchasedWeapon = b.name; // Keep track of newly purchased weapon
                     addText(p.x, p.y, b.name, "#fff"); 
                 }
             }
@@ -1226,6 +1227,14 @@ function checkGameFlow() {
         stats.changingRound = true;
         setTimeout(() => {
             stats.round++; 
+            
+            // Award Round Survival Coin Bonus to Host/Offline player
+            const coinBonus = 10; 
+            saveData.lobbyCoins = (saveData.lobbyCoins || 0) + coinBonus;
+            if (me) {
+                addText(me.x, me.y - 70, `+${coinBonus} ROUND BONUS 🪙`, "#ffd700");
+            }
+
             if (stats.round % 5 === 0) { 
                 if (typeof ZombieVariants !== 'undefined') ZombieVariants.spawnBoss(stats.round); 
             } else {
@@ -1505,7 +1514,7 @@ function drawOverBossIcon(bId, discovered, defeated, strikeProgress) {
             ctx.beginPath(); 
             ctx.arc(27 + 4, 27 - 4, 2, 0, Math.PI * 2); 
             c.fill(); 
-            c.stroke();
+            ctx.stroke();
         } else if (b.id === 'boss_decayer') {
             c.fillStyle = '#2ecc71';
             c.beginPath(); 
