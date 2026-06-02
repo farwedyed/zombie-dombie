@@ -214,16 +214,27 @@ function init() {
             showScoreboard = true; 
         } else {
             keys[e.code] = true; 
-            if (gameActive && e.code === 'KeyR') {
-                handleReload(); 
-            }
-            if (gameActive && e.code === 'KeyF') {
-                handleInteractAction(); 
-            }
-            if (gameActive && e.code === 'KeyQ') {
-                if (me && me.inventory.length > 1) {
-                    me.weapIdx = (me.weapIdx + 1) % me.inventory.length;
-                    addText(me.x, me.y - 40, me.inventory[me.weapIdx].name, "#fff");
+            
+            // Intercept spectator inputs to allow camera cycling
+            if (gameActive && me && me.state === 'SPECTATING') {
+                if (e.code === 'KeyQ' || e.code === 'ArrowRight' || e.code === 'KeyD') {
+                    cycleSpectator(1);
+                }
+                if (e.code === 'ArrowLeft' || e.code === 'KeyA') {
+                    cycleSpectator(-1);
+                }
+            } else {
+                if (gameActive && e.code === 'KeyR') {
+                    handleReload(); 
+                }
+                if (gameActive && e.code === 'KeyF') {
+                    handleInteractAction(); 
+                }
+                if (gameActive && e.code === 'KeyQ') {
+                    if (me && me.inventory.length > 1) {
+                        me.weapIdx = (me.weapIdx + 1) % me.inventory.length;
+                        addText(me.x, me.y - 40, me.inventory[me.weapIdx].name, "#fff");
+                    }
                 }
             }
         }
@@ -238,13 +249,19 @@ function init() {
     });
     
     window.addEventListener('wheel', function (e) {
-        if (gameActive && me && me.inventory.length > 1) {
-            if (e.deltaY > 0) {
-                me.weapIdx = (me.weapIdx + 1) % me.inventory.length;
-            } else {
-                me.weapIdx = (me.weapIdx - 1 + me.inventory.length) % me.inventory.length;
+        if (gameActive && me) {
+            if (me.state === 'SPECTATING') {
+                cycleSpectator(e.deltaY > 0 ? 1 : -1);
+                return;
             }
-            addText(me.x, me.y - 40, me.inventory[me.weapIdx].name, "#fff");
+            if (me.inventory.length > 1) {
+                if (e.deltaY > 0) {
+                    me.weapIdx = (me.weapIdx + 1) % me.inventory.length;
+                } else {
+                    me.weapIdx = (me.weapIdx - 1 + me.inventory.length) % me.inventory.length;
+                }
+                addText(me.x, me.y - 40, me.inventory[me.weapIdx].name, "#fff");
+            }
         }
     }, { passive: true });
     
@@ -256,6 +273,9 @@ function init() {
     window.addEventListener('mousedown', function (e) { 
         if (e.button === 0) {
             mouse.down = true; 
+            if (gameActive && me && me.state === 'SPECTATING') {
+                cycleSpectator(1);
+            }
         }
     });
     
@@ -520,16 +540,23 @@ function setupTouchControls() {
     document.getElementById('btn-touch-switch').addEventListener('touchstart', function (e) {
         e.preventDefault(); 
         if (me) me.isTouch = true;
-        if (gameActive && me && me.inventory.length > 1) {
-            // Debounce touch event to prevent immediate duplicate switches on mobile
-            const now = Date.now();
-            if (now - (me.lastSwitchTime || 0) < 300) return;
-            me.lastSwitchTime = now;
+        if (gameActive && me) {
+            // Cycle targets if currently in spectating status
+            if (me.state === 'SPECTATING') {
+                cycleSpectator(1);
+                return;
+            }
+            if (me.inventory.length > 1) {
+                // Debounce touch event to prevent immediate duplicate switches on mobile
+                const now = Date.now();
+                if (now - (me.lastSwitchTime || 0) < 300) return;
+                me.lastSwitchTime = now;
 
-            me.weapIdx = (me.weapIdx + 1) % me.inventory.length;
-            addText(me.x, me.y - 40, me.inventory[me.weapIdx].name, "#fff");
-            if (Network.mode === 'CLIENT') {
-                Network.sendClientData(me); 
+                me.weapIdx = (me.weapIdx + 1) % me.inventory.length;
+                addText(me.x, me.y - 40, me.inventory[me.weapIdx].name, "#fff");
+                if (Network.mode === 'CLIENT') {
+                    Network.sendClientData(me); 
+                }
             }
         }
     });
@@ -1672,7 +1699,9 @@ function feedbackCopyButton() {
 
 // Override updateUI to solve the weapon switching visual freeze bug in Solo and Tutorial modes
 window.updateUI = function() {
-    document.getElementById('round-box').innerText = stats.round;
+    const roundEl = document.getElementById('round-box');
+    if (roundEl) roundEl.innerText = stats.round;
+    
     const bTimer = document.getElementById('boss-timer-box');
     if (bTimer) { 
         if (stats.round % 5 === 0) { 
@@ -1712,36 +1741,61 @@ window.updateUI = function() {
         if (hud) {
             if (p) {
                 hud.style.display = 'block'; 
-                document.getElementById(pId + '-name').innerText = p.name || pId.toUpperCase(); 
-                document.getElementById(pId + '-score').innerHTML = p.score + ' <span style="font-size:16px">⛃</span>';
                 
-                // Prioritize local active weapon values, falling back to network structures for remote peers
+                const nameEl = document.getElementById(pId + '-name');
+                if (nameEl) nameEl.innerText = p.name || pId.toUpperCase(); 
+                
+                const scoreEl = document.getElementById(pId + '-score');
+                if (scoreEl) scoreEl.innerHTML = p.score + ' <span style="font-size:16px">⛃</span>';
+                
+                // Resolve Network Live Ammo and Weapon Switches
+                const isLocal = (pId === window.myPlayerId);
                 const gun = p.inventory && p.inventory[p.weapIdx] ? p.inventory[p.weapIdx] : null;
+                
                 let gunName = "Model 1911";
                 let ammoText = "8 / 32";
                 
-                if (p.reloading) {
+                if (p.state === 'SPECTATING') {
+                    gunName = "SPECTATING";
+                    ammoText = "NEXT ROUND";
+                } else if (p.reloading) {
                     ammoText = "RELOADING";
-                } else if (gun) {
+                } else if (p.state === 'DOWNED') {
+                    gunName = "DOWNED";
+                    ammoText = "NEED HELP";
+                } else if (isLocal && gun) {
                     gunName = gun.name;
                     ammoText = `${gun.clip} / ${gun.ammo}`;
-                } else if (p.gunName) {
-                    gunName = p.gunName;
-                    ammoText = `${p.clip} / ${p.ammo}`;
+                } else {
+                    // Non-local players read directly from replicated state
+                    gunName = p.gunName || (gun ? gun.name : "Model 1911");
+                    ammoText = (p.clip !== undefined && p.ammo !== undefined) ? `${p.clip} / ${p.ammo}` : (gun ? `${gun.clip} / ${gun.ammo}` : "8 / 32");
                 }
                 
-                document.getElementById(pId + '-gun-name').innerText = gunName; 
-                document.getElementById(pId + '-ammo-text').innerText = ammoText; 
-                document.getElementById(pId + '-icon-vig').style.display = p.hasVigor ? 'block' : 'none';
+                const gunNameEl = document.getElementById(pId + '-gun-name');
+                if (gunNameEl) gunNameEl.innerText = gunName; 
+                
+                const ammoTextEl = document.getElementById(pId + '-ammo-text');
+                if (ammoTextEl) ammoTextEl.innerText = ammoText; 
+                
+                const vigIconEl = document.getElementById(pId + '-icon-vig');
+                if (vigIconEl) vigIconEl.style.display = p.hasVigor ? 'block' : 'none';
+                
                 const hpBar = document.getElementById(pId + '-hp-bar');
                 if (hpBar) {
                     let pct = p.hp / p.maxHp; 
                     if (pct < 0) pct = 0; 
                     if (pct > 1) pct = 1; 
                     hpBar.style.width = (pct * 100) + "%";
-                    if (pct > 0.5) hpBar.style.backgroundColor = "#2ecc71"; 
-                    else if (pct > 0.25) hpBar.style.backgroundColor = "#f1c40f"; 
-                    else hpBar.style.backgroundColor = "#e74c3c";
+                    if (p.state === 'SPECTATING') {
+                        hpBar.style.width = "0%";
+                    } else if (pct > 0.5) {
+                        hpBar.style.backgroundColor = "#2ecc71"; 
+                    } else if (pct > 0.25) {
+                        hpBar.style.backgroundColor = "#f1c40f"; 
+                    } else {
+                        hpBar.style.backgroundColor = "#e74c3c";
+                    }
                 }
             } else hud.style.display = 'none';
         }

@@ -477,6 +477,7 @@ function drawGame() {
     });
 
     Object.values(players).forEach(p => {
+        if (p.state === 'SPECTATING') return; // Skip spectator rendering completely
         ctx.save();
         ctx.translate(p.x, p.y);
         
@@ -738,6 +739,30 @@ function drawGame() {
     }
 
     ctx.restore(); 
+    
+    // --- DRAW SPECTATOR OVERLAY ---
+    if (me && me.state === 'SPECTATING') {
+        ctx.save();
+        ctx.fillStyle = 'rgba(10, 10, 10, 0.85)';
+        ctx.fillRect(0, canvas.height - 110, canvas.width, 110);
+        ctx.strokeStyle = '#a83232';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(0, canvas.height - 110, canvas.width, 110);
+        
+        ctx.fillStyle = '#ff4757';
+        ctx.font = 'bold 22px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText('SPECTATOR MODE', canvas.width / 2, canvas.height - 70);
+        
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 14px monospace';
+        let targetName = "Nobody";
+        if (window.spectateTargetId && players[window.spectateTargetId]) {
+            targetName = players[window.spectateTargetId].name || window.spectateTargetId.toUpperCase();
+        }
+        ctx.fillText(`Watching: ${targetName}  |  Press [Q], [A/D], or [Arrows] / Tap [GUN] to Cycle Survivors`, canvas.width / 2, canvas.height - 35);
+        ctx.restore();
+    }
     
     if (window.activeBoss && window.activeBoss.name) {
         const barW = 400;

@@ -14,6 +14,19 @@ window.GameBalanceConfig = {
 
 let bulletIdCounter = 0;
 
+// Global helper to cycle through targets for spectating players
+window.cycleSpectator = function(dir = 1) {
+    let survivors = Object.values(players).filter(p => p.state === 'ALIVE');
+    if (survivors.length <= 1) return;
+    let currentIdx = survivors.findIndex(p => p.id === window.spectateTargetId);
+    if (currentIdx === -1) {
+        window.spectateTargetId = survivors[0].id;
+    } else {
+        let nextIdx = (currentIdx + dir + survivors.length) % survivors.length;
+        window.spectateTargetId = survivors[nextIdx].id;
+    }
+};
+
 function loop(currentTime) {
     if (!gameActive) return;
     if (!currentTime) currentTime = performance.now();
@@ -28,11 +41,23 @@ function loop(currentTime) {
         loopCount++; 
     }
     if (accumulator >= tickRate) accumulator = 0;
+    
     let camTarget = me;
-    if (me && me.state !== 'ALIVE') {
+    if (me && (me.state === 'SPECTATING' || me.state === 'DOWNED')) {
+        let survivors = Object.values(players).filter(p => p.state === 'ALIVE');
+        if (survivors.length > 0) {
+            if (window.spectateTargetId === undefined || !players[window.spectateTargetId] || players[window.spectateTargetId].state !== 'ALIVE') {
+                window.spectateTargetId = survivors[0].id;
+            }
+            camTarget = players[window.spectateTargetId];
+        } else {
+            camTarget = me;
+        }
+    } else if (me && me.state !== 'ALIVE') {
         let survivor = Object.values(players).find(p => p.state === 'ALIVE');
         if (survivor) camTarget = survivor;
     }
+    
     if (camTarget) {
         const scale = window.getGameScale();
         camera.x = camTarget.x - (canvas.width / scale) / 2; 
@@ -102,6 +127,7 @@ function updateGameLogic() {
         ['p2', 'p3', 'p4'].forEach(pId => {
             const p = players[pId];
             if (p) {
+                if (p.state === 'SPECTATING') return; // Skip spectator update step
                 if (p.triggerReload) forceReload(p); 
                 p.triggerReload = false;
                 if (Network.mode === 'LOCAL_COOP' && pId === 'p2') updateLocalCoopP2(p);
@@ -301,6 +327,7 @@ function addPlayerXP(p, amount) {
 }
 
 function updatePlayerPhysics(p, isLocal) {
+    if (p.state === 'SPECTATING') return; // Skip movement & inputs for spectators
     if (p.state === 'DOWNED') {
         if (p.reviveTimer > 0) { 
             p.reviveTimer--; 
@@ -357,6 +384,7 @@ function updatePlayerPhysics(p, isLocal) {
 }
 
 function updateLocalCoopP2(p) {
+    if (p.state === 'SPECTATING') return; // Skip coop input for spectators
     if (p.state === 'DOWNED') { 
         if (p.reviveTimer > 0) { 
             p.reviveTimer--; 
@@ -580,8 +608,11 @@ function checkInteractUI() {
 
 function handleInteractAction() { 
     if (me.state !== 'ALIVE') return; 
-    if (Network.mode === 'CLIENT') Network.sendInteract(); 
-    else processInteraction(me); 
+    if (Network.mode === 'CLIENT') {
+        Network.sendInteract(); // Standard clean WebRTC message
+    } else {
+        processInteraction(me); 
+    }
 }
 
 function processInteraction(p) {
@@ -658,8 +689,10 @@ function processInteraction(p) {
 
 function checkAllDead() { 
     if (Network.mode === 'CLIENT') return; 
-    let allDown = Object.values(players).every(p => p.state === 'DOWNED'); 
-    if (allDown && !Object.values(players).some(p => p.reviveTimer > 0)) gameOver(); 
+    let activePlayers = Object.values(players).filter(p => p.state === 'ALIVE' || p.state === 'DOWNED');
+    if (activePlayers.length === 0) return; // Prevent premature game-overs when mid-round joins spectate
+    let allDown = activePlayers.every(p => p.state === 'DOWNED'); 
+    if (allDown && !activePlayers.some(p => p.reviveTimer > 0)) gameOver(); 
 }
 
 function updateZombies() {
@@ -1240,10 +1273,6 @@ function drawOverBossIcon(bId, discovered, defeated, strikeProgress) {
             c.fill(); 
             c.stroke();
             c.beginPath(); 
-            c.arc(27 + 4, 27 - 1.5, 2, 0, Math.PI * 2); 
-            c.fill(); 
-            c.stroke();
-            c.beginPath(); 
             c.arc(27, 27 - 6, 2.3, 0, Math.PI * 2); 
             c.fill(); 
             c.stroke();
@@ -1285,7 +1314,7 @@ function drawOverBossIcon(bId, discovered, defeated, strikeProgress) {
             c.stroke();
 
             c.strokeStyle = '#7f8c8d'; 
-            c.lineWidth = 2.5;
+            c.lineWidth = 3;
             c.beginPath(); 
             c.arc(27, 27, 11, 0, Math.PI, true); 
             c.stroke();
@@ -1761,13 +1790,25 @@ function updateUI() {
         if (hud) {
             if (p) {
                 hud.style.display = 'block'; 
-                document.getElementById(pId + '-name').innerText = p.name || pId.toUpperCase(); 
-                document.getElementById(pId + '-score').innerHTML = p.score + ' <span style="font-size:16px">⛃</span>';
+                
+                const nameEl = document.getElementById(pId + '-name');
+                if (nameEl) nameEl.innerText = p.name || pId.toUpperCase(); 
+                
+                const scoreEl = document.getElementById(pId + '-score');
+                if (scoreEl) scoreEl.innerHTML = p.score + ' <span style="font-size:16px">⛃</span>';
+                
                 const gun = p.inventory && p.inventory[p.weapIdx] ? p.inventory[p.weapIdx] : null, gunName = p.gunName || (gun ? gun.name : "Model 1911");
                 const ammoText = p.reloading ? "RELOADING" : (p.clip !== undefined && p.ammo !== undefined ? `${p.clip} / ${p.ammo}` : (gun ? `${gun.clip} / ${gun.ammo}` : "8 / 32"));
-                document.getElementById(pId + '-gun-name').innerText = gunName; 
-                document.getElementById(pId + '-ammo-text').innerText = ammoText; 
-                document.getElementById(pId + '-icon-vig').style.display = p.hasVigor ? 'block' : 'none';
+                
+                const gunNameEl = document.getElementById(pId + '-gun-name');
+                if (gunNameEl) gunNameEl.innerText = gunName; 
+                
+                const ammoTextEl = document.getElementById(pId + '-ammo-text');
+                if (ammoTextEl) ammoTextEl.innerText = ammoText; 
+                
+                const vigIconEl = document.getElementById(pId + '-icon-vig');
+                if (vigIconEl) vigIconEl.style.display = p.hasVigor ? 'block' : 'none';
+                
                 const hpBar = document.getElementById(pId + '-hp-bar');
                 if (hpBar) {
                     let pct = p.hp / p.maxHp; 
@@ -1782,5 +1823,3 @@ function updateUI() {
         }
     });
 }
-
-init();

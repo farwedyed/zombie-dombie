@@ -160,26 +160,61 @@ const Network = {
                     type: 'LOBBY_UPDATE',
                     lobbyPlayers: window.lobbyPlayers
                 });
+
+                // MID-GAME JOIN HANDSHAKE: If match is currently in progress, spawn them as a spectator
+                if (gameActive) {
+                    const spawnX = activeMap.rooms[0].x + activeMap.rooms[0].w / 2;
+                    const spawnY = activeMap.rooms[0].y + activeMap.rooms[0].h / 2;
+                    players[c.playerId] = createPlayer(c.playerId, spawnX, spawnY, getPlayerColor(c.playerId), window.lobbyPlayers[c.playerId]);
+                    players[c.playerId].state = 'SPECTATING';
+                    
+                    try {
+                        c.send({
+                            type: 'START',
+                            mapIndex: stats.selectedMapIdx,
+                            midGame: true
+                        });
+                    } catch (e) {
+                        console.warn("Failed to send mid-game START:", e);
+                    }
+                }
             }
             else if(data.type === 'P_DATA') {
                 const p = players[c.playerId];
                 if (p) {
-                    if (p.state === 'ALIVE') {
+                    if (p.state === 'ALIVE' && data.x !== undefined && data.y !== undefined) {
                         p.serverX = data.x;
                         p.serverY = data.y;
                     }
-                    p.angle = data.angle;
+                    if (data.angle !== undefined) p.angle = data.angle;
                     
                     if(data.name) p.name = data.name;
                     p.isShooting = data.shoot; 
-                    if (data.reload) p.triggerReload = true;
+
+                    if (data.reload) {
+                        // FIXED: Forces instant remote reloading state and spawns floating text on the Host screen
+                        const gun = p.inventory && p.inventory[p.weapIdx] ? p.inventory[p.weapIdx] : null;
+                        if (gun && !p.reloading) {
+                            p.reloading = true;
+                            p.reloadTimer = gun.reload;
+                            p.triggerReload = false; // Bypasses secondary triggers
+                            if (typeof addText === 'function') {
+                                addText(p.x, p.y - 40, "RELOADING...", "#fff");
+                            }
+                        }
+                    }
+
                     p.equippedCosmetic = data.cosmetic || 'none';
                     p.isTouch = data.isTouch || false;
+                    if (data.state) p.state = data.state;
 
                     // Sync the active weapon selection sent by client
                     if (data.gunName) {
                         syncPlayerInventory(p, data.weapIdx, data.gunName);
                     }
+
+                    // BREAK CIRCULAR SYNC LOOP: Host is authoritative over simulated ammo counts.
+                    // We do not overwrite host simulated ammo with stale client P_DATA values during normal gameplay.
                 }
             }
             else if(data.type === 'INTERACT') {
@@ -354,7 +389,11 @@ const Network = {
                 if (data.mapIndex !== undefined && typeof playableMaps !== 'undefined') {
                     activeMap = playableMaps[data.mapIndex];
                 }
+                this.lastGameStateTime = Date.now(); // FIXED: Resets Client watchdog timestamp to current time to prevent an instant game restart disconnect
                 launchGame();
+                if (data.midGame) {
+                    me.state = 'SPECTATING';
+                }
             }
             else if(data.type === 'GAME_STATE') {
                 this.lastGameStateTime = Date.now(); // Feed watchdog on every gamestate frame
@@ -366,8 +405,17 @@ const Network = {
                     serverMap.set(sz.id, sz);
                     const local = zombies.find(z => z.id === sz.id);
                     if(local) {
-                        if (local.hp > sz.hp && typeof spawnParticles === 'function') {
-                            spawnParticles(local.x, local.y, '#800', 3);
+                        if (local.hp > sz.hp) {
+                            if (typeof spawnParticles === 'function') {
+                                spawnParticles(local.x, local.y, '#800', 3);
+                            }
+
+                            // HIT INDICATOR SYNC: Spawns white float points (+10 or +20 if Double Points) directly on the target zombie
+                            if (typeof addText === 'function') {
+                                let pts = 10;
+                                if (window.doublePointsTimer > 0) pts *= 2;
+                                addText(local.x, local.y, "+" + pts, "#fff");
+                            }
 
                             if (window.bloodStains && Math.random() < 0.45) {
                                 window.bloodStains.push({
@@ -488,15 +536,6 @@ const Network = {
                 window.fireZones = data.fireZones || [];
                 window.mortarTargets = data.mortarTargets || [];
                 window.groundSmashes = data.groundSmashes || [];
-
-                if (data.stats && stats) {
-                    if (data.stats.score > stats.score) {
-                        let diff = data.stats.score - stats.score;
-                        if (typeof addText === 'function') {
-                            addText(me.x, me.y, "+" + diff, "#ff0");
-                        }
-                    }
-                }
                 
                 stats = data.stats;
 
@@ -508,7 +547,8 @@ const Network = {
                             let myX = me.x;
                             let myY = me.y;
                             let myWeapIdx = me.weapIdx; // Preserve weapon indexing during host sync frame
-                            
+                            let localReloading = me.reloading; // Cache local reload state
+
                             if (me.state === 'DOWNED' && fallbackPId.state === 'ALIVE') {
                                 const spawnSource = data.p1;
                                 if (spawnSource) {
@@ -533,15 +573,44 @@ const Network = {
                                 if (xpToGive > 0 && typeof addPlayerXP === 'function') {
                                     addPlayerXP(me, xpToGive);
                                 }
+
+                                // PERSONAL MAJOR SCORE SYNC: Spawns yellow match scores on your player model 
+                                // only for larger rewards (kills +50, double points etc.), bypassing hit indicators (+10 / +20)
+                                if (scoreDiff !== 10 && scoreDiff !== 20) {
+                                    if (typeof addText === 'function') {
+                                        addText(me.x, me.y - 40, "+" + scoreDiff, "#ff0");
+                                    }
+                                }
                             }
 
+                            // Capture old inventory size before syncing player inventory
+                            const oldInvSize = me.inventory ? me.inventory.length : 0;
                             if (fallbackPId.gunName) {
                                 syncPlayerInventory(me, fallbackPId.weapIdx, fallbackPId.gunName);
                             }
+                            const newInvSize = me.inventory ? me.inventory.length : 0;
 
                             Object.assign(me, fallbackPId);
                             me.angle = myAngle; 
-                            me.weapIdx = myWeapIdx; // Apply localized index lock
+                            
+                            // FIXED: Lock bypass on weapon buys. If a brand new weapon was added to inventory
+                            // during the host's logic frame (e.g. from a Mystery Box or Wallbuy purchase),
+                            // we force Client weapon index sync. Otherwise, we maintain the index lock to prevent rubberbanding.
+                            if (newInvSize > oldInvSize) {
+                                const targetIdx = me.inventory.findIndex(w => w.name === fallbackPId.gunName);
+                                if (targetIdx !== -1) {
+                                    me.weapIdx = targetIdx;
+                                }
+                            } else {
+                                me.weapIdx = myWeapIdx; // Apply localized index lock safely
+                            }
+
+                            // FIXED: Local reloading race condition safety guard. 
+                            // If the Client finished reloading locally (reloading is false), do not let 
+                            // delayed incoming host packets drag them back into a reloading state.
+                            if (!localReloading) {
+                                me.reloading = false;
+                            }
                             
                             if (fallbackPId.state === 'DOWNED') {
                                 me.x = fallbackPId.x;
@@ -555,6 +624,15 @@ const Network = {
                             me.gunColor = fallbackPId.gunColor !== undefined ? fallbackPId.gunColor : "#999";
                             me.clip = fallbackPId.clip !== undefined ? fallbackPId.clip : 8;
                             me.ammo = fallbackPId.ammo !== undefined ? fallbackPId.ammo : 32;
+
+                            // FIXED: Authoritatively sync HUD weapon inventory states.
+                            // Client local loop uses inventory arrays for HUD elements. By targeting 
+                            // the active inventory array weapon directly, HUD frozen states are solved.
+                            const activeGunInInv = me.inventory ? me.inventory.find(w => w.name === fallbackPId.gunName) : null;
+                            if (activeGunInInv) {
+                                if (fallbackPId.clip !== undefined) activeGunInInv.clip = fallbackPId.clip;
+                                if (fallbackPId.ammo !== undefined) activeGunInInv.ammo = fallbackPId.ammo;
+                            }
                         }
                     } else {
                         if (data[pId]) {
@@ -566,6 +644,13 @@ const Network = {
                             if (p && p.state === 'DOWNED' && data[pId].state === 'ALIVE') {
                                 if (typeof addText === 'function') {
                                     addText(p.x, p.y, "REVIVED (+INVINCIBLE!)", "#0f0");
+                                }
+                            }
+
+                            // REMOTE FLOATING RELOAD SYNC: Trigger "RELOADING..." float indicator on Client screens when remote players start reloading
+                            if (p && data[pId].reloading && !p.reloading) {
+                                if (typeof addText === 'function') {
+                                    addText(p.x, p.y - 40, "RELOADING...", "#fff");
                                 }
                             }
 
@@ -696,6 +781,19 @@ const Network = {
 
         if(this.conn && this.conn.open) {
             try {
+                const activeGun = p.inventory && p.inventory[p.weapIdx] ? p.inventory[p.weapIdx] : null;
+
+                // FIXED: Plays dry fire sound locally on the Client's screen when trying to fire empty weapons
+                if (mouse.down && activeGun && activeGun.clip === 0 && activeGun.ammo === 0) {
+                    const nowMs = Date.now();
+                    if (nowMs - (activeGun.lastDryFireTime || 0) >= 600) { // 600ms cooldown (~35 frames)
+                        activeGun.lastDryFireTime = nowMs;
+                        if (typeof SoundSystem !== 'undefined') {
+                            SoundSystem.play('dry_fire');
+                        }
+                    }
+                }
+
                 this.conn.send({
                     type: 'P_DATA',
                     x: p.x, y: p.y, angle: p.angle,
@@ -705,7 +803,10 @@ const Network = {
                     cosmetic: p.equippedCosmetic || 'none',
                     isTouch: p.isTouch,
                     weapIdx: p.weapIdx,
-                    gunName: p.inventory && p.inventory[p.weapIdx] ? p.inventory[p.weapIdx].name : ""
+                    gunName: activeGun ? activeGun.name : "",
+                    clip: activeGun ? activeGun.clip : 0,    // Send actual authoritative clip values
+                    ammo: activeGun ? activeGun.ammo : 0,    // Send actual authoritative reserve values
+                    state: p.state 
                 });
             } catch (e) {
                 console.warn("Failed to send client data payload:", e);
