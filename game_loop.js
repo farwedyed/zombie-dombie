@@ -140,7 +140,7 @@ function updateGameLogic() {
                 if (p.state === 'ALIVE' && p.hp < p.maxHp) p.hp++; 
             });
         }
-        ['p2', 'p3', 'p4'].forEach(pId => {
+        ['p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8'].forEach(pId => {
             const p = players[pId];
             if (p) {
                 if (p.state === 'SPECTATING') return; 
@@ -579,7 +579,9 @@ function checkGameFlow() {
             }
             stats.changingRound = false; 
             addText(me ? me.x : 200, (me ? me.y : 200) - 100, "ROUND " + stats.round, "#a83232"); 
-            if (typeof SoundSystem !== 'undefined') SoundSystem.play('round_start'); 
+            if (typeof SoundSystem !== 'undefined') {
+                SoundSystem.play('round_start'); 
+            }
             checkAchievements();
             Object.values(players).forEach(p => { 
                 if (p.state !== 'ALIVE') { 
@@ -642,6 +644,18 @@ function resetSession() {
     window.activeBoss = null; window.zombieArrows = []; window.acidPools = []; window.toxicClouds = []; window.fireZones = []; window.mortarTargets = []; window.groundSmashes = []; window.screenShake = 0; window.spawnedBossTypes = []; 
     
     window.startingUnlockedAch = [...(saveData.unlockedAch || [])];
+    
+    // Dynamic robust fallback to guarantee activeMap is never null/undefined inside resetSession
+    if (!activeMap || !activeMap.rooms) {
+        if (typeof playableMaps !== 'undefined' && playableMaps[currentMapIdx]) {
+            activeMap = playableMaps[currentMapIdx];
+        } else if (typeof playableMaps !== 'undefined' && playableMaps[0]) {
+            activeMap = playableMaps[0];
+        } else {
+            console.error("Critical Error: playableMaps is completely unresolved.");
+            return;
+        }
+    }
     
     activeMap.rooms.forEach(r => {
         if (currentGameMode === 'INFECTION') {
@@ -824,9 +838,9 @@ function drawOverBossIcon(bId, discovered, defeated, strikeProgress) {
             c.lineWidth = 0.8;
             c.beginPath(); 
             ctx.arc(27 - 4, 27 - 4, 2, 0, Math.PI * 2); 
-            ctx.fill(); 
-            ctx.stroke();
-            ctx.beginPath(); 
+            c.fill(); 
+            c.stroke();
+            c.beginPath(); 
             ctx.arc(27 + 4, 27 - 4, 2, 0, Math.PI * 2); 
             ctx.fill(); 
             ctx.stroke();
@@ -849,13 +863,13 @@ function drawOverBossIcon(bId, discovered, defeated, strikeProgress) {
             c.strokeStyle = '#000'; 
             c.lineWidth = 0.8;
             c.beginPath(); 
-            c.arc(27 - 4, 27 - 4, 2, 0, Math.PI * 2); 
-            c.fill(); 
-            c.stroke();
-            c.beginPath(); 
-            c.arc(27 + 4, 27 - 4, 2, 0, Math.PI * 2); 
-            c.fill(); 
-            c.stroke();
+            ctx.arc(27 - 4, 27 - 4, 2, 0, Math.PI * 2); 
+            ctx.fill(); 
+            ctx.stroke();
+            ctx.beginPath(); 
+            ctx.arc(27 + 4, 27 - 4, 2, 0, Math.PI * 2); 
+            ctx.fill(); 
+            ctx.stroke();
         } else if (b.id === 'boss_pyromaniac') {
             c.fillStyle = '#d35400';
             c.beginPath(); 
@@ -878,13 +892,13 @@ function drawOverBossIcon(bId, discovered, defeated, strikeProgress) {
             c.strokeStyle = '#000'; 
             c.lineWidth = 0.8;
             c.beginPath(); 
-            c.arc(27 - 4, 27 - 4, 2, 0, Math.PI * 2); 
-            c.fill(); 
-            c.stroke();
-            c.beginPath(); 
-            c.arc(27 + 4, 27 - 4, 2, 0, Math.PI * 2); 
-            c.fill(); 
-            c.stroke();
+            ctx.arc(27 - 4, 27 - 4, 2, 0, Math.PI * 2); 
+            ctx.fill(); 
+            ctx.stroke();
+            ctx.beginPath(); 
+            ctx.arc(27 + 4, 27 - 4, 2, 0, Math.PI * 2); 
+            ctx.fill(); 
+            ctx.stroke();
         }
     }
     
@@ -1297,7 +1311,7 @@ function updateUI() {
         me.lastHp = me.hp;
     }
 
-    ['p1', 'p2', 'p3', 'p4'].forEach(pId => {
+    ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8'].forEach(pId => {
         const p = players[pId], hud = document.getElementById('hud-' + pId);
         if (hud) {
             if (p) {
@@ -1318,20 +1332,28 @@ function updateUI() {
                 if (p.state === 'SPECTATING') {
                     gunName = "SPECTATING";
                     ammoText = "NEXT ROUND";
-                } else if (p.reloading) {
-                    ammoText = "RELOADING";
                 } else if (p.state === 'DOWNED') {
                     gunName = "DOWNED";
                     ammoText = "NEED HELP";
                 } else if (typeof InfectionMode !== 'undefined' && InfectionMode.isActive && InfectionMode.infectedIds.has(p.id)) {
                     gunName = (p.id === InfectionMode.alphaId) ? "Patient Zero Alpha" : "Infected claws";
                     ammoText = "MELEE";
-                } else if (isLocal && gun) {
-                    gunName = gun.name;
-                    ammoText = `${gun.clip} / ${gun.ammo}`;
                 } else {
-                    gunName = p.gunName || (gun ? gun.name : "Model 1911");
-                    ammoText = (p.clip !== undefined && p.ammo !== undefined) ? `${p.clip} / ${p.ammo}` : (gun ? `${gun.clip} / ${gun.ammo}` : "8 / 32");
+                    // Determine the correct gun name first
+                    if (isLocal && gun) {
+                        gunName = gun.name;
+                    } else {
+                        gunName = p.gunName || (gun ? gun.name : "Model 1911");
+                    }
+                    
+                    // Determine the ammunition text next, checking reload state cleanly
+                    if (p.reloading) {
+                        ammoText = "RELOADING";
+                    } else if (isLocal && gun) {
+                        ammoText = `${gun.clip} / ${gun.ammo}`;
+                    } else {
+                        ammoText = (p.clip !== undefined && p.ammo !== undefined) ? `${p.clip} / ${p.ammo}` : (gun ? `${gun.clip} / ${gun.ammo}` : "8 / 32");
+                    }
                 }
                 
                 const gunNameEl = document.getElementById(pId + '-gun-name');
@@ -1356,4 +1378,63 @@ function updateUI() {
             } else hud.style.display = 'none';
         }
     });
+}
+
+function resetSession() { 
+    const currentMapIdx = stats.selectedMapIdx !== undefined ? stats.selectedMapIdx : 0;
+    const currentDiff = stats.difficulty || 'medium';
+    
+    const currentGameMode = stats.gameMode || 'SURVIVAL';
+
+    let zombiesToSpawnBase = GameBalanceConfig.WAVE_BASE_MEDIUM; 
+    if (currentDiff === 'easy') zombiesToSpawnBase = GameBalanceConfig.WAVE_BASE_EASY; 
+    else if (currentDiff === 'hard') zombiesToSpawnBase = GameBalanceConfig.WAVE_BASE_HARD;
+    
+    stats = { 
+        score: 0, 
+        round: 1, 
+        zombiesToSpawn: zombiesToSpawnBase, 
+        zombiesAlive: 0, 
+        frame: 0, 
+        sessionKills: 0, 
+        selectedMapIdx: currentMapIdx, 
+        difficulty: currentDiff,
+        gameMode: currentGameMode
+    }; 
+
+    zombies = []; bullets = []; particles = []; texts = []; window.bloodStains = []; zombieIdCounter = 0; window.drops = []; window.doublePointsTimer = 0; window.instaKillTimer = 0;
+    window.activeBoss = null; window.zombieArrows = []; window.acidPools = []; window.toxicClouds = []; window.fireZones = []; window.mortarTargets = []; window.groundSmashes = []; window.screenShake = 0; window.spawnedBossTypes = []; 
+    
+    window.startingUnlockedAch = [...(saveData.unlockedAch || [])];
+    
+    // Dynamic robust fallback to guarantee activeMap is never null/undefined inside resetSession
+    if (!activeMap || !activeMap.rooms) {
+        if (typeof playableMaps !== 'undefined' && playableMaps[currentMapIdx]) {
+            activeMap = playableMaps[currentMapIdx];
+        } else if (typeof playableMaps !== 'undefined' && playableMaps[0]) {
+            activeMap = playableMaps[0];
+        } else {
+            console.error("Critical Error: playableMaps is completely unresolved.");
+            return;
+        }
+    }
+    
+    activeMap.rooms.forEach(r => {
+        if (currentGameMode === 'INFECTION') {
+            r.unlocked = true; 
+        } else if (activeMap.name === "Sector-12 City") {
+            r.unlocked = (r.id === 0 || r.id === 1);
+        } else {
+            r.unlocked = (r.id === 0);
+        }
+    });
+
+    if (activeMap === tutorialMapData) activeMap.windows.forEach(w => w.boards = 0); 
+    else activeMap.windows.forEach(w => w.boards = w.max);
+
+    if (typeof InfectionMode !== 'undefined' && stats.gameMode === 'INFECTION') {
+        InfectionMode.init();
+    } else if (typeof InfectionMode !== 'undefined') {
+        InfectionMode.isActive = false;
+    }
 }

@@ -542,7 +542,7 @@ const LobbyManager = {
                 difficulty: stats.difficulty || 'medium',
                 visibility: visibility, 
                 playerCount: Object.values(window.lobbyPlayers).filter(p => p !== "").length, 
-                maxPlayers: 4, 
+                maxPlayers: 8, 
                 status: 'LOBBY', 
                 lastActive: firebase.firestore.FieldValue.serverTimestamp()
             });
@@ -698,7 +698,7 @@ window.refreshServerBrowser = function () {
                     <td style="padding:10px; color:#ccc;">${mapName}</td>
                     <td style="padding:10px; color:#2ecc71; font-weight:bold;">${modeName}</td>
                     <td style="padding:10px; color:#e67e22; font-weight:bold;">${lobby.difficulty ? lobby.difficulty.toUpperCase() : "MEDIUM"}</td>
-                    <td style="padding:10px; color:#666;">${lobby.playerCount || 1} / ${lobby.maxPlayers || 4}</td>
+                    <td style="padding:10px; color:#666;">${lobby.playerCount || 1} / ${lobby.maxPlayers || 8}</td>
                     <td style="padding:10px; text-align:right;"><button onclick="joinServerBrowserLobby('${lobby.peerId}')" style="width:auto; margin:0; padding:5px 12px; font-size:12px; background:#a83232; color:#fff; border:none; border-radius:3px;">Connect</button></td>
                 </tr>
             `;
@@ -737,7 +737,7 @@ function enterLobbyJoinManual(id) {
 
     let nameInput = document.getElementById('username-input'); 
     myUsername = nameInput ? nameInput.value || "Survivor" : "Survivor";
-    window.lobbyPlayers = { p1: "Host [Lv. ?]", p2: "", p3: "", p4: "" }; 
+    window.lobbyPlayers = { p1: "Host [Lv. ?]", p2: "", p3: "", p4: "", p5: "", p6: "", p7: "", p8: "" }; 
     updateLobbyPlayersList();
     Network.init(function () { 
         Network.join(id, function () { 
@@ -827,7 +827,7 @@ window.deploySoloOffline = function () {
     closeMenu('solo-deployment-modal');
     Network.mode = 'OFFLINE'; 
     window.myPlayerId = 'p1'; 
-    window.lobbyPlayers = { p1: "Survivor", p2: "", p3: "", p4: "" };
+    window.lobbyPlayers = { p1: "Survivor", p2: "", p3: "", p4: "", p5: "", p6: "", p7: "", p8: "" };
     stats.difficulty = selectedSoloDifficulty; 
     stats.gameMode = "SURVIVAL"; 
     activeMap = playableMaps[selectedSoloMapIdx];
@@ -868,7 +868,7 @@ function startLocalCoop() {
     closeMenu('coop-modal');
     Network.mode = 'LOCAL_COOP'; 
     window.myPlayerId = 'p1'; 
-    window.lobbyPlayers = { p1: "Survivor", p2: "Player 2 [Lv. 1]", p3: "", p4: "" };
+    window.lobbyPlayers = { p1: "Survivor", p2: "Player 2 [Lv. 1]", p3: "", p4: "", p5: "", p6: "", p7: "", p8: "" };
     stats.difficulty = document.getElementById('menu-diff-select') ? document.getElementById('menu-diff-select').value : "medium";
     stats.gameMode = "SURVIVAL"; 
     saveLocalUsername(); 
@@ -879,7 +879,7 @@ function startLocalCoop() {
 function startTutorial() {
     Network.mode = 'OFFLINE'; 
     window.myPlayerId = 'p1'; 
-    window.lobbyPlayers = { p1: "Survivor", p2: "", p3: "", p4: "" }; 
+    window.lobbyPlayers = { p1: "Survivor", p2: "", p3: "", p4: "", p5: "", p6: "", p7: "", p8: "" }; 
     stats.difficulty = "medium";
     stats.gameMode = "SURVIVAL";
     saveLocalUsername(); 
@@ -922,7 +922,7 @@ function enterLobbyHost() {
     myUsername = (document.getElementById('username-input').value || "Survivor").substring(0, 12);
     const myLvl = Math.floor((saveData.xp || 0) / 1000) + 1;
     window.myPlayerId = 'p1'; 
-    window.lobbyPlayers = { p1: myUsername + " [Lv. " + myLvl + "]", p2: "", p3: "", p4: "" }; 
+    window.lobbyPlayers = { p1: myUsername + " [Lv. " + myLvl + "]", p2: "", p3: "", p4: "", p5: "", p6: "", p7: "", p8: "" }; 
     updateLobbyPlayersList();
     
     document.getElementById('main-menu').style.display = 'none'; 
@@ -956,7 +956,7 @@ function enterLobbyJoin() {
     document.getElementById('lobby-visibility-display-client').style.display = 'block';
 
     myUsername = (document.getElementById('username-input').value || "Survivor").substring(0, 12);
-    window.lobbyPlayers = { p1: "Host [Lv. ?]", p2: "", p3: "", p4: "" }; 
+    window.lobbyPlayers = { p1: "Host [Lv. ?]", p2: "", p3: "", p4: "", p5: "", p6: "", p7: "", p8: "" }; 
     updateLobbyPlayersList();
     Network.init(function () { 
         Network.join(id, function () { 
@@ -1021,19 +1021,21 @@ function updateLobbyPlayersList() {
     if (!listEl) return;
     let html = `<div style="text-align:left; background:rgba(255,255,255,0.05); padding:15px; border:1px solid #333; border-radius:4px; min-width:280px; box-sizing:border-box;"><div style="border-bottom:1px solid #444; padding-bottom:5px; margin-bottom:10px; font-weight:bold; color:#a83232;">LOBBY survivors:</div>`;
     html += `<div style="color:#3498db; font-size:15px; margin-bottom:5px; display:flex; justify-content:space-between; align-items:center;"><span>👑 P1 (Host): <strong>${window.lobbyPlayers.p1 || "Survivor"}</strong></span></div>`;
-    ['p2', 'p3', 'p4'].forEach(function (pId, idx) {
+    
+    ['p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8'].forEach(function (pId, idx) {
         const pName = window.lobbyPlayers[pId];
         const pColor = getPlayerColor(pId);
+        const playerDisplayIndex = idx + 2;
         if (pName && pName !== "Reserved") {
-            html += `<div style="color:${pColor}; font-size:15px; margin-bottom:5px; display:flex; justify-content:space-between; align-items:center;"><span>👤 P${idx+2}: <strong>${pName}</strong></span>`;
+            html += `<div style="color:${pColor}; font-size:15px; margin-bottom:5px; display:flex; justify-content:space-between; align-items:center;"><span>👤 P${playerDisplayIndex}: <strong>${pName}</strong></span>`;
             if (Network.mode === 'HOST') {
                 html += `<button onclick="kickPlayer('${pId}')" style="width:auto; margin:0; padding:2px 8px; font-size:11px; background:#c0392b; color:#fff; border:1px solid #a83232; border-radius:3px; height:auto;">Kick</button>`;
             }
             html += `</div>`;
         } else if (pName === "Reserved") {
-            html += `<div style="color:#888; font-size:14px; margin-bottom:5px; font-style:italic;">👤 P${idx+2}: Connecting...</div>`;
+            html += `<div style="color:#888; font-size:14px; margin-bottom:5px; font-style:italic;">👤 P${playerDisplayIndex}: Connecting...</div>`;
         } else {
-            html += `<div style="color:#666; font-size:14px; margin-bottom:5px; font-style:italic;">👤 P${idx+2}: Open Slot</div>`;
+            html += `<div style="color:#666; font-size:14px; margin-bottom:5px; font-style:italic;">👤 P${playerDisplayIndex}: Open Slot</div>`;
         }
     });
     listEl.innerHTML = html + "</div>";
@@ -1112,7 +1114,7 @@ function launchGame() {
         players['p1'] = createPlayer('p1', spawnX, spawnY, getPlayerColor('p1'), displayName); 
         me = players['p1'];
         if (Network.mode === 'HOST') {
-            ['p2', 'p3', 'p4'].forEach(function (pId, idx) {
+            ['p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8'].forEach(function (pId, idx) {
                 if (window.lobbyPlayers[pId] && window.lobbyPlayers[pId] !== "Reserved") {
                     players[pId] = createPlayer(pId, spawnX + 40 * (idx + 1), spawnY, getPlayerColor(pId), window.lobbyPlayers[pId]);
                 }

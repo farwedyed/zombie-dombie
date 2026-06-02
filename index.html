@@ -92,49 +92,52 @@
             font-weight: 900; 
         }
         
+        /* --- SIDE-PANELS FOR 8-PLAYER HUD SYSTEM --- */
+        .hud-panel-left {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+            z-index: 1000;
+        }
+        .hud-panel-right {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+            z-index: 1000;
+        }
+        
         .hud-cluster { 
-            position: absolute; 
+            background: rgba(10, 10, 10, 0.75);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 6px 12px;
+            border-radius: 4px;
+            min-width: 170px;
+            box-sizing: border-box;
+            display: none; 
             pointer-events: none; 
             text-shadow: 2px 2px 0 #000; 
             z-index: 1000; 
-            display: none; 
-        }
-        #hud-p1 { 
-            bottom: 20px; 
-            left: 20px; 
-            text-align: left; 
-        }
-        #hud-p2 { 
-            bottom: 20px; 
-            right: 20px; 
-            text-align: right; 
-        }
-        #hud-p3 { 
-            top: 20px; 
-            left: 20px; 
-            text-align: left; 
-        }
-        #hud-p4 { 
-            top: 20px; 
-            right: 20px; 
-            text-align: right; 
         }
         
         .perk-area { 
             display: flex; 
-            gap: 10px; 
-            margin-top: 10px; 
-        }
-        #hud-p1 .perk-area, #hud-p3 .perk-area { 
-            justify-content: flex-start; 
-        }
-        #hud-p2 .perk-area, #hud-p4 .perk-area { 
-            justify-content: flex-end; 
+            gap: 6px; 
+            margin-top: 4px; 
         }
         
         .perk { 
-            width: 30px; 
-            height: 30px; 
+            width: 24px; 
+            height: 24px; 
             border-radius: 50%; 
             border: 2px solid white; 
             display: none; 
@@ -220,9 +223,9 @@
         }
 
         @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            20%, 60% { transform: translateX(-8px); }
-            40%, 80% { transform: translateX(8px); }
+            0%, 100% { transform: translate(0, 0); }
+            20%, 60% { transform: translate(-2px, 1px); }
+            40%, 80% { transform: translate(2px, -1px); }
         }
         .shake-anim {
             animation: shake 0.4s ease-in-out;
@@ -892,10 +895,8 @@
 
         @media (max-width: 768px) {
             #round-box { font-size: 36px; top: 15px; }
-            #hud-p1 { bottom: 160px; left: 15px; }
-            #hud-p2 { bottom: 160px; right: 15px; }
-            #hud-p3 { top: 80px; left: 15px; }
-            #hud-p4 { top: 80px; right: 15px; }
+            .hud-panel-left { top: 70px; left: 15px; }
+            .hud-panel-right { top: 70px; right: 15px; }
             .perk { width: 24px; height: 24px; }
             #tutorial-hud {
                 width: 90%;
@@ -1437,52 +1438,138 @@
         Next Boss in: 4 Round(s)
     </div>
 
-    <!-- Player 1 HUD -->
-    <div id="hud-p1" class="hud-cluster">
-        <div id="p1-name" style="color: #3498db; font-size: 18px; font-weight: bold;">Survivor</div>
-        <div id="p1-hp-bar-container" style="width: 140px; height: 8px; background: #222; border: 1px solid #444; border-radius: 4px; margin-top: 5px; overflow: hidden; box-sizing: border-box;">
-            <div id="p1-hp-bar" style="width: 100%; height: 100%; background: #2ecc71; transition: width 0.2s ease;"></div>
+    <!-- LEFT SIDE HUD CONTAINER (P1, P3, P5, P7) -->
+    <div class="hud-panel-left">
+        <!-- Player 1 HUD -->
+        <div id="hud-p1" class="hud-cluster" style="text-align: left;">
+            <div id="p1-name" style="color: #3498db; font-size: 14px; font-weight: bold;">Survivor</div>
+            <div id="p1-hp-bar-container" style="width: 120px; height: 6px; background: #222; border: 1px solid #444; border-radius: 3px; margin-top: 3px; overflow: hidden; box-sizing: border-box;">
+                <div id="p1-hp-bar" style="width: 100%; height: 100%; background: #2ecc71; transition: width 0.2s ease;"></div>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 3px; gap: 10px;">
+                <div id="p1-score" style="color: #ffd700; font-size: 16px; font-weight: bold;">500 🪙</div>
+                <div style="text-align: right;">
+                    <span id="p1-gun-name" style="color: #fff; font-size: 13px; font-weight: bold;">Model 1911</span>
+                    <span id="p1-ammo-text" style="color: #ccc; font-size: 12px; margin-left: 4px;">8/32</span>
+                </div>
+            </div>
+            <div id="p1-perks" class="perk-area"><div id="p1-icon-vig" class="perk" style="background: #c0392b;"></div></div>
         </div>
-        <div id="p1-score" style="color: #ffd700; font-size: 28px; font-weight: bold; margin-top: 5px;">500 🪙</div>
-        <div id="p1-gun-name" style="color: #fff; font-size: 24px; font-weight: bold;">Model 1911</div>
-        <div id="p1-ammo-text" style="color: #ccc; font-size: 20px;">8 / 32</div>
-        <div id="p1-perks" class="perk-area"><div id="p1-icon-vig" class="perk" style="background: #c0392b;"></div></div>
+
+        <!-- Player 3 HUD -->
+        <div id="hud-p3" class="hud-cluster" style="text-align: left;">
+            <div id="p3-name" style="color: #2ecc71; font-size: 14px; font-weight: bold;">Player 3</div>
+            <div id="p3-hp-bar-container" style="width: 120px; height: 6px; background: #222; border: 1px solid #444; border-radius: 3px; margin-top: 3px; overflow: hidden; box-sizing: border-box;">
+                <div id="p3-hp-bar" style="width: 100%; height: 100%; background: #2ecc71; transition: width 0.2s ease;"></div>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 3px; gap: 10px;">
+                <div id="p3-score" style="color: #ffd700; font-size: 16px; font-weight: bold;">500 🪙</div>
+                <div style="text-align: right;">
+                    <span id="p3-gun-name" style="color: #fff; font-size: 13px; font-weight: bold;">Model 1911</span>
+                    <span id="p3-ammo-text" style="color: #ccc; font-size: 12px; margin-left: 4px;">8/32</span>
+                </div>
+            </div>
+            <div id="p3-perks" class="perk-area"><div id="p3-icon-vig" class="perk" style="background: #c0392b;"></div></div>
+        </div>
+
+        <!-- Player 5 HUD -->
+        <div id="hud-p5" class="hud-cluster" style="text-align: left;">
+            <div id="p5-name" style="color: #f1c40f; font-size: 14px; font-weight: bold;">Player 5</div>
+            <div id="p5-hp-bar-container" style="width: 120px; height: 6px; background: #222; border: 1px solid #444; border-radius: 3px; margin-top: 3px; overflow: hidden; box-sizing: border-box;">
+                <div id="p5-hp-bar" style="width: 100%; height: 100%; background: #2ecc71; transition: width 0.2s ease;"></div>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 3px; gap: 10px;">
+                <div id="p5-score" style="color: #ffd700; font-size: 16px; font-weight: bold;">500 🪙</div>
+                <div style="text-align: right;">
+                    <span id="p5-gun-name" style="color: #fff; font-size: 13px; font-weight: bold;">Model 1911</span>
+                    <span id="p5-ammo-text" style="color: #ccc; font-size: 12px; margin-left: 4px;">8/32</span>
+                </div>
+            </div>
+            <div id="p5-perks" class="perk-area"><div id="p5-icon-vig" class="perk" style="background: #c0392b;"></div></div>
+        </div>
+
+        <!-- Player 7 HUD -->
+        <div id="hud-p7" class="hud-cluster" style="text-align: left;">
+            <div id="p7-name" style="color: #1abc9c; font-size: 14px; font-weight: bold;">Player 7</div>
+            <div id="p7-hp-bar-container" style="width: 120px; height: 6px; background: #222; border: 1px solid #444; border-radius: 3px; margin-top: 3px; overflow: hidden; box-sizing: border-box;">
+                <div id="p7-hp-bar" style="width: 100%; height: 100%; background: #2ecc71; transition: width 0.2s ease;"></div>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 3px; gap: 10px;">
+                <div id="p7-score" style="color: #ffd700; font-size: 16px; font-weight: bold;">500 🪙</div>
+                <div style="text-align: right;">
+                    <span id="p7-gun-name" style="color: #fff; font-size: 13px; font-weight: bold;">Model 1911</span>
+                    <span id="p7-ammo-text" style="color: #ccc; font-size: 12px; margin-left: 4px;">8/32</span>
+                </div>
+            </div>
+            <div id="p7-perks" class="perk-area"><div id="p7-icon-vig" class="perk" style="background: #c0392b;"></div></div>
+        </div>
     </div>
 
-    <!-- Player 2 HUD -->
-    <div id="hud-p2" class="hud-cluster">
-        <div id="p2-name" style="color: #e67e22; font-size: 18px; font-weight: bold;">Player 2</div>
-        <div id="p2-hp-bar-container" style="width: 140px; height: 8px; background: #222; border: 1px solid #444; border-radius: 4px; margin-top: 5px; margin-left: auto; overflow: hidden; box-sizing: border-box;">
-            <div id="p2-hp-bar" style="width: 100%; height: 100%; background: #2ecc71; transition: width 0.2s ease;"></div>
+    <!-- RIGHT SIDE HUD CONTAINER (P2, P4, P6, P8) -->
+    <div class="hud-panel-right">
+        <!-- Player 2 HUD -->
+        <div id="hud-p2" class="hud-cluster" style="text-align: right;">
+            <div id="p2-name" style="color: #e67e22; font-size: 14px; font-weight: bold;">Player 2</div>
+            <div id="p2-hp-bar-container" style="width: 120px; height: 6px; background: #222; border: 1px solid #444; border-radius: 3px; margin-top: 3px; margin-left: auto; overflow: hidden; box-sizing: border-box;">
+                <div id="p2-hp-bar" style="width: 100%; height: 100%; background: #2ecc71; transition: width 0.2s ease;"></div>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 3px; gap: 10px;">
+                <div style="text-align: left;">
+                    <span id="p2-gun-name" style="color: #fff; font-size: 13px; font-weight: bold;">Model 1911</span>
+                    <span id="p2-ammo-text" style="color: #ccc; font-size: 12px; margin-left: 4px;">8/32</span>
+                </div>
+                <div id="p2-score" style="color: #ffd700; font-size: 16px; font-weight: bold;">500 🪙</div>
+            </div>
+            <div id="p2-perks" class="perk-area" style="justify-content: flex-end;"><div id="p2-icon-vig" class="perk" style="background: #c0392b;"></div></div>
         </div>
-        <div id="p2-score" style="color: #ffd700; font-size: 28px; font-weight: bold; margin-top: 5px;">500 🪙</div>
-        <div id="p2-gun-name" style="color: #fff; font-size: 24px; font-weight: bold;">Model 1911</div>
-        <div id="p2-ammo-text" style="color: #ccc; font-size: 20px;">8 / 32</div>
-        <div id="p2-perks" class="perk-area"><div id="p2-icon-vig" class="perk" style="background: #c0392b;"></div></div>
-    </div>
 
-    <!-- Player 3 HUD -->
-    <div id="hud-p3" class="hud-cluster">
-        <div id="p3-name" style="color: #2ecc71; font-size: 18px; font-weight: bold;">Player 3</div>
-        <div id="p3-hp-bar-container" style="width: 140px; height: 8px; background: #222; border: 1px solid #444; border-radius: 4px; margin-top: 5px; overflow: hidden; box-sizing: border-box;">
-            <div id="p3-hp-bar" style="width: 100%; height: 100%; background: #2ecc71; transition: width 0.2s ease;"></div>
+        <!-- Player 4 HUD -->
+        <div id="hud-p4" class="hud-cluster" style="text-align: right;">
+            <div id="p4-name" style="color: #9b59b6; font-size: 14px; font-weight: bold;">Player 4</div>
+            <div id="p4-hp-bar-container" style="width: 120px; height: 6px; background: #222; border: 1px solid #444; border-radius: 3px; margin-top: 3px; margin-left: auto; overflow: hidden; box-sizing: border-box;">
+                <div id="p4-hp-bar" style="width: 100%; height: 100%; background: #2ecc71; transition: width 0.2s ease;"></div>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 3px; gap: 10px;">
+                <div style="text-align: left;">
+                    <span id="p4-gun-name" style="color: #fff; font-size: 13px; font-weight: bold;">Model 1911</span>
+                    <span id="p4-ammo-text" style="color: #ccc; font-size: 12px; margin-left: 4px;">8/32</span>
+                </div>
+                <div id="p4-score" style="color: #ffd700; font-size: 16px; font-weight: bold;">500 🪙</div>
+            </div>
+            <div id="p4-perks" class="perk-area" style="justify-content: flex-end;"><div id="p4-icon-vig" class="perk" style="background: #c0392b;"></div></div>
         </div>
-        <div id="p3-score" style="color: #ffd700; font-size: 28px; font-weight: bold; margin-top: 5px;">500 🪙</div>
-        <div id="p3-gun-name" style="color: #fff; font-size: 24px; font-weight: bold;">Model 1911</div>
-        <div id="p3-ammo-text" style="color: #ccc; font-size: 20px;">8 / 32</div>
-        <div id="p3-perks" class="perk-area"><div id="p3-icon-vig" class="perk" style="background: #c0392b;"></div></div>
-    </div>
 
-    <!-- Player 4 HUD -->
-    <div id="hud-p4" class="hud-cluster">
-        <div id="p4-name" style="color: #9b59b6; font-size: 18px; font-weight: bold;">Player 4</div>
-        <div id="hud-p4-hp-bar-container" style="width: 140px; height: 8px; background: #222; border: 1px solid #444; border-radius: 4px; margin-top: 5px; margin-left: auto; overflow: hidden; box-sizing: border-box;">
-            <div id="hud-p4-hp-bar" style="width: 100%; height: 100%; background: #2ecc71; transition: width 0.2s ease;"></div>
+        <!-- Player 6 HUD -->
+        <div id="hud-p6" class="hud-cluster" style="text-align: right;">
+            <div id="p6-name" style="color: #e74c3c; font-size: 14px; font-weight: bold;">Player 6</div>
+            <div id="p6-hp-bar-container" style="width: 120px; height: 6px; background: #222; border: 1px solid #444; border-radius: 3px; margin-top: 3px; margin-left: auto; overflow: hidden; box-sizing: border-box;">
+                <div id="p6-hp-bar" style="width: 100%; height: 100%; background: #2ecc71; transition: width 0.2s ease;"></div>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 3px; gap: 10px;">
+                <div style="text-align: left;">
+                    <span id="p6-gun-name" style="color: #fff; font-size: 13px; font-weight: bold;">Model 1911</span>
+                    <span id="p6-ammo-text" style="color: #ccc; font-size: 12px; margin-left: 4px;">8/32</span>
+                </div>
+                <div id="p6-score" style="color: #ffd700; font-size: 16px; font-weight: bold;">500 🪙</div>
+            </div>
+            <div id="p6-perks" class="perk-area" style="justify-content: flex-end;"><div id="p6-icon-vig" class="perk" style="background: #c0392b;"></div></div>
         </div>
-        <div id="p4-score" style="color: #ffd700; font-size: 28px; font-weight: bold; margin-top: 5px;">500 🪙</div>
-        <div id="p4-gun-name" style="color: #fff; font-size: 24px; font-weight: bold;">Model 1911</div>
-        <div id="p4-ammo-text" style="color: #ccc; font-size: 20px;">8 / 32</div>
-        <div id="p4-perks" class="perk-area" style="justify-content: flex-end;"><div id="p4-icon-vig" class="perk" style="background: #c0392b;"></div></div>
+
+        <!-- Player 8 HUD -->
+        <div id="hud-p8" class="hud-cluster" style="text-align: right;">
+            <div id="p8-name" style="color: #10ac84; font-size: 14px; font-weight: bold;">Player 8</div>
+            <div id="p8-hp-bar-container" style="width: 120px; height: 6px; background: #222; border: 1px solid #444; border-radius: 3px; margin-top: 3px; margin-left: auto; overflow: hidden; box-sizing: border-box;">
+                <div id="p8-hp-bar" style="width: 100%; height: 100%; background: #2ecc71; transition: width 0.2s ease;"></div>
+            </div>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 3px; gap: 10px;">
+                <div style="text-align: left;">
+                    <span id="p8-gun-name" style="color: #fff; font-size: 13px; font-weight: bold;">Model 1911</span>
+                    <span id="p8-ammo-text" style="color: #ccc; font-size: 12px; margin-left: 4px;">8/32</span>
+                </div>
+                <div id="p8-score" style="color: #ffd700; font-size: 16px; font-weight: bold;">500 🪙</div>
+            </div>
+            <div id="p8-perks" class="perk-area" style="justify-content: flex-end;"><div id="p8-icon-vig" class="perk" style="background: #c0392b;"></div></div>
+        </div>
     </div>
 
     <!-- TUTORIAL HUD -->

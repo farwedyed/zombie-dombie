@@ -110,6 +110,7 @@ window.addEventListener('resize', function () {
 });
 
 /* --- CORE GAME STATE --- */
+let activeMap = null; // Declared globally here to prevent ReferenceErrors
 let camera = { x: 0, y: 0 };
 let gameActive = false;
 let showScoreboard = false;
