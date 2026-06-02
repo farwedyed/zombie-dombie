@@ -310,7 +310,6 @@ function drawGame() {
             let alpha = s.life / 25;
             if (alpha < 0) alpha = 0; if (alpha > 1) alpha = 1;
             
-            // Decides between custom color template or the default dark orange
             ctx.strokeStyle = s.color ? s.color.replace('ALPHA', alpha) : `rgba(211, 84, 0, ${alpha})`;
             ctx.lineWidth = 4;
             ctx.beginPath();
@@ -320,7 +319,6 @@ function drawGame() {
         });
     }
 
-    // --- DRAW RAMPAGER CHARGING PATH LINE ---
     zombies.forEach(z => {
         if (z.type === 'boss_rampager' && z.chargeState === 'TELEGRAPH') {
             ctx.save();
@@ -328,7 +326,6 @@ function drawGame() {
             ctx.lineWidth = z.r * 2;
             ctx.lineCap = 'round';
             
-            // Dynamic path calculation depending on short Rapid bursts vs long Heavy charges
             const speed = (z.chargeAttackType === 'RAPID') ? 20 : 24;
             const ticks = (z.chargeAttackType === 'RAPID') ? 18 : 35;
             const chargeLen = speed * ticks;
@@ -477,7 +474,13 @@ function drawGame() {
     });
 
     Object.values(players).forEach(p => {
-        if (p.state === 'SPECTATING') return; // Skip spectator rendering completely
+        if (p.state === 'SPECTATING') return; 
+
+        // --- DRAW NEON MELEE SWIPES ---
+        if (typeof InfectionMode !== 'undefined' && InfectionMode.isActive && InfectionMode.infectedIds.has(p.id)) {
+            InfectionMode.drawMeleeSwipe(p, ctx);
+        }
+
         ctx.save();
         ctx.translate(p.x, p.y);
         
@@ -518,7 +521,18 @@ function drawGame() {
             drawBackCosmetic(equippedCos, p.r, ctx);
         }
         
-        ctx.fillStyle = p.hasVigor ? '#c0392b' : p.color;
+        // --- ADAPTIVE PLAYER COLORS FOR INFECTION MODE ---
+        let baseColor = p.color;
+        let isPlayerInfected = false;
+        if (typeof InfectionMode !== 'undefined' && InfectionMode.isActive) {
+            if (InfectionMode.infectedIds.has(p.id)) {
+                isPlayerInfected = true;
+                // Patient Zero Alpha is dark emerald green, regular infected are bright green
+                baseColor = (p.id === InfectionMode.alphaId) ? '#10ac84' : '#2ecc71';
+            }
+        }
+
+        ctx.fillStyle = (p.hasVigor && !isPlayerInfected) ? '#c0392b' : baseColor;
         
         ctx.beginPath(); 
         ctx.arc(0, 0, p.r, 0, Math.PI*2); 
@@ -526,13 +540,59 @@ function drawGame() {
         ctx.strokeStyle = '#000000';
         ctx.lineWidth = 2.5;
         ctx.stroke();
+
+        // --- DRAW GLOWING RED EYES & ANGRY BROWS FOR INFECTED ZOMBIES ---
+        if (isPlayerInfected) {
+            const r = p.r;
+            const eyeRadius = r * 0.22;
+            const eyeX = r * 0.35;       // Forward offset
+            const eyeYOffset = r * 0.35; // Sideways offset
+
+            ctx.fillStyle = '#ff0000';
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 1;
+
+            // Left Eye
+            ctx.beginPath();
+            ctx.arc(eyeX, -eyeYOffset, eyeRadius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Right Eye
+            ctx.beginPath();
+            ctx.arc(eyeX, eyeYOffset, eyeRadius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            const browWidth = r * 0.75;
+            const browHeight = r * 0.18;
+
+            // Angry left brow (slanting down toward the center nose area)
+            ctx.save();
+            ctx.translate(r * 0.25, -eyeYOffset);
+            ctx.rotate(-0.42); // Inverted to slant angry
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(-browHeight / 2, -browWidth / 2, browHeight, browWidth);
+            ctx.restore();
+
+            // Angry right brow (slanting up toward the center nose area)
+            ctx.save();
+            ctx.translate(r * 0.25, eyeYOffset);
+            ctx.rotate(0.42); // Inverted to slant angry
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(-browHeight / 2, -browWidth / 2, browHeight, browWidth);
+            ctx.restore();
+        }
         
-        const activeGunColor = p.gunColor || (p.inventory && p.inventory[p.weapIdx] ? p.inventory[p.weapIdx].color : '#999');
-        ctx.fillStyle = activeGunColor;
-        ctx.fillRect(0, -5, 25, 10);
-        ctx.strokeStyle = '#000000';
-        ctx.lineWidth = 2.5;
-        ctx.strokeRect(0, -5, 25, 10);
+        // Hide standard physical gun barrel blocks if player is infected
+        if (!isPlayerInfected) {
+            const activeGunColor = p.gunColor || (p.inventory && p.inventory[p.weapIdx] ? p.inventory[p.weapIdx].color : '#999');
+            ctx.fillStyle = activeGunColor;
+            ctx.fillRect(0, -5, 25, 10);
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 2.5;
+            ctx.strokeRect(0, -5, 25, 10);
+        }
 
         if (cosObj && cosObj.type === 'halo') {
             drawBackCosmetic(equippedCos, p.r, ctx);
@@ -596,7 +656,6 @@ function drawGame() {
             }
         }
         
-        // --- DRAW ANGRY EYEBROWS & EYES ---
         if (z.type === 'boss_blink') {
             ctx.fillStyle = '#00ffff';
             ctx.strokeStyle = '#000000';
@@ -605,10 +664,8 @@ function drawGame() {
             ctx.beginPath(); ctx.arc(z.x + 6, z.y - 4, 2.8, 0, Math.PI*2); ctx.fill(); ctx.stroke();
             ctx.beginPath(); ctx.arc(z.x, z.y - 10, 3.2, 0, Math.PI*2); ctx.fill(); ctx.stroke();
         } else {
-            // Scale geometry smoothly depending on zombie base size (r)
             const r = z.r;
 
-            // Red glow eyes
             const eyeRadius = r * 0.22;
             const eyeY = -r * 0.1;
             const eyeXOffset = r * 0.35;
@@ -617,25 +674,21 @@ function drawGame() {
             ctx.strokeStyle = '#000000';
             ctx.lineWidth = 1;
 
-            // Left Eye
             ctx.beginPath();
             ctx.arc(z.x - eyeXOffset, z.y + eyeY, eyeRadius, 0, Math.PI * 2);
             ctx.fill();
             ctx.stroke();
 
-            // Right Eye
             ctx.beginPath();
             ctx.arc(z.x + eyeXOffset, z.y + eyeY, eyeRadius, 0, Math.PI * 2);
             ctx.fill();
             ctx.stroke();
 
-            // Slanted black eyebrows drawn on top
             const browWidth = r * 0.75;
             const browHeight = r * 0.18;
             const browY = -r * 0.25;
             const slantAngle = 0.42;
 
-            // Left Eyebrow (Angles downwards to the center)
             ctx.save();
             ctx.translate(z.x - eyeXOffset + (r * 0.05), z.y + browY);
             ctx.rotate(slantAngle);
@@ -643,7 +696,6 @@ function drawGame() {
             ctx.fillRect(-browWidth / 2, -browHeight / 2, browWidth, browHeight);
             ctx.restore();
 
-            // Right Eyebrow (Angles downwards to the center)
             ctx.save();
             ctx.translate(z.x + eyeXOffset - (r * 0.05), z.y + browY);
             ctx.rotate(-slantAngle);
@@ -789,5 +841,10 @@ function drawGame() {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(`${window.activeBoss.name.toUpperCase()} (${Math.floor(pct * 100)}%)`, x + barW / 2, y + barH / 2);
+    }
+
+    // --- DRAW PVP INFECTION MODE HUD OVERLAYS ---
+    if (typeof InfectionMode !== 'undefined' && InfectionMode.isActive) {
+        InfectionMode.drawHUD(ctx);
     }
 }

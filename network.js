@@ -147,6 +147,7 @@ const Network = {
                         type: 'LOBBY_WELCOME',
                         name: myUsername,
                         mapIndex: stats.selectedMapIdx,
+                        gameMode: stats.gameMode || 'SURVIVAL',
                         assignedId: c.playerId,
                         lobbyPlayers: window.lobbyPlayers,
                         difficulty: stats.difficulty || 'medium',
@@ -158,20 +159,28 @@ const Network = {
 
                 this.broadcastToAll({
                     type: 'LOBBY_UPDATE',
-                    lobbyPlayers: window.lobbyPlayers
+                    lobbyPlayers: window.lobbyPlayers,
+                    gameMode: stats.gameMode || 'SURVIVAL'
                 });
 
-                // MID-GAME JOIN HANDSHAKE: If match is currently in progress, spawn them as a spectator
+                // MID-GAME JOIN HANDSHAKE: Spawn as spectator
                 if (gameActive) {
                     const spawnX = activeMap.rooms[0].x + activeMap.rooms[0].w / 2;
                     const spawnY = activeMap.rooms[0].y + activeMap.rooms[0].h / 2;
                     players[c.playerId] = createPlayer(c.playerId, spawnX, spawnY, getPlayerColor(c.playerId), window.lobbyPlayers[c.playerId]);
-                    players[c.playerId].state = 'SPECTATING';
+                    
+                    if (typeof InfectionMode !== 'undefined' && InfectionMode.isActive) {
+                        // In Infection mode, mid-game joiners automatically start infected
+                        InfectionMode.infectPlayer(c.playerId, false);
+                    } else {
+                        players[c.playerId].state = 'SPECTATING';
+                    }
                     
                     try {
                         c.send({
                             type: 'START',
                             mapIndex: stats.selectedMapIdx,
+                            gameMode: stats.gameMode || 'SURVIVAL',
                             midGame: true
                         });
                     } catch (e) {
@@ -192,12 +201,11 @@ const Network = {
                     p.isShooting = data.shoot; 
 
                     if (data.reload) {
-                        // FIXED: Forces instant remote reloading state and spawns floating text on the Host screen
                         const gun = p.inventory && p.inventory[p.weapIdx] ? p.inventory[p.weapIdx] : null;
                         if (gun && !p.reloading) {
                             p.reloading = true;
                             p.reloadTimer = gun.reload;
-                            p.triggerReload = false; // Bypasses secondary triggers
+                            p.triggerReload = false; 
                             if (typeof addText === 'function') {
                                 addText(p.x, p.y - 40, "RELOADING...", "#fff");
                             }
@@ -208,13 +216,9 @@ const Network = {
                     p.isTouch = data.isTouch || false;
                     if (data.state) p.state = data.state;
 
-                    // Sync the active weapon selection sent by client
                     if (data.gunName) {
                         syncPlayerInventory(p, data.weapIdx, data.gunName);
                     }
-
-                    // BREAK CIRCULAR SYNC LOOP: Host is authoritative over simulated ammo counts.
-                    // We do not overwrite host simulated ammo with stale client P_DATA values during normal gameplay.
                 }
             }
             else if(data.type === 'INTERACT') {
@@ -232,7 +236,8 @@ const Network = {
             
             this.broadcastToAll({
                 type: 'LOBBY_UPDATE',
-                lobbyPlayers: window.lobbyPlayers
+                lobbyPlayers: window.lobbyPlayers,
+                gameMode: stats.gameMode || 'SURVIVAL'
             });
 
             if (typeof updateLobbyUI === 'function') {
@@ -249,6 +254,10 @@ const Network = {
                         statusEl.style.color = "#fff";
                     }
                 }
+            }
+
+            if (typeof InfectionMode !== 'undefined' && InfectionMode.isActive) {
+                InfectionMode.infectedIds.delete(c.playerId);
             }
 
             if(players[c.playerId]) {
@@ -299,7 +308,15 @@ const Network = {
             toxicClouds: window.toxicClouds || [],
             fireZones: window.fireZones || [],
             mortarTargets: window.mortarTargets || [],
-            groundSmashes: window.groundSmashes || []
+            groundSmashes: window.groundSmashes || [],
+
+            // --- REPLICATE ACTIVE INFECTION MODE STATES ---
+            infectionActive: (typeof InfectionMode !== 'undefined' && InfectionMode.isActive),
+            infectionState: (typeof InfectionMode !== 'undefined') ? InfectionMode.state : 'WAITING',
+            infectionTimer: (typeof InfectionMode !== 'undefined') ? InfectionMode.timer : 0,
+            infectionCountdown: (typeof InfectionMode !== 'undefined') ? InfectionMode.countdown : 0,
+            alphaId: (typeof InfectionMode !== 'undefined') ? InfectionMode.alphaId : null,
+            infectedIds: (typeof InfectionMode !== 'undefined') ? Array.from(InfectionMode.infectedIds) : []
         };
 
         this.conns.forEach(c => {
@@ -328,6 +345,7 @@ const Network = {
                 window.myPlayerId = data.assignedId;
                 window.lobbyPlayers = data.lobbyPlayers;
                 stats.selectedMapIdx = data.mapIndex;
+                stats.gameMode = data.gameMode || 'SURVIVAL';
                 stats.difficulty = data.difficulty || 'medium';
                 this.lastGameStateTime = Date.now(); // Feed watchdog
 
@@ -342,6 +360,10 @@ const Network = {
                 if (diffDisplay) {
                     diffDisplay.innerText = "Difficulty: " + capitalizeFirstLetter(stats.difficulty);
                 }
+                const modeDisplay = document.getElementById('lobby-mode-display-client');
+                if (modeDisplay) {
+                    modeDisplay.innerText = "Mode: " + (stats.gameMode === 'INFECTION' ? "Infection Mode" : "Classic Survival");
+                }
                 const clientVisDisplay = document.getElementById('lobby-visibility-display-client');
                 if (clientVisDisplay && data.visibility) {
                     clientVisDisplay.innerText = data.visibility === 'public' ? "Public" : "Private";
@@ -352,7 +374,8 @@ const Network = {
             }
             else if (data.type === 'LOBBY_UPDATE') {
                 window.lobbyPlayers = data.lobbyPlayers;
-                this.lastGameStateTime = Date.now(); // Feed watchdog on every gamestate frame
+                if (data.gameMode) stats.gameMode = data.gameMode;
+                this.lastGameStateTime = Date.now(); 
                 if (typeof updateLobbyPlayersList === 'function') updateLobbyPlayersList();
             }
             else if (data.type === 'LOBBY_MAP_CHANGE') {
@@ -361,6 +384,13 @@ const Network = {
                 if (mapDisplay) {
                     const mapName = (typeof playableMaps !== 'undefined' && playableMaps[data.mapIndex]) ? playableMaps[data.mapIndex].name : "Unknown Map";
                     mapDisplay.innerText = mapName;
+                }
+            }
+            else if (data.type === 'LOBBY_MODE_CHANGE') {
+                stats.gameMode = data.gameMode || 'SURVIVAL';
+                const modeDisplay = document.getElementById('lobby-mode-display-client');
+                if (modeDisplay) {
+                    modeDisplay.innerText = "Mode: " + (stats.gameMode === 'INFECTION' ? "Infection Mode" : "Classic Survival");
                 }
             }
             else if (data.type === 'LOBBY_DIFF_CHANGE') {
@@ -389,15 +419,62 @@ const Network = {
                 if (data.mapIndex !== undefined && typeof playableMaps !== 'undefined') {
                     activeMap = playableMaps[data.mapIndex];
                 }
-                this.lastGameStateTime = Date.now(); // FIXED: Resets Client watchdog timestamp to current time to prevent an instant game restart disconnect
+                stats.gameMode = data.gameMode || 'SURVIVAL';
+                this.lastGameStateTime = Date.now(); 
                 launchGame();
-                if (data.midGame) {
+                if (data.midGame && (!typeof InfectionMode !== 'undefined' || !InfectionMode.isActive)) {
                     me.state = 'SPECTATING';
                 }
             }
+
+            // --- MELEE FLASH CHANNELS ---
+            else if (data.type === 'INF_SELECT_ALPHA') {
+                if (typeof InfectionMode !== 'undefined') {
+                    InfectionMode.isActive = true;
+                    InfectionMode.state = 'ACTIVE';
+                    InfectionMode.alphaId = data.alphaId;
+                    InfectionMode.infectedIds.add(data.alphaId);
+                    InfectionMode.infectPlayer(data.alphaId, true);
+                }
+            }
+            else if (data.type === 'INF_TURN') {
+                if (typeof InfectionMode !== 'undefined') {
+                    InfectionMode.infectPlayer(data.victimId, false);
+                }
+            }
+            else if (data.type === 'INF_RESPAWN') {
+                if (typeof InfectionMode !== 'undefined') {
+                    InfectionMode.respawnPlayer(data.playerId);
+                    const p = players[data.playerId];
+                    if (p) {
+                        p.x = data.x;
+                        p.y = data.y;
+                    }
+                }
+            }
+            else if (data.type === 'INF_GAME_OVER') {
+                if (typeof InfectionMode !== 'undefined') {
+                    InfectionMode.endMatch(data.result);
+                }
+            }
+
             else if(data.type === 'GAME_STATE') {
                 this.lastGameStateTime = Date.now(); // Feed watchdog on every gamestate frame
                 
+                // --- CONTINUOUS SYNC OF INFECTION STATES ---
+                if (data.infectionActive) {
+                    if (typeof InfectionMode !== 'undefined') {
+                        InfectionMode.isActive = true;
+                        InfectionMode.state = data.infectionState;
+                        InfectionMode.timer = data.infectionTimer;
+                        InfectionMode.countdown = data.infectionCountdown;
+                        InfectionMode.alphaId = data.alphaId;
+                        InfectionMode.infectedIds = new Set(data.infectedIds);
+                    }
+                } else if (typeof InfectionMode !== 'undefined') {
+                    InfectionMode.isActive = false;
+                }
+
                 const serverZombies = data.zombies || [];
                 const serverMap = new Map();
                 
@@ -410,7 +487,6 @@ const Network = {
                                 spawnParticles(local.x, local.y, '#800', 3);
                             }
 
-                            // HIT INDICATOR SYNC: Spawns white float points (+10 or +20 if Double Points) directly on the target zombie
                             if (typeof addText === 'function') {
                                 let pts = 10;
                                 if (window.doublePointsTimer > 0) pts *= 2;
@@ -480,7 +556,7 @@ const Network = {
 
                 const incomingBullets = data.bullets || [];
                 const serverBulletMap = new Map();
-                let shotSoundPlayedThisTick = false; // Prevent overlapping multi-pellet shotgun blasts
+                let shotSoundPlayedThisTick = false; 
                 
                 incomingBullets.forEach(sb => {
                     serverBulletMap.set(sb.id, sb);
@@ -500,7 +576,6 @@ const Network = {
                             life: 50
                         });
                         
-                        // Play shoot sound for network bullets while filtering shotgun pellet duplicate blasts
                         if (!shotSoundPlayedThisTick) {
                             if (typeof SoundSystem !== 'undefined') {
                                 SoundSystem.play('shoot');
@@ -530,7 +605,6 @@ const Network = {
                 window.doublePointsTimer = data.doublePointsTimer || 0;
                 window.instaKillTimer = data.instaKillTimer || 0;
                 
-                // Parses down environmental hazard frames for guests
                 window.acidPools = data.acidPools || [];
                 window.toxicClouds = data.toxicClouds || [];
                 window.fireZones = data.fireZones || [];
@@ -546,8 +620,8 @@ const Network = {
                             let myAngle = me.angle;
                             let myX = me.x;
                             let myY = me.y;
-                            let myWeapIdx = me.weapIdx; // Preserve weapon indexing during host sync frame
-                            let localReloading = me.reloading; // Cache local reload state
+                            let myWeapIdx = me.weapIdx; 
+                            let localReloading = me.reloading; 
 
                             if (me.state === 'DOWNED' && fallbackPId.state === 'ALIVE') {
                                 const spawnSource = data.p1;
@@ -574,8 +648,6 @@ const Network = {
                                     addPlayerXP(me, xpToGive);
                                 }
 
-                                // PERSONAL MAJOR SCORE SYNC: Spawns yellow match scores on your player model 
-                                // only for larger rewards (kills +50, double points etc.), bypassing hit indicators (+10 / +20)
                                 if (scoreDiff !== 10 && scoreDiff !== 20) {
                                     if (typeof addText === 'function') {
                                         addText(me.x, me.y - 40, "+" + scoreDiff, "#ff0");
@@ -583,7 +655,6 @@ const Network = {
                                 }
                             }
 
-                            // Capture old inventory size before syncing player inventory
                             const oldInvSize = me.inventory ? me.inventory.length : 0;
                             if (fallbackPId.gunName) {
                                 syncPlayerInventory(me, fallbackPId.weapIdx, fallbackPId.gunName);
@@ -593,21 +664,15 @@ const Network = {
                             Object.assign(me, fallbackPId);
                             me.angle = myAngle; 
                             
-                            // FIXED: Lock bypass on weapon buys. If a brand new weapon was added to inventory
-                            // during the host's logic frame (e.g. from a Mystery Box or Wallbuy purchase),
-                            // we force Client weapon index sync. Otherwise, we maintain the index lock to prevent rubberbanding.
                             if (newInvSize > oldInvSize) {
                                 const targetIdx = me.inventory.findIndex(w => w.name === fallbackPId.gunName);
                                 if (targetIdx !== -1) {
                                     me.weapIdx = targetIdx;
                                 }
                             } else {
-                                me.weapIdx = myWeapIdx; // Apply localized index lock safely
+                                me.weapIdx = myWeapIdx; 
                             }
 
-                            // FIXED: Local reloading race condition safety guard. 
-                            // If the Client finished reloading locally (reloading is false), do not let 
-                            // delayed incoming host packets drag them back into a reloading state.
                             if (!localReloading) {
                                 me.reloading = false;
                             }
@@ -625,9 +690,6 @@ const Network = {
                             me.clip = fallbackPId.clip !== undefined ? fallbackPId.clip : 8;
                             me.ammo = fallbackPId.ammo !== undefined ? fallbackPId.ammo : 32;
 
-                            // FIXED: Authoritatively sync HUD weapon inventory states.
-                            // Client local loop uses inventory arrays for HUD elements. By targeting 
-                            // the active inventory array weapon directly, HUD frozen states are solved.
                             const activeGunInInv = me.inventory ? me.inventory.find(w => w.name === fallbackPId.gunName) : null;
                             if (activeGunInInv) {
                                 if (fallbackPId.clip !== undefined) activeGunInInv.clip = fallbackPId.clip;
@@ -647,7 +709,6 @@ const Network = {
                                 }
                             }
 
-                            // REMOTE FLOATING RELOAD SYNC: Trigger "RELOADING..." float indicator on Client screens when remote players start reloading
                             if (p && data[pId].reloading && !p.reloading) {
                                 if (typeof addText === 'function') {
                                     addText(p.x, p.y - 40, "RELOADING...", "#fff");
@@ -682,6 +743,9 @@ const Network = {
                             p.clip = data[pId].clip !== undefined ? data[pId].clip : 8;
                             p.ammo = data[pId].ammo !== undefined ? data[pId].ammo : 32;
                             p.equippedCosmetic = data[pId].cosmetic !== undefined ? data[pId].cosmetic : 'none';
+
+                            // Replicate Melee Slashes of other players
+                            p.isSlashing = data[pId].isSlashing !== undefined ? data[pId].isSlashing : p.isSlashing;
                         } else {
                             if (players[pId]) delete players[pId];
                         }
@@ -704,12 +768,10 @@ const Network = {
             }
         });
 
-        // 1. Connection Close Event Trigger
         this.conn.on('close', () => {
             this.handleDisconnectFallback();
         });
 
-        // 2. Browser WebRTC ICE Connection State Triggers
         if (this.conn.peerConnection) {
             this.conn.peerConnection.addEventListener('iceconnectionstatechange', () => {
                 const state = this.conn.peerConnection.iceConnectionState;
@@ -726,7 +788,6 @@ const Network = {
         }
     },
 
-    // 3. Heartbeat Watchdog verification loop
     checkHostHeartbeat: function() {
         if (this.mode !== 'CLIENT' || !gameActive) return;
         
@@ -736,7 +797,7 @@ const Network = {
         }
 
         const elapsed = Date.now() - this.lastGameStateTime;
-        if (elapsed > 4000) { // 4-second timeout threshold
+        if (elapsed > 4000) { 
             console.warn("Watchdog: Host heartbeat lost. Redirecting.");
             this.handleDisconnectFallback("⚠️ Connection Timed Out: The Host stopped responding.");
         }
@@ -761,7 +822,7 @@ const Network = {
 
         document.getElementById('game-ui').style.display = 'none';
         document.getElementById('game-over').style.display = 'none';
-        document.getElementById('main-menu').style.display = 'none'; // Ensure lobby list re-renders correctly on fail
+        document.getElementById('main-menu').style.display = 'none'; 
         document.getElementById('lobby-screen').style.display = 'none';
         document.getElementById('main-menu').style.display = 'flex';
 
@@ -783,10 +844,9 @@ const Network = {
             try {
                 const activeGun = p.inventory && p.inventory[p.weapIdx] ? p.inventory[p.weapIdx] : null;
 
-                // FIXED: Plays dry fire sound locally on the Client's screen when trying to fire empty weapons
                 if (mouse.down && activeGun && activeGun.clip === 0 && activeGun.ammo === 0) {
                     const nowMs = Date.now();
-                    if (nowMs - (activeGun.lastDryFireTime || 0) >= 600) { // 600ms cooldown (~35 frames)
+                    if (nowMs - (activeGun.lastDryFireTime || 0) >= 600) { 
                         activeGun.lastDryFireTime = nowMs;
                         if (typeof SoundSystem !== 'undefined') {
                             SoundSystem.play('dry_fire');
@@ -804,8 +864,8 @@ const Network = {
                     isTouch: p.isTouch,
                     weapIdx: p.weapIdx,
                     gunName: activeGun ? activeGun.name : "",
-                    clip: activeGun ? activeGun.clip : 0,    // Send actual authoritative clip values
-                    ammo: activeGun ? activeGun.ammo : 0,    // Send actual authoritative reserve values
+                    clip: activeGun ? activeGun.clip : 0,    
+                    ammo: activeGun ? activeGun.ammo : 0,    
                     state: p.state 
                 });
             } catch (e) {
@@ -826,9 +886,9 @@ const Network = {
 };
 
 function getPlayerColor(id) {
-    if (id === 'p1') return '#3498db'; // Blue
-    if (id === 'p2') return '#e67e22'; // Orange
-    if (id === 'p3') return '#2ecc71'; // Green
+    if (id === 'p1') return '#3498db'; 
+    if (id === 'p2') return '#e67e22'; 
+    if (id === 'p3') return '#2ecc71'; 
     return '#9b59b6'; // Purple (p4)
 }
 
@@ -850,7 +910,11 @@ function getPrunedPlayer(p) {
         gunName: activeGun ? activeGun.name : "Model 1911",
         gunColor: activeGun ? activeGun.color : "#999",
         name: p.name,
-        cosmetic: p.equippedCosmetic || 'none'
+        cosmetic: p.equippedCosmetic || 'none',
+
+        // --- REPLICATE ACTIVE INFECTION PROPERTIES ---
+        isSlashing: p.isSlashing,
+        isInfected: (typeof InfectionMode !== 'undefined' && InfectionMode.isActive) ? InfectionMode.infectedIds.has(p.id) : false
     };
 }
 

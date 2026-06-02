@@ -16,7 +16,13 @@ let bulletIdCounter = 0;
 
 // Global helper to cycle through targets for spectating players
 window.cycleSpectator = function(dir = 1) {
-    let survivors = Object.values(players).filter(p => p.state === 'ALIVE');
+    let survivors = Object.values(players).filter(p => {
+        // In Infection, spectate any human players still alive
+        if (typeof InfectionMode !== 'undefined' && InfectionMode.isActive) {
+            return p.state === 'ALIVE' && !InfectionMode.infectedIds.has(p.id);
+        }
+        return p.state === 'ALIVE';
+    });
     if (survivors.length <= 1) return;
     let currentIdx = survivors.findIndex(p => p.id === window.spectateTargetId);
     if (currentIdx === -1) {
@@ -44,7 +50,12 @@ function loop(currentTime) {
     
     let camTarget = me;
     if (me && (me.state === 'SPECTATING' || me.state === 'DOWNED')) {
-        let survivors = Object.values(players).filter(p => p.state === 'ALIVE');
+        let survivors = Object.values(players).filter(p => {
+            if (typeof InfectionMode !== 'undefined' && InfectionMode.isActive) {
+                return p.state === 'ALIVE' && !InfectionMode.infectedIds.has(p.id);
+            }
+            return p.state === 'ALIVE';
+        });
         if (survivors.length > 0) {
             if (window.spectateTargetId === undefined || !players[window.spectateTargetId] || players[window.spectateTargetId].state !== 'ALIVE') {
                 window.spectateTargetId = survivors[0].id;
@@ -81,6 +92,7 @@ function loop(currentTime) {
 
 function updateGameLogic() {
     if (me) updatePlayerPhysics(me, true);
+    
     Object.values(players).forEach(p => {
         if (p !== me && p.serverX !== undefined) { 
             p.x += (p.serverX - p.x) * 0.15; 
@@ -88,6 +100,12 @@ function updateGameLogic() {
         }
         if (p.invincibleTimer > 0) p.invincibleTimer--;
     });
+
+    // --- INTEGRATE INFECTION STATE MACHINE ---
+    if (typeof InfectionMode !== 'undefined' && InfectionMode.isActive) {
+        InfectionMode.update();
+    }
+
     if (typeof Tutorial !== 'undefined' && Tutorial.isActive) Tutorial.update();
     const altHeld = keys['AltLeft'] || keys['AltRight'];
     if (altHeld && keys['Digit1']) { keys['Digit1'] = false; skipToBossRound(5); }
@@ -127,7 +145,7 @@ function updateGameLogic() {
         ['p2', 'p3', 'p4'].forEach(pId => {
             const p = players[pId];
             if (p) {
-                if (p.state === 'SPECTATING') return; // Skip spectator update step
+                if (p.state === 'SPECTATING') return; 
                 if (p.triggerReload) forceReload(p); 
                 p.triggerReload = false;
                 if (Network.mode === 'LOCAL_COOP' && pId === 'p2') updateLocalCoopP2(p);
@@ -138,13 +156,20 @@ function updateGameLogic() {
                 }
             }
         });
+
         updateZombies(); 
         updateBullets(); 
         updateEnvironmentalHazards();
         if (typeof ZombieVariants !== 'undefined') ZombieVariants.updateProjectiles();
+        
         stats.zombiesAlive = zombies.length; 
-        checkGameFlow(); 
-        checkAllDead(); 
+
+        // Bypass standard round changes and dead evaluations when in PvP Infection Mode
+        if (typeof InfectionMode === 'undefined' || !InfectionMode.isActive) {
+            checkGameFlow(); 
+            checkAllDead(); 
+        }
+
         Object.values(players).forEach(p => {
             if (p.isShooting) {
                 const gun = p.inventory && p.inventory[p.weapIdx] ? p.inventory[p.weapIdx] : null;
@@ -155,6 +180,7 @@ function updateGameLogic() {
                 }
             } else p.pressHandled = false;
         });
+
         if (window.doublePointsTimer > 0) window.doublePointsTimer--;
         if (window.instaKillTimer > 0) window.instaKillTimer--;
         for (let i = window.drops.length - 1; i >= 0; i--) {
@@ -221,8 +247,12 @@ function updateEnvironmentalHazards() {
                             p.hp -= 35; 
                             addText(p.x, p.y, "-35 HP (Explosion!)", "#ff4757"); 
                             if (p.hp <= 0) { 
-                                p.state = 'DOWNED'; 
-                                p.reviveTimer = p.hasVigor ? 300 : -1; 
+                                if (typeof InfectionMode !== 'undefined' && InfectionMode.isActive) {
+                                    InfectionMode.infectPlayer(p.id, false);
+                                } else {
+                                    p.state = 'DOWNED'; 
+                                    p.reviveTimer = p.hasVigor ? 300 : -1; 
+                                }
                             } 
                         }
                     }
@@ -254,8 +284,12 @@ function updateEnvironmentalHazards() {
                     p.hp -= 6; 
                     addText(p.x, p.y, "-6 HP (Acid)", "#2ecc71"); 
                     if (p.hp <= 0) { 
-                        p.state = 'DOWNED'; 
-                        p.reviveTimer = p.hasVigor ? 300 : -1; 
+                        if (typeof InfectionMode !== 'undefined' && InfectionMode.isActive) {
+                            InfectionMode.infectPlayer(p.id, false);
+                        } else {
+                            p.state = 'DOWNED'; 
+                            p.reviveTimer = p.hasVigor ? 300 : -1; 
+                        }
                     } 
                 } 
             }
@@ -266,8 +300,12 @@ function updateEnvironmentalHazards() {
                     p.hp -= 10; 
                     addText(p.x, p.y, "-10 HP (Gas)", "#27ae60"); 
                     if (p.hp <= 0) { 
-                        p.state = 'DOWNED'; 
-                        p.reviveTimer = p.hasVigor ? 300 : -1; 
+                        if (typeof InfectionMode !== 'undefined' && InfectionMode.isActive) {
+                            InfectionMode.infectPlayer(p.id, false);
+                        } else {
+                            p.state = 'DOWNED'; 
+                            p.reviveTimer = p.hasVigor ? 300 : -1; 
+                        }
                     } 
                 } 
             }
@@ -277,8 +315,12 @@ function updateEnvironmentalHazards() {
                     p.hp -= 8; 
                     addText(p.x, p.y, "-8 HP (Burn)", "#e67e22"); 
                     if (p.hp <= 0) { 
-                        p.state = 'DOWNED'; 
-                        p.reviveTimer = p.hasVigor ? 300 : -1; 
+                        if (typeof InfectionMode !== 'undefined' && InfectionMode.isActive) {
+                            InfectionMode.infectPlayer(p.id, false);
+                        } else {
+                            p.state = 'DOWNED'; 
+                            p.reviveTimer = p.hasVigor ? 300 : -1; 
+                        }
                     } 
                 } 
             }
@@ -327,7 +369,7 @@ function addPlayerXP(p, amount) {
 }
 
 function updatePlayerPhysics(p, isLocal) {
-    if (p.state === 'SPECTATING') return; // Skip movement & inputs for spectators
+    if (p.state === 'SPECTATING') return; 
     if (p.state === 'DOWNED') {
         if (p.reviveTimer > 0) { 
             p.reviveTimer--; 
@@ -384,7 +426,7 @@ function updatePlayerPhysics(p, isLocal) {
 }
 
 function updateLocalCoopP2(p) {
-    if (p.state === 'SPECTATING') return; // Skip coop input for spectators
+    if (p.state === 'SPECTATING') return; 
     if (p.state === 'DOWNED') { 
         if (p.reviveTimer > 0) { 
             p.reviveTimer--; 
@@ -486,6 +528,13 @@ function updateLocalCoopP2(p) {
 
 function shootGun(p) {
     if (p.state !== 'ALIVE' || p.reloading) return; 
+
+    // --- MELEE SWIPE REDIRECT FOR PvP INFECTION MODE ---
+    if (typeof InfectionMode !== 'undefined' && InfectionMode.isActive && InfectionMode.infectedIds.has(p.id)) {
+        InfectionMode.triggerMeleeSlash(p);
+        return;
+    }
+
     const gun = p.inventory && p.inventory[p.weapIdx] ? p.inventory[p.weapIdx] : null; 
     if (!gun) return;
     if (stats.frame - (gun.lastShot || 0) >= gun.rpm) {
@@ -522,7 +571,6 @@ function shootGun(p) {
         } else if (gun.ammo > 0) {
             forceReload(p); 
         } else {
-            // Dry fire cooldown: Only trigger the click sound every 35 frames (approx. 0.6 seconds)
             if (stats.frame - (gun.lastDryFire || 0) >= 35) {
                 gun.lastDryFire = stats.frame;
                 if (typeof SoundSystem !== 'undefined') {
@@ -574,6 +622,7 @@ function handleReload() {
 }
 
 function forceReload(p) { 
+    if (typeof InfectionMode !== 'undefined' && InfectionMode.isActive && InfectionMode.infectedIds.has(p.id)) return;
     let gun = p.inventory[p.weapIdx]; 
     if (!p.reloading && gun.clip < gun.mag && gun.ammo > 0) { 
         p.reloading = true; 
@@ -589,6 +638,11 @@ function checkInteractUI() {
     if (msg) msg.style.display = 'none'; 
     me.interactionTarget = null; 
     if (me.state !== 'ALIVE') return;
+
+    if (typeof InfectionMode !== 'undefined' && InfectionMode.isActive) {
+        if (InfectionMode.infectedIds.has(me.id)) return;
+    }
+
     let downed = Object.values(players).find(p => p !== me && p.state === 'DOWNED' && Math.hypot(me.x - p.x, p.y - p.y) < 50);
     if (downed) { 
         if (msg) { 
@@ -609,13 +663,15 @@ function checkInteractUI() {
 function handleInteractAction() { 
     if (me.state !== 'ALIVE') return; 
     if (Network.mode === 'CLIENT') {
-        Network.sendInteract(); // Standard clean WebRTC message
+        Network.sendInteract(); 
     } else {
         processInteraction(me); 
     }
 }
 
 function processInteraction(p) {
+    if (typeof InfectionMode !== 'undefined' && InfectionMode.isActive && InfectionMode.infectedIds.has(p.id)) return;
+
     let teammate = Object.values(players).find(pl => pl !== p && pl.state === 'DOWNED' && Math.hypot(p.x - pl.x, p.y - pl.y) < 50);
     if (teammate) { 
         teammate.state = 'ALIVE'; 
@@ -690,12 +746,20 @@ function processInteraction(p) {
 function checkAllDead() { 
     if (Network.mode === 'CLIENT') return; 
     let activePlayers = Object.values(players).filter(p => p.state === 'ALIVE' || p.state === 'DOWNED');
-    if (activePlayers.length === 0) return; // Prevent premature game-overs when mid-round joins spectate
+    if (activePlayers.length === 0) return; 
     let allDown = activePlayers.every(p => p.state === 'DOWNED'); 
     if (allDown && !activePlayers.some(p => p.reviveTimer > 0)) gameOver(); 
 }
 
 function updateZombies() {
+    // --- BYPASS AI ZOMBIES IN PVP INFECTION MODE ---
+    if (typeof InfectionMode !== 'undefined' && InfectionMode.isActive) {
+        zombies = [];
+        stats.zombiesAlive = 0;
+        stats.zombiesToSpawn = 0;
+        return;
+    }
+
     const currentDiff = stats.difficulty || 'medium'; 
     let spawnRate = GameBalanceConfig.SPAWN_RATE_MEDIUM; 
     if (currentDiff === 'easy') spawnRate = GameBalanceConfig.SPAWN_RATE_EASY; 
@@ -867,13 +931,8 @@ function updateZombies() {
         if (typeof ZombieVariants !== 'undefined') ZombieVariants.updateSpecialBehaviors(z);
         
         Object.values(players).forEach(p => {
-            // If it's a remote player, evaluate damage using their actual reported coordinates 
-            // instead of their interpolated path to remove artificial lag.
             let px = (p !== me && p.serverX !== undefined) ? p.serverX : p.x;
             let py = (p !== me && p.serverY !== undefined) ? p.serverY : p.y;
-            
-            // Give remote clients a slightly smaller, more lenient damage hitbox (e.g., 22px instead of 30px)
-            // to make up for P2P connection latency.
             let hitRadius = (p !== me) ? 22 : 30;
 
             if (Math.hypot(px - z.x, py - z.y) < hitRadius && p.state === 'ALIVE') {
@@ -908,6 +967,36 @@ function updateBullets() {
             if (b.type === 'explosive') triggerExplosion(b); 
             else spawnSparks(b.x, b.y, b.vx, b.vy); 
         }
+
+        if (!hit && typeof InfectionMode !== 'undefined' && InfectionMode.isActive) {
+            Object.values(players).forEach(p => {
+                if (!hit && p.state === 'ALIVE' && InfectionMode.infectedIds.has(p.id) && Math.hypot(b.x - p.x, b.y - p.y) < p.r + 5) {
+                    hit = true;
+                    if (b.type === 'explosive') {
+                        triggerExplosion(b);
+                    } else {
+                        p.hp -= b.dmg;
+                        p.hitTimer = 4;
+                        spawnParticles(p.x, p.y, '#2ecc71', 4);
+
+                        if (p.hp <= 0) {
+                            InfectionMode.handleInfectedDeath(p.id);
+                            
+                            const shooter = players[b.ownerId];
+                            if (shooter) {
+                                shooter.score += GameBalanceConfig.SCORE_ZOMBIE_KILL;
+                                shooter.kills++;
+                                addPlayerXP(shooter, GameBalanceConfig.XP_ZOMBIE_KILL);
+                                if (b.ownerId === 'p1') {
+                                    saveData.lobbyCoins = (saveData.lobbyCoins || 0) + GameBalanceConfig.LOBBY_COINS_PER_KILL;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
         if (!hit) zombies.forEach((z) => {
             if (!z || z.dead || z.hp <= 0) return;
             if (!hit && Math.hypot(b.x - z.x, b.y - z.y) < z.r + 5) {
@@ -984,6 +1073,7 @@ function updateBullets() {
 
 function triggerExplosion(b) {
     const explosionRadius = 150;
+    
     zombies.forEach(z => {
         if (z.dead || z.hp <= 0) return; 
         let dist = Math.hypot(b.x - z.x, b.y - z.y);
@@ -1043,6 +1133,38 @@ function triggerExplosion(b) {
             }
         }
     });
+
+    if (typeof InfectionMode !== 'undefined' && InfectionMode.isActive) {
+        Object.values(players).forEach(p => {
+            if (InfectionMode.infectedIds.has(p.id) && p.state === 'ALIVE') {
+                let dist = Math.hypot(b.x - p.x, b.y - p.y);
+                if (dist < explosionRadius) {
+                    let falloff = 1 - (dist / explosionRadius);
+                    let splashDmg = Math.floor(b.dmg * falloff);
+                    if (splashDmg > 0) {
+                        p.hp -= splashDmg;
+                        p.hitTimer = 6;
+                        spawnParticles(p.x, p.y, '#2ecc71', 6);
+
+                        if (p.hp <= 0) {
+                            InfectionMode.handleInfectedDeath(p.id);
+                            
+                            const shooter = players[b.ownerId];
+                            if (shooter) {
+                                shooter.score += GameBalanceConfig.SCORE_ZOMBIE_KILL;
+                                shooter.kills++;
+                                addPlayerXP(shooter, GameBalanceConfig.XP_ZOMBIE_KILL);
+                                if (b.ownerId === 'p1') {
+                                    saveData.lobbyCoins = (saveData.lobbyCoins || 0) + GameBalanceConfig.LOBBY_COINS_PER_KILL;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
     spawnExplosionVisuals(b.x, b.y);
 }
 
@@ -1147,26 +1269,66 @@ function drawScoreboard() {
     const tbody = document.getElementById('score-body'); 
     tbody.innerHTML = '';
     Object.values(players).forEach(p => {
-        let ping = (p.id === me.id) ? "0ms" : "35ms", status = p.state === 'ALIVE' ? '<span style="color:#0f0">ALIVE</span>' : '<span style="color:#f00">DOWN</span>';
+        let ping = (p.id === me.id) ? "0ms" : "35ms";
+        let status = p.state === 'ALIVE' ? '<span style="color:#0f0">ALIVE</span>' : '<span style="color:#f00">DOWN</span>';
+        
+        if (typeof InfectionMode !== 'undefined' && InfectionMode.isActive) {
+            status = InfectionMode.infectedIds.has(p.id) ? '<span style="color:#2ecc71">INFECTED</span>' : '<span style="color:#3498db">SURVIVOR</span>';
+        }
+
         tbody.innerHTML += `<tr><td style="color:${p.color}">${p.name}</td><td>${p.kills}</td><td>${p.score}</td><td>${status}</td><td>${ping}</td></tr>`;
     });
 }
 
 function resetSession() { 
-    const currentMapIdx = stats.selectedMapIdx !== undefined ? stats.selectedMapIdx : 0, currentDiff = stats.difficulty || 'medium';
+    const currentMapIdx = stats.selectedMapIdx !== undefined ? stats.selectedMapIdx : 0;
+    const currentDiff = stats.difficulty || 'medium';
+    
+    // PRESERVE GAME MODE VALUES [2]
+    const currentGameMode = stats.gameMode || 'SURVIVAL';
+
     let zombiesToSpawnBase = GameBalanceConfig.WAVE_BASE_MEDIUM; 
     if (currentDiff === 'easy') zombiesToSpawnBase = GameBalanceConfig.WAVE_BASE_EASY; 
     else if (currentDiff === 'hard') zombiesToSpawnBase = GameBalanceConfig.WAVE_BASE_HARD;
-    stats = { score: 0, round: 1, zombiesToSpawn: zombiesToSpawnBase, zombiesAlive: 0, frame: 0, sessionKills: 0, selectedMapIdx: currentMapIdx, difficulty: currentDiff }; 
+    
+    // RESTORE THE PRESERVED VALUE BACK INTO THE INJECTED LITERALS [2]
+    stats = { 
+        score: 0, 
+        round: 1, 
+        zombiesToSpawn: zombiesToSpawnBase, 
+        zombiesAlive: 0, 
+        frame: 0, 
+        sessionKills: 0, 
+        selectedMapIdx: currentMapIdx, 
+        difficulty: currentDiff,
+        gameMode: currentGameMode
+    }; 
+
     zombies = []; bullets = []; particles = []; texts = []; window.bloodStains = []; zombieIdCounter = 0; window.drops = []; window.doublePointsTimer = 0; window.instaKillTimer = 0;
     window.activeBoss = null; window.zombieArrows = []; window.acidPools = []; window.toxicClouds = []; window.fireZones = []; window.mortarTargets = []; window.groundSmashes = []; window.screenShake = 0; window.spawnedBossTypes = []; 
     
-    // Capture unlocked achievements when the match is launched so we can track newly unlocked ones
     window.startingUnlockedAch = [...(saveData.unlockedAch || [])];
     
-    activeMap.rooms.forEach(r => r.unlocked = (r.id === 0)); 
+    // Automatically open Rooms 0 & 1 on Sector-12 City to unlock starter AI spawns in Classic mode [2]
+    activeMap.rooms.forEach(r => {
+        if (currentGameMode === 'INFECTION') {
+            r.unlocked = true; // Unlock the entire open-world city map for PvP tag matches!
+        } else if (activeMap.name === "Sector-12 City") {
+            r.unlocked = (r.id === 0 || r.id === 1);
+        } else {
+            r.unlocked = (r.id === 0);
+        }
+    });
+
     if (activeMap === tutorialMapData) activeMap.windows.forEach(w => w.boards = 0); 
     else activeMap.windows.forEach(w => w.boards = w.max);
+
+    // --- RE-INITIALIZE THE INFECTION MODULE ON GAME LAUNCH ---
+    if (typeof InfectionMode !== 'undefined' && stats.gameMode === 'INFECTION') {
+        InfectionMode.init();
+    } else if (typeof InfectionMode !== 'undefined') {
+        InfectionMode.isActive = false;
+    }
 }
 
 function spawnParticles(x, y, c, n) { 
@@ -1211,7 +1373,6 @@ function drawOverBossIcon(bId, discovered, defeated, strikeProgress) {
     if (!b) return;
 
     if (!discovered) {
-        // Draw locked circle
         c.fillStyle = '#151515';
         c.beginPath(); 
         c.arc(27, 27, 14, 0, Math.PI * 2); 
@@ -1226,7 +1387,6 @@ function drawOverBossIcon(bId, discovered, defeated, strikeProgress) {
         c.textBaseline = 'middle';
         c.fillText('?', 27, 27);
     } else {
-        // Render discovered sprite profiles
         if (b.id === 'boss_logbreaker') {
             c.fillStyle = '#ffffff';
             c.beginPath(); 
@@ -1328,12 +1488,12 @@ function drawOverBossIcon(bId, discovered, defeated, strikeProgress) {
             c.lineTo(27 - 3, 27 - 10); 
             c.fill(); 
             c.stroke();
-            c.beginPath(); 
-            c.moveTo(27 + 7, 27 - 8); 
-            c.lineTo(27 + 12, 27 - 15); 
-            c.lineTo(27 + 3, 27 - 10); 
-            c.fill(); 
-            c.stroke();
+            ctx.beginPath(); 
+            ctx.moveTo(27 + 7, 27 - 8); 
+            ctx.lineTo(27 + 12, 27 - 15); 
+            ctx.lineTo(27 + 3, 27 - 10); 
+            ctx.fill(); 
+            ctx.stroke();
 
             c.fillStyle = '#f00'; 
             c.strokeStyle = '#000'; 
@@ -1342,8 +1502,8 @@ function drawOverBossIcon(bId, discovered, defeated, strikeProgress) {
             c.arc(27 - 4, 27 - 4, 2, 0, Math.PI * 2); 
             c.fill(); 
             c.stroke();
-            c.beginPath(); 
-            c.arc(27 + 4, 27 - 4, 2, 0, Math.PI * 2); 
+            ctx.beginPath(); 
+            ctx.arc(27 + 4, 27 - 4, 2, 0, Math.PI * 2); 
             c.fill(); 
             c.stroke();
         } else if (b.id === 'boss_decayer') {
@@ -1404,7 +1564,6 @@ function drawOverBossIcon(bId, discovered, defeated, strikeProgress) {
         }
     }
     
-    // Draw Defeated Slash line
     if (defeated && strikeProgress > 0) {
         c.strokeStyle = '#ff4757';
         c.lineWidth = 3;
@@ -1432,6 +1591,16 @@ function gameOver() {
     if (saveData.xp === undefined) saveData.xp = 0;
     if (saveData.lobbyCoins === undefined) saveData.lobbyCoins = 0;
 
+    const isInfection = (stats.gameMode === 'INFECTION');
+    const cardBoss = document.getElementById('card-boss');
+    if (cardBoss) {
+        if (isInfection) {
+            cardBoss.style.display = 'none';
+        } else {
+            cardBoss.style.display = 'flex';
+        }
+    }
+
     let oldXP = window.matchStartingXP !== undefined ? window.matchStartingXP : (saveData.xp || 0);
     let oldCoins = window.matchStartingCoins !== undefined ? window.matchStartingCoins : (saveData.lobbyCoins || 0);
     let msg = ""; 
@@ -1454,7 +1623,6 @@ function gameOver() {
         canAffordAndLock = (newCoins >= cosmeticPrice); 
     }
 
-    // Dynamic UI data injections inside pre-rendered containers
     document.getElementById('over-round-val').innerText = `Round ${stats.round}`;
     document.getElementById('perf-msg').innerText = msg;
     document.getElementById('level-badge').innerText = `Lv. ${oldLvl}`;
@@ -1491,16 +1659,15 @@ function gameOver() {
     document.getElementById('game-ui').style.display = 'none'; 
     document.getElementById('game-over').style.display = 'flex'; 
 
-    // High-speed sequential stagger reveal (0.75s interval paces)
     const staggerSequence = [
         { id: "over-title", delay: 200, sound: "zombie_hurt", shake: 14 },
         { id: "over-round-box", delay: 950, sound: "zombie_hurt", shake: 16 },
         { id: "card-stats", delay: 1700, sound: "shoot", shake: 10, action: animateStats },
         { id: "perf-msg", delay: 2450, sound: "purchase", shake: 4 },
         { id: "card-xp", delay: 3200, sound: "shoot", shake: 10, action: animateXP },
-        { id: "card-boss", delay: 3950, sound: "shoot", shake: 10, action: animateBoss },
-        { id: "card-cosmetic", delay: 4700, sound: "shoot", shake: 10, action: animateCosmetic },
-        { id: "over-controls", delay: 5450, sound: "purchase", shake: 6 }
+        ...(isInfection ? [] : [{ id: "card-boss", delay: 3950, sound: "shoot", shake: 10, action: animateBoss }]),
+        { id: "card-cosmetic", delay: isInfection ? 3950 : 4700, sound: "shoot", shake: 10, action: animateCosmetic },
+        { id: "over-controls", delay: isInfection ? 4700 : 5450, sound: "purchase", shake: 6 }
     ];
 
     staggerSequence.forEach(step => {
@@ -1564,9 +1731,10 @@ function gameOver() {
     }
 
     function animateBoss() {
+        if (isInfection) return; // Prevent initializing boss models in Infection ending context
         const row = document.getElementById('over-bosses-row');
         if (!row) return;
-        row.innerHTML = ""; // Clear
+        row.innerHTML = ""; 
         
         bossesDB.forEach(function (b) {
             const discovered = saveData.unlockedBosses && saveData.unlockedBosses.includes(b.id);
@@ -1588,7 +1756,6 @@ function gameOver() {
                 <div id="over-boss-slot-${b.id}" style="display: flex; flex-direction: column; align-items: center; min-width: 60px; transform: scale(0); opacity: 0; transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.25), opacity 0.4s; position: relative;">
                     <div style="position: relative; width: 54px; height: 54px; margin-bottom: 4px;">
                         <canvas id="over-boss-cv-${b.id}" width="54" height="54" style="background: #080808; border: 1.5px solid ${discovered ? b.color : '#333'}; border-radius: 50%; box-sizing: border-box; display: block; box-shadow: 0 0 10px rgba(0,0,0,0.5);"></canvas>
-                        <!-- Flash Overlay for juice -->
                         <div id="over-boss-flash-${b.id}" style="position: absolute; inset: 0; border-radius: 50%; background: #fff; opacity: 0; pointer-events: none; transition: opacity 0.15s ease-out;"></div>
                     </div>
                     <span id="over-boss-status-${b.id}" style="font-size: 8px; color: ${statusColor}; font-weight: bold; text-transform: uppercase; text-align: center; line-height: 1.2; letter-spacing: 0.5px;">${statusText}</span>
@@ -1596,15 +1763,13 @@ function gameOver() {
             `;
             row.insertAdjacentHTML('beforeend', slotHtml);
             
-            // Draw initial frames
             if (defeated && isNewDefeat) {
-                drawOverBossIcon(b.id, discovered, true, 0); // Animate strike progress later
+                drawOverBossIcon(b.id, discovered, true, 0); 
             } else {
                 drawOverBossIcon(b.id, discovered, defeated, 1);
             }
         });
         
-        // Sequentially stagger scale pop each boss slot
         bossesDB.forEach(function (b, idx) {
             setTimeout(function () {
                 const slot = document.getElementById(`over-boss-slot-${b.id}`);
@@ -1621,7 +1786,6 @@ function gameOver() {
                 const isNewDiscovery = discovered && !window.startingUnlockedBosses.includes(b.id);
                 const isNewDefeat = defeated && !window.startingDefeatedBosses.includes(b.id);
                 
-                // --- NEW DISCOVERY JUICE ---
                 if (isNewDiscovery) {
                     setTimeout(function () {
                         const flash = document.getElementById(`over-boss-flash-${b.id}`);
@@ -1641,7 +1805,6 @@ function gameOver() {
                     }, 350);
                 }
                 
-                // --- NEW DEFEAT ANIMATED STRIKE ---
                 if (isNewDefeat) {
                     setTimeout(function () {
                         let progress = 0;
@@ -1672,7 +1835,7 @@ function gameOver() {
                     }, 400);
                 }
                 
-            }, 300 + idx * 250); // Stagger interval (250ms)
+            }, 300 + idx * 250); 
         });
     }
 
@@ -1688,7 +1851,6 @@ function gameOver() {
             } else clearInterval(interval);
         }, 16);
 
-        // Generate spinning preview of the locked cosmetic target
         if (cheapestLockedCosmetic) {
             let overCv = document.getElementById('over-cos-preview');
             if (overCv && typeof drawBackCosmetic === 'function') {
@@ -1750,16 +1912,41 @@ function returnToLobby() {
 }
 
 function updateUI() {
-    document.getElementById('round-box').innerText = stats.round;
+    const roundEl = document.getElementById('round-box');
+    const isInfection = (typeof InfectionMode !== 'undefined' && InfectionMode.isActive);
+    if (roundEl) {
+        if (isInfection) {
+            const totalSecs = Math.max(0, Math.floor(InfectionMode.timer / 60));
+            const mins = Math.floor(totalSecs / 60);
+            const secs = totalSecs % 60;
+            const timeText = (InfectionMode.state === 'WAITING') 
+                ? `PATIENT ZERO IN: ${Math.max(0, Math.floor(InfectionMode.countdown / 60))}s`
+                : `TIME REMAINING: ${mins}:${secs.toString().padStart(2, '0')}`;
+            
+            roundEl.innerText = timeText;
+            roundEl.style.fontSize = "22px"; 
+            roundEl.style.color = (InfectionMode.state === 'WAITING') ? "#ffd700" : "#2ecc71";
+        } else {
+            roundEl.innerText = stats.round;
+            roundEl.style.fontSize = "50px"; 
+            roundEl.style.color = "#a83232"; 
+        }
+    }
+    
     const bTimer = document.getElementById('boss-timer-box');
     if (bTimer) { 
-        if (stats.round % 5 === 0) { 
-            bTimer.innerText = "⚠️ BOSS ROUND ACTIVE!"; 
-            bTimer.style.color = "#ff4757"; 
-        } else { 
-            bTimer.innerText = `Next Boss in: ${5 - (stats.round % 5)} Round(s)`; 
-            bTimer.style.color = "#ffd700"; 
-        } 
+        if (typeof InfectionMode !== 'undefined' && InfectionMode.isActive) {
+            bTimer.style.display = 'none';
+        } else {
+            bTimer.style.display = 'block';
+            if (stats.round % 5 === 0) { 
+                bTimer.innerText = "⚠️ BOSS ROUND ACTIVE!"; 
+                bTimer.style.color = "#ff4757"; 
+            } else { 
+                bTimer.innerText = `Next Boss in: ${5 - (stats.round % 5)} Round(s)`; 
+                bTimer.style.color = "#ffd700"; 
+            } 
+        }
     }
     const badgeDouble = document.getElementById('badge-double'), badgeInsta = document.getElementById('badge-instakill');
     if (badgeDouble) badgeDouble.style.display = (window.doublePointsTimer > 0) ? 'block' : 'none';
@@ -1797,8 +1984,31 @@ function updateUI() {
                 const scoreEl = document.getElementById(pId + '-score');
                 if (scoreEl) scoreEl.innerHTML = p.score + ' <span style="font-size:16px">⛃</span>';
                 
-                const gun = p.inventory && p.inventory[p.weapIdx] ? p.inventory[p.weapIdx] : null, gunName = p.gunName || (gun ? gun.name : "Model 1911");
-                const ammoText = p.reloading ? "RELOADING" : (p.clip !== undefined && p.ammo !== undefined ? `${p.clip} / ${p.ammo}` : (gun ? `${gun.clip} / ${gun.ammo}` : "8 / 32"));
+                const isLocal = (pId === window.myPlayerId);
+                const gun = p.inventory && p.inventory[p.weapIdx] ? p.inventory[p.weapIdx] : null;
+                
+                let gunName = "Model 1911";
+                let ammoText = "8 / 32";
+                
+                if (p.state === 'SPECTATING') {
+                    gunName = "SPECTATING";
+                    ammoText = "NEXT ROUND";
+                } else if (p.reloading) {
+                    ammoText = "RELOADING";
+                } else if (p.state === 'DOWNED') {
+                    gunName = "DOWNED";
+                    ammoText = "NEED HELP";
+                } else if (typeof InfectionMode !== 'undefined' && InfectionMode.isActive && InfectionMode.infectedIds.has(p.id)) {
+                    // Update HUD states for infected players
+                    gunName = (p.id === InfectionMode.alphaId) ? "Patient Zero Alpha" : "Infected claws";
+                    ammoText = "MELEE";
+                } else if (isLocal && gun) {
+                    gunName = gun.name;
+                    ammoText = `${gun.clip} / ${gun.ammo}`;
+                } else {
+                    gunName = p.gunName || (gun ? gun.name : "Model 1911");
+                    ammoText = (p.clip !== undefined && p.ammo !== undefined) ? `${p.clip} / ${p.ammo}` : (gun ? `${gun.clip} / ${gun.ammo}` : "8 / 32");
+                }
                 
                 const gunNameEl = document.getElementById(pId + '-gun-name');
                 if (gunNameEl) gunNameEl.innerText = gunName; 

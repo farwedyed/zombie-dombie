@@ -121,6 +121,7 @@ let stats = {
     frame: 0, 
     sessionKills: 0, 
     selectedMapIdx: 0, 
+    gameMode: "SURVIVAL", // Mode selection tracks: 'SURVIVAL' vs 'INFECTION'
     difficulty: "medium" 
 };
 let players = {};
@@ -159,7 +160,6 @@ let selectedSoloDifficulty = 'medium';
 window.matchStartingXP = 0;
 window.matchStartingCoins = 0;
 
-// Tracking arrays to verify run discovery & defeats
 window.startingUnlockedBosses = [];
 window.startingDefeatedBosses = [];
 
@@ -201,7 +201,7 @@ async function populateMenuLeaderboard() {
 
 function init() {
     refreshMainMenuStats();
-    populateMenuLeaderboard(); // Pull leaderboard records immediately on load
+    populateMenuLeaderboard(); 
 
     window.addEventListener('resize', function () { 
         canvas.width = window.innerWidth; 
@@ -215,7 +215,6 @@ function init() {
         } else {
             keys[e.code] = true; 
             
-            // Intercept spectator inputs to allow camera cycling
             if (gameActive && me && me.state === 'SPECTATING') {
                 if (e.code === 'KeyQ' || e.code === 'ArrowRight' || e.code === 'KeyD') {
                     cycleSpectator(1);
@@ -300,7 +299,6 @@ function init() {
         }, 800);
     }
 
-    // Modal restructuring logic
     document.querySelectorAll('.modal').forEach(function (modal) {
         modal.style.overflow = 'hidden';
         modal.style.display = 'none';
@@ -309,7 +307,6 @@ function init() {
         let closeBtn = modal.querySelector('button[onclick^="closeMenu"]');
         let title = modal.querySelector('h2');
         
-        // Define style for the Close Button globally
         if (closeBtn) {
             closeBtn.className = 'close-btn-top';
             closeBtn.innerHTML = '✕';
@@ -326,7 +323,6 @@ function init() {
             };
         }
 
-        // List of modals with highly customized layout structures that must NOT be dynamically restructured
         const customModals = [
             'cosmetics-modal', 
             'lobby-browser-modal', 
@@ -337,10 +333,9 @@ function init() {
         ];
         
         if (customModals.includes(modal.id)) {
-            return; // Skip structural wrapper modifications for these custom layouts
+            return; 
         }
         
-        // Simple vertical lists (ach-modal, gun-modal, bosses-modal) get wrapped
         let listContainer = modal.querySelector('#ach-list, #gun-list, #bosses-list, #player-list');
         
         if (!listContainer) {
@@ -541,13 +536,11 @@ function setupTouchControls() {
         e.preventDefault(); 
         if (me) me.isTouch = true;
         if (gameActive && me) {
-            // Cycle targets if currently in spectating status
             if (me.state === 'SPECTATING') {
                 cycleSpectator(1);
                 return;
             }
             if (me.inventory.length > 1) {
-                // Debounce touch event to prevent immediate duplicate switches on mobile
                 const now = Date.now();
                 if (now - (me.lastSwitchTime || 0) < 300) return;
                 me.lastSwitchTime = now;
@@ -566,7 +559,7 @@ function setupTouchControls() {
 window.openMenu = function (id) {
     const el = document.getElementById(id);
     if (el) {
-        el.style.display = 'flex'; // Fixes display rules from block to flex
+        el.style.display = 'flex'; 
     }
     if (id === 'ach-modal') renderAchievements();
     if (id === 'gun-modal') renderGunLibrary();
@@ -801,6 +794,7 @@ const LobbyManager = {
                 hostName: myUsername, 
                 hostLevel: myLvl, 
                 mapIndex: stats.selectedMapIdx, 
+                gameMode: stats.gameMode || 'SURVIVAL', // Sync active modes up to cloud listings
                 difficulty: stats.difficulty || 'medium',
                 visibility: visibility, 
                 playerCount: Object.values(window.lobbyPlayers).filter(p => p !== "").length, 
@@ -826,6 +820,7 @@ const LobbyManager = {
                 await db.collection("lobbies").doc(peerId).update({
                     playerCount: Object.values(window.lobbyPlayers).filter(p => p !== "").length,
                     mapIndex: stats.selectedMapIdx, 
+                    gameMode: stats.gameMode || 'SURVIVAL', // Continuously push game mode updates
                     difficulty: stats.difficulty || 'medium', 
                     visibility: visibility, 
                     lastActive: firebase.firestore.FieldValue.serverTimestamp()
@@ -935,7 +930,8 @@ window.refreshServerBrowser = function () {
     const list = document.getElementById('lobby-browser-list');
     const noLobbies = document.getElementById('no-lobbies-msg'); 
     if (!list) return;
-    list.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:30px; color:#888;">Scanning active public lobbies...</td></tr>`;
+    
+    list.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:30px; color:#888;">Scanning active public lobbies...</td></tr>`;
     if (noLobbies) noLobbies.style.display = 'none';
     
     LobbyManager.fetchLobbies(function (lobbies) {
@@ -946,15 +942,17 @@ window.refreshServerBrowser = function () {
         }
         lobbies.forEach(function (lobby) {
             let mapName = "Facility"; 
-            if (lobby.mapIndex === 1) {
-                mapName = "Bunker"; 
-            } else if (lobby.mapIndex === 2) {
-                mapName = "Sector-9";
-            }
+            if (lobby.mapIndex === 1) mapName = "Bunker"; 
+            else if (lobby.mapIndex === 2) mapName = "Sector-9";
+            else if (lobby.mapIndex === 3) mapName = "Sector-12";
+            
+            const modeName = lobby.gameMode === 'INFECTION' ? "☣️ INFECTION" : "SURVIVAL";
+
             list.innerHTML += `
                 <tr style="border-bottom:1px solid #222;">
                     <td style="padding:10px; color:#3498db; font-weight:bold;">${lobby.hostName || "Host"} <span style="color:#ffd700; font-size:10px;">[Lv.${lobby.hostLevel || 1}]</span></td>
                     <td style="padding:10px; color:#ccc;">${mapName}</td>
+                    <td style="padding:10px; color:#2ecc71; font-weight:bold;">${modeName}</td>
                     <td style="padding:10px; color:#e67e22; font-weight:bold;">${lobby.difficulty ? lobby.difficulty.toUpperCase() : "MEDIUM"}</td>
                     <td style="padding:10px; color:#666;">${lobby.playerCount || 1} / ${lobby.maxPlayers || 4}</td>
                     <td style="padding:10px; text-align:right;"><button onclick="joinServerBrowserLobby('${lobby.peerId}')" style="width:auto; margin:0; padding:5px 12px; font-size:12px; background:#a83232; color:#fff; border:none; border-radius:3px;">Connect</button></td>
@@ -986,6 +984,8 @@ function enterLobbyJoinManual(id) {
     
     document.getElementById('lobby-map-select').style.display = 'none';
     document.getElementById('lobby-map-display-client').style.display = 'block';
+    document.getElementById('lobby-mode-select').style.display = 'none';
+    document.getElementById('lobby-mode-display-client').style.display = 'block';
     document.getElementById('lobby-diff-select').style.display = 'none';
     document.getElementById('lobby-diff-display-client').style.display = 'block';
     document.getElementById('lobby-visibility-select').style.display = 'none';
@@ -997,7 +997,7 @@ function enterLobbyJoinManual(id) {
     updateLobbyPlayersList();
     Network.init(function () { 
         Network.join(id, function () { 
-            document.getElementById('lobby-status').innerText = "Connected! Ready to deploy."; 
+            document.getElementById('lobby-status').innerText = "Connected! Ready to play."; 
         }); 
     });
 }
@@ -1314,6 +1314,7 @@ window.deploySoloOffline = function () {
     window.myPlayerId = 'p1'; 
     window.lobbyPlayers = { p1: "Survivor", p2: "", p3: "", p4: "" };
     stats.difficulty = selectedSoloDifficulty; 
+    stats.gameMode = "SURVIVAL"; // Offline matches default strictly to AI Survival
     activeMap = playableMaps[selectedSoloMapIdx];
     saveLocalUsername(); 
     launchGame();
@@ -1353,6 +1354,7 @@ function startLocalCoop() {
     window.myPlayerId = 'p1'; 
     window.lobbyPlayers = { p1: "Survivor", p2: "Player 2 [Lv. 1]", p3: "", p4: "" };
     stats.difficulty = document.getElementById('menu-diff-select') ? document.getElementById('menu-diff-select').value : "medium";
+    stats.gameMode = "SURVIVAL"; // Split-screen local play defaults strictly to Classic Survival
     saveLocalUsername(); 
     activeMap = playableMaps[document.getElementById('map-select') ? parseInt(document.getElementById('map-select').value) : 0];
     launchGame();
@@ -1363,6 +1365,7 @@ function startTutorial() {
     window.myPlayerId = 'p1'; 
     window.lobbyPlayers = { p1: "Survivor", p2: "", p3: "", p4: "" }; 
     stats.difficulty = "medium";
+    stats.gameMode = "SURVIVAL";
     saveLocalUsername(); 
     if (typeof Tutorial !== 'undefined') {
         Tutorial.isActive = true; 
@@ -1378,6 +1381,7 @@ function enterLobbyHost() {
     if (!validateOnlineName()) return;
     stats.selectedMapIdx = document.getElementById('map-select') ? parseInt(document.getElementById('map-select').value) : 0; 
     stats.difficulty = "medium";
+    stats.gameMode = "SURVIVAL"; // Default game mode
     
     if (document.getElementById('lobby-map-select')) {
         document.getElementById('lobby-map-select').value = stats.selectedMapIdx;
@@ -1385,9 +1389,14 @@ function enterLobbyHost() {
     if (document.getElementById('lobby-diff-select')) {
         document.getElementById('lobby-diff-select').value = stats.difficulty;
     }
+    if (document.getElementById('lobby-mode-select')) {
+        document.getElementById('lobby-mode-select').value = stats.gameMode;
+    }
     
     document.getElementById('lobby-map-select').style.display = 'block'; 
     document.getElementById('lobby-map-display-client').style.display = 'none';
+    document.getElementById('lobby-mode-select').style.display = 'block'; 
+    document.getElementById('lobby-mode-display-client').style.display = 'none';
     document.getElementById('lobby-diff-select').style.display = 'block'; 
     document.getElementById('lobby-diff-display-client').style.display = 'none';
     document.getElementById('lobby-visibility-select').style.display = 'block'; 
@@ -1423,6 +1432,8 @@ function enterLobbyJoin() {
     
     document.getElementById('lobby-map-select').style.display = 'none'; 
     document.getElementById('lobby-map-display-client').style.display = 'block';
+    document.getElementById('lobby-mode-select').style.display = 'none'; 
+    document.getElementById('lobby-mode-display-client').style.display = 'block';
     document.getElementById('lobby-diff-select').style.display = 'none'; 
     document.getElementById('lobby-diff-display-client').style.display = 'block';
     document.getElementById('lobby-visibility-select').style.display = 'none'; 
@@ -1445,9 +1456,35 @@ function lobbyChangeMap() {
     if (Network.mode === 'HOST') { 
         try { 
             Network.broadcastToAll({ type: 'LOBBY_MAP_CHANGE', mapIndex: stats.selectedMapIdx }); 
+            // Immediate Firestore Doc Update for Server Browser
+            if (typeof db !== 'undefined' && db && Network.peer) {
+                db.collection("lobbies").doc(Network.peer.id).update({
+                    mapIndex: stats.selectedMapIdx,
+                    lastActive: firebase.firestore.FieldValue.serverTimestamp()
+                }).catch(e => {});
+            }
         } catch(e){} 
     }
 }
+
+// Host controls the Game Mode handshake [2]
+window.lobbyChangeMode = function() {
+    const select = document.getElementById('lobby-mode-select');
+    if (!select) return;
+    stats.gameMode = select.value;
+    if (Network.mode === 'HOST') {
+        try {
+            Network.broadcastToAll({ type: 'LOBBY_MODE_CHANGE', gameMode: stats.gameMode });
+            // Immediate Firestore Doc Update for Server Browser
+            if (typeof db !== 'undefined' && db && Network.peer) {
+                db.collection("lobbies").doc(Network.peer.id).update({
+                    gameMode: stats.gameMode,
+                    lastActive: firebase.firestore.FieldValue.serverTimestamp()
+                }).catch(e => console.warn("Lobby mode immediate sync failed:", e));
+            }
+        } catch(e){}
+    }
+};
 
 function lobbyChangeDifficulty() {
     const select = document.getElementById('lobby-diff-select'); 
@@ -1456,6 +1493,13 @@ function lobbyChangeDifficulty() {
     if (Network.mode === 'HOST') { 
         try { 
             Network.broadcastToAll({ type: 'LOBBY_DIFF_CHANGE', difficulty: stats.difficulty }); 
+            // Immediate Firestore Doc Update for Server Browser
+            if (typeof db !== 'undefined' && db && Network.peer) {
+                db.collection("lobbies").doc(Network.peer.id).update({
+                    difficulty: stats.difficulty,
+                    lastActive: firebase.firestore.FieldValue.serverTimestamp()
+                }).catch(e => {});
+            }
         } catch(e){} 
     }
 }
@@ -1494,7 +1538,7 @@ function updateLobbyUI(connected) {
 
 function hostStartGame() { 
     try { 
-        Network.broadcastToAll({ type: 'START', mapIndex: stats.selectedMapIdx }); 
+        Network.broadcastToAll({ type: 'START', mapIndex: stats.selectedMapIdx, gameMode: stats.gameMode }); 
     } catch(e){} 
     activeMap = playableMaps[stats.selectedMapIdx]; 
     launchGame(); 
@@ -1528,7 +1572,6 @@ function launchGame() {
     window.matchStartingXP = saveData.xp || 0;
     window.matchStartingCoins = saveData.lobbyCoins || 0;
 
-    // Capture baseline discovered/defeated structures before run starts
     window.startingUnlockedBosses = [...(saveData.unlockedBosses || [])];
     window.startingDefeatedBosses = [...(saveData.defeatedBosses || [])];
 
@@ -1545,6 +1588,10 @@ function launchGame() {
     } else if (activeMap === playableMaps[2]) { 
         spawnX = 250; 
         spawnY = 250; 
+    } else if (activeMap === playableMaps[3]) {
+        // Survivors spawn directly in Central Plaza on Sector-12 City Map launch
+        spawnX = 1400;
+        spawnY = 1200;
     }
     
     if (Network.mode === 'CLIENT') {
@@ -1563,6 +1610,12 @@ function launchGame() {
             players['p2'] = createPlayer('p2', spawnX + 40, spawnY, getPlayerColor('p2'), "Player 2 [Lv. 1]");
         }
     }
+
+    // Trigger local initializations if the match is launched inside PVP Infection mode
+    if (typeof InfectionMode !== 'undefined' && stats.gameMode === 'INFECTION') {
+        InfectionMode.init();
+    }
+
     lastLoopTime = performance.now(); 
     accumulator = 0; 
     gameActive = true; 
@@ -1573,7 +1626,7 @@ function requestRestart() {
     if (Network.mode === 'CLIENT') return; 
     if (Network.mode === 'HOST') { 
         try { 
-            Network.broadcastToAll({ type: 'START', mapIndex: stats.selectedMapIdx }); 
+            Network.broadcastToAll({ type: 'START', mapIndex: stats.selectedMapIdx, gameMode: stats.gameMode }); 
         } catch(e){} 
     }
     launchGame(); 
@@ -1642,6 +1695,10 @@ function goToLobbyScreen() {
         document.getElementById('start-btn').style.background = '#a83232';
         document.getElementById('lobby-map-select').style.display = 'block'; 
         document.getElementById('lobby-map-display-client').style.display = 'none';
+        
+        document.getElementById('lobby-mode-select').style.display = 'block';
+        document.getElementById('lobby-mode-display-client').style.display = 'none';
+
         if (Network.peer && typeof LobbyManager !== 'undefined') {
             LobbyManager.registerLobby(Network.peer.id);
         }
@@ -1653,6 +1710,11 @@ function goToLobbyScreen() {
         const clientMapDisplay = document.getElementById('lobby-map-display-client'); 
         clientMapDisplay.style.display = 'block';
         clientMapDisplay.innerText = (typeof playableMaps !== 'undefined' && playableMaps[stats.selectedMapIdx]) ? playableMaps[stats.selectedMapIdx].name : "Unknown Map";
+
+        document.getElementById('lobby-mode-select').style.display = 'none';
+        const clientModeDisplay = document.getElementById('lobby-mode-display-client');
+        clientModeDisplay.style.display = 'block';
+        clientModeDisplay.innerText = (stats.gameMode === 'INFECTION') ? "Infection Mode" : "Classic Survival";
     }
 }
 
@@ -1697,20 +1759,42 @@ function feedbackCopyButton() {
     }
 }
 
-// Override updateUI to solve the weapon switching visual freeze bug in Solo and Tutorial modes
 window.updateUI = function() {
     const roundEl = document.getElementById('round-box');
-    if (roundEl) roundEl.innerText = stats.round;
+    const isInfection = (typeof InfectionMode !== 'undefined' && InfectionMode.isActive);
+    if (roundEl) {
+        if (isInfection) {
+            const totalSecs = Math.max(0, Math.floor(InfectionMode.timer / 60));
+            const mins = Math.floor(totalSecs / 60);
+            const secs = totalSecs % 60;
+            const timeText = (InfectionMode.state === 'WAITING') 
+                ? `PATIENT ZERO IN: ${Math.max(0, Math.floor(InfectionMode.countdown / 60))}s`
+                : `TIME REMAINING: ${mins}:${secs.toString().padStart(2, '0')}`;
+            
+            roundEl.innerText = timeText;
+            roundEl.style.fontSize = "22px"; 
+            roundEl.style.color = (InfectionMode.state === 'WAITING') ? "#ffd700" : "#2ecc71";
+        } else {
+            roundEl.innerText = stats.round;
+            roundEl.style.fontSize = "50px"; 
+            roundEl.style.color = "#a83232"; 
+        }
+    }
     
     const bTimer = document.getElementById('boss-timer-box');
     if (bTimer) { 
-        if (stats.round % 5 === 0) { 
-            bTimer.innerText = "⚠️ BOSS ROUND ACTIVE!"; 
-            bTimer.style.color = "#ff4757"; 
-        } else { 
-            bTimer.innerText = `Next Boss in: ${5 - (stats.round % 5)} Round(s)`; 
-            bTimer.style.color = "#ffd700"; 
-        } 
+        if (typeof InfectionMode !== 'undefined' && InfectionMode.isActive) {
+            bTimer.style.display = 'none';
+        } else {
+            bTimer.style.display = 'block';
+            if (stats.round % 5 === 0) { 
+                bTimer.innerText = "⚠️ BOSS ROUND ACTIVE!"; 
+                bTimer.style.color = "#ff4757"; 
+            } else { 
+                bTimer.innerText = `Next Boss in: ${5 - (stats.round % 5)} Round(s)`; 
+                bTimer.style.color = "#ffd700"; 
+            } 
+        }
     }
     const badgeDouble = document.getElementById('badge-double'), badgeInsta = document.getElementById('badge-instakill');
     if (badgeDouble) badgeDouble.style.display = (window.doublePointsTimer > 0) ? 'block' : 'none';
@@ -1748,7 +1832,6 @@ window.updateUI = function() {
                 const scoreEl = document.getElementById(pId + '-score');
                 if (scoreEl) scoreEl.innerHTML = p.score + ' <span style="font-size:16px">⛃</span>';
                 
-                // Resolve Network Live Ammo and Weapon Switches
                 const isLocal = (pId === window.myPlayerId);
                 const gun = p.inventory && p.inventory[p.weapIdx] ? p.inventory[p.weapIdx] : null;
                 
@@ -1763,11 +1846,13 @@ window.updateUI = function() {
                 } else if (p.state === 'DOWNED') {
                     gunName = "DOWNED";
                     ammoText = "NEED HELP";
+                } else if (typeof InfectionMode !== 'undefined' && InfectionMode.isActive && InfectionMode.infectedIds.has(p.id)) {
+                    gunName = (p.id === InfectionMode.alphaId) ? "Patient Zero Alpha" : "Infected claws";
+                    ammoText = "MELEE";
                 } else if (isLocal && gun) {
                     gunName = gun.name;
                     ammoText = `${gun.clip} / ${gun.ammo}`;
                 } else {
-                    // Non-local players read directly from replicated state
                     gunName = p.gunName || (gun ? gun.name : "Model 1911");
                     ammoText = (p.clip !== undefined && p.ammo !== undefined) ? `${p.clip} / ${p.ammo}` : (gun ? `${gun.clip} / ${gun.ammo}` : "8 / 32");
                 }

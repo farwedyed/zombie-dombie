@@ -236,6 +236,87 @@ const playableMaps = [
             { x: 250, y: -600, roomId: 1 },  // Room 1 Top window
             { x: 1550, y: 250, roomId: 4 }   // Room 4 Right window (Zombies will now spawn outside)
         ]
+    },
+
+    // --- MAP 3: SECTOR-12 CITY (NEW SPRAWLING INFECTION MAP) ---
+    {
+        name: "Sector-12 City",
+        desc: "A massive multi-tiered metropolis sector featuring intersecting streets, blockades, alleys, and commercial holdout spots.",
+        rooms: [
+            { id: 0, name: "Central Plaza", unlocked: true, price: 0, color: "#1a1a1d", x: 1000, y: 1000, w: 800, h: 800 },
+            { id: 1, name: "Main Street North", unlocked: false, price: 750, color: "#0f172a", x: 1000, y: 200, w: 800, h: 800, 
+              door: { x: 1350, y: 980, w: 100, h: 40 } },
+            { id: 2, name: "Commercial Sector East", unlocked: false, price: 1000, color: "#1e1e24", x: 1800, y: 1000, w: 800, h: 800, 
+              door: { x: 1780, y: 1350, w: 40, h: 100 } },
+            { id: 3, name: "Medical Center West", unlocked: false, price: 1250, color: "#13222d", x: 200, y: 1000, w: 800, h: 800, 
+              door: { x: 980, y: 1350, w: 40, h: 100 } },
+            { id: 4, name: "Safehouse Alley South", unlocked: false, price: 1500, color: "#1b1424", x: 1000, y: 1800, w: 800, h: 800, 
+              door: { x: 1350, y: 1780, w: 100, h: 40 } }
+        ],
+        walls: [
+            // --- ROOM 0: CENTRAL PLAZA WALLS (Leaves 4 connecting door gaps) ---
+            { x: 1000, y: 1000, w: 350, h: 40 }, { x: 1450, y: 1000, w: 350, h: 40 }, // North boundary split
+            { x: 1000, y: 1760, w: 350, h: 40 }, { x: 1450, y: 1760, w: 350, h: 40 }, // South boundary split
+            { x: 1000, y: 1000, w: 40, h: 350 }, { x: 1000, y: 1450, w: 40, h: 350 }, // West boundary split
+            { x: 1760, y: 1000, w: 40, h: 350 }, { x: 1760, y: 1450, w: 40, h: 350 }, // East boundary split
+
+            // --- ROOM 1: MAIN STREET NORTH WALLS ---
+            { x: 1000, y: 200, w: 350, h: 40 }, { x: 1450, y: 200, w: 350, h: 40 },   // Exterior North wall (split for window)
+            { x: 1000, y: 200, w: 40, h: 800 },                                      // West boundary
+            { x: 1760, y: 200, w: 40, h: 800 },                                      // East boundary
+            { x: 1000, y: 960, w: 350, h: 40 }, { x: 1450, y: 960, w: 350, h: 40 },   // dividing South wall
+
+            // --- ROOM 2: COMMERCIAL SECTOR EAST WALLS ---
+            { x: 1800, y: 1000, w: 800, h: 40 },                                      // North boundary
+            { x: 1800, y: 1760, w: 800, h: 40 },                                      // South boundary
+            { x: 1800, y: 1000, w: 40, h: 350 }, { x: 1800, y: 1450, w: 40, h: 350 }, // dividing West wall
+            { x: 2560, y: 1000, w: 40, h: 350 }, { x: 2560, y: 1450, w: 40, h: 350 }, // Exterior East wall (split for window)
+
+            // --- ROOM 3: MEDICAL CENTER WEST WALLS ---
+            { x: 200, y: 1000, w: 800, h: 40 },                                       // North boundary
+            { x: 200, y: 1760, w: 800, h: 40 },                                       // South boundary
+            { x: 200, y: 1000, w: 40, h: 350 }, { x: 200, y: 1450, w: 40, h: 350 },   // Exterior West wall (split for window)
+            { x: 960, y: 1000, w: 40, h: 350 }, { x: 960, y: 1450, w: 40, h: 350 },   // dividing East wall
+
+            // --- ROOM 4: SAFEHOUSE ALLEY SOUTH WALLS ---
+            { x: 1000, y: 1800, w: 350, h: 40 }, { x: 1450, y: 1800, w: 350, h: 40 }, // dividing North wall
+            { x: 1000, y: 1800, w: 40, h: 800 },                                      // West boundary
+            { x: 1760, y: 1800, w: 40, h: 800 },                                      // East boundary
+            { x: 1000, y: 2560, w: 350, h: 40 }, { x: 1450, y: 2560, w: 350, h: 40 }  // Exterior South wall (split for window)
+        ],
+        windows: [
+            // Peripheral barricade entry windows wrapping around outer streets
+            { x: 1350, y: 200, w: 100, h: 40, boards: 6, max: 6, orientation: 'H', entryX: 1400, entryY: 100 },   // North street outer window
+            { x: 2560, y: 1350, w: 40, h: 100, boards: 6, max: 6, orientation: 'V', entryX: 2660, entryY: 1400 }, // East street outer window
+            { x: 200, y: 1350, w: 40, h: 100, boards: 6, max: 6, orientation: 'V', entryX: 100, entryY: 1400 },  // West street outer window
+            { x: 1350, y: 2560, w: 100, h: 40, boards: 6, max: 6, orientation: 'H', entryX: 1400, entryY: 2660 }  // South street outer window
+        ],
+        furniture: [
+            // Urban barriers/crates scattered around the plaza and buildings for pathfinding layouts
+            { x: 1350, y: 1350, w: 100, h: 100, color: "#333" }, // Central Plaza monument
+            { x: 1200, y: 400, w: 80, h: 150, color: "#111" },   // Overturned city bus
+            { x: 2100, y: 1200, w: 120, h: 60, color: "#222" },  // Commercial counter desk
+            { x: 400, y: 1500, w: 150, h: 60, color: "#222" },   // Triage medical tables
+            { x: 1500, y: 2100, w: 60, h: 140, color: "#444" }   // Alleyway dumpster blockades
+        ],
+        interactables: [
+            // Abundant layout of buy options across all city blocks
+            { x: 1380, y: 1100, w: 40, h: 40, type: 'WALLBUY', price: 500, label: "Model 1911" },
+            { x: 1380, y: 1650, w: 40, h: 40, type: 'WALLBUY', price: 500, label: "Olympus" },
+            { x: 1100, y: 400, w: 40, h: 40, type: 'WALLBUY', price: 1000, label: "MP-Retro" },
+            { x: 2300, y: 1100, w: 40, h: 40, type: 'WALLBUY', price: 1200, label: "Enforcer" },
+            { x: 400, y: 1100, w: 40, h: 40, type: 'WALLBUY', price: 1500, label: "Galilee" },
+            { x: 1100, y: 2300, w: 40, h: 40, type: 'WALLBUY', price: 2000, label: "LMG-21" },
+            { x: 1600, y: 2300, w: 40, h: 40, type: 'WALLBUY', price: 2000, label: "Bazooka" },
+            { x: 1480, y: 1370, w: 60, h: 60, type: 'BOX', price: 950, color: '#8e44ad', label: "?" },
+            { x: 1375, y: 1950, w: 50, h: 50, type: 'PERK', price: 2500, color: '#c0392b', label: "VIG" }
+        ],
+        spawnPoints: [
+            { x: 1400, y: 50, roomId: 1 },    // Spawn outside North building
+            { x: 2700, y: 1400, roomId: 2 },  // Spawn outside East building
+            { x: 50, y: 1400, roomId: 3 },    // Spawn outside West building
+            { x: 1400, y: 2750, roomId: 4 }   // Spawn outside South building
+        ]
     }
 ];
 
@@ -273,6 +354,3 @@ const tutorialMapData = {
         { x: 1050, y: 450, roomId: 2 }
     ]
 };
-
-// Default current map
-let activeMap = playableMaps[0];
